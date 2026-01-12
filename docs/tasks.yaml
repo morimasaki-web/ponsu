@@ -1,0 +1,395 @@
+# Ponsu Development Tasks (YAML)
+#
+# 方針（MVP確定）
+# - DB: PostgreSQL
+# - DBアクセス: sqlc
+# - API: GraphQL (gqlgen)
+# - 監査/状態管理: Event Sourcing（event_store + 同期プロジェクション）
+# - UI: SPA化を見据えたSSR
+# - 認可: RBAC
+# - 通知: Slack（Incoming Webhook）
+# - 添付: MinIO（S3互換）を推奨（実装はStorage抽象で差し替え可能に）
+# - マイグレーション: golang-migrate/migrate を推奨
+
+project: Ponsu
+version: 1.0.0-mvp
+created_at: 2026-01-12
+
+external_review:
+  enabled: false
+  note: "外部LLM（Claude Code等）レビューは一旦運用しない。needs_claude_review は将来再開用の目印として残す。"
+
+status_values: [todo, in_progress, done, blocked]
+priority_values: [low, medium, high]
+
+tasks:
+  # -------------------------
+  # 0. 基盤・開発環境
+  # -------------------------
+  - id: MVP-000
+    title: "開発環境前提の整備（Go/Docker/実行ポリシー手順）"
+    status: done
+    priority: high
+    branch: "feature/mvp-000-dev-prereqs"
+    depends_on: []
+    needs_claude_review: false
+    description: "Windows環境で `go` が使えること、Dockerが使えること、verifyスクリプトが実行できることの手順をドキュメント化する。"
+    start_date: 2026-01-12
+    end_date: 2026-01-12
+    deliverables:
+      - "docs/instruction.md（Go/Docker導入、PATH確認、verify.cmdの使い方）"
+    acceptance_criteria:
+      - "新規環境で `go version` が確認できる手順が書かれている"
+      - "`ponsu\\scripts\\verify.cmd` が実行できる手順が書かれている"
+
+  - id: MVP-001
+    title: "Goプロジェクト初期化（Clean Architecture雛形）"
+    status: in_progress
+    priority: high
+    branch: "feature/mvp-001-bootstrap"
+    depends_on: [MVP-000]
+    needs_claude_review: true
+    description: "Go module初期化、基本ディレクトリ、最小のmain起動、設定読み込みの足場を作る。"
+    start_date: 2026-01-12
+    deliverables:
+      - "go.mod / go.sum"
+      - "cmd/ponsu/（エントリポイント）"
+      - "internal/{domain,usecase,interface,infrastructure}/（雛形）"
+      - "Makefile または Taskfile（任意）"
+    acceptance_criteria:
+      - "`go test ./...` が通る"
+      - "`go run ./cmd/ponsu` が起動してログを出す"
+
+  - id: MVP-002
+    title: "ローカル開発環境（Postgres/MinIO）をdocker-composeで用意"
+    status: todo
+    priority: high
+    branch: "feature/mvp-002-dev-env"
+    depends_on: [MVP-001]
+    needs_claude_review: false
+    description: "イベントストア/Read Modelを動かすための依存サービスをローカルで立ち上げられるようにする。"
+    deliverables:
+      - "compose.yaml（Postgres, MinIO, 必要ならAdminer等）"
+      - "環境変数例（.env.example）"
+    acceptance_criteria:
+      - "`docker compose up -d` で Postgres と MinIO が起動する"
+      - "アプリから接続できる（疎通確認コード or ヘルスチェック）"
+
+  - id: MVP-003
+    title: "DBマイグレーション導入（golang-migrate/migrate）"
+    status: todo
+    priority: high
+    branch: "feature/mvp-003-migrations"
+    depends_on: [MVP-002]
+    needs_claude_review: true
+    description: "SQLマイグレーションの運用を確立し、CI/開発で確実に同じ状態を作れるようにする。"
+    deliverables:
+      - "migrations/（up/down SQL）"
+      - "migrate実行手段（Makefile/Taskfile/README）"
+    acceptance_criteria:
+      - "ローカルで up/down が実行できる"
+      - "新規DBから最新スキーマを再現できる"
+
+  - id: MVP-004
+    title: "sqlc 導入（クエリ・生成・レイヤ境界の定義）"
+    status: todo
+    priority: high
+    branch: "feature/mvp-004-sqlc"
+    depends_on: [MVP-003]
+    needs_claude_review: true
+    description: "sqlc設定、クエリ配置、生成コードの置き場所、Repository境界を確定する。"
+    deliverables:
+      - "sqlc.yaml（または sqlc.json）"
+      - "db/query/*.sql"
+      - "生成コード配置（例: internal/infrastructure/dbgen）"
+    acceptance_criteria:
+      - "`sqlc generate` が成功する"
+      - "最小クエリでDB疎通ができる"
+
+  - id: MVP-005
+    title: "検証スクリプトをCIで実行（GitHub Actions）"
+    status: done
+    priority: medium
+    branch: "feature/mvp-005-ci-verify"
+    depends_on: [MVP-000]
+    needs_claude_review: false
+    description: "無料検証（go test/vet/golangci-lint/govulncheck）をPR/Pushで自動実行し、漏れを防ぐ。"
+    start_date: 2026-01-12
+    end_date: 2026-01-12
+    deliverables:
+      - ".github/workflows/verify.yml（新規）"
+    acceptance_criteria:
+      - "PRで `go test ./...` が必ず走る"
+      - "golangci-lint と govulncheck も実行される（失敗で落ちる）"
+
+  # -------------------------
+  # 1. 認証・セッション・認可（RBAC）
+  # -------------------------
+  - id: MVP-010
+    title: "OIDCログイン（Google or Microsoft）とセッション管理"
+    status: todo
+    priority: high
+    branch: "feature/mvp-010-oidc"
+    depends_on: [MVP-001]
+    needs_claude_review: true
+    description: "HTTPルートで /auth/login, /auth/callback, /auth/logout を実装し、ログイン状態を保持できるようにする。"
+    acceptance_criteria:
+      - "ログイン→コールバック→ログイン済みとしてSSR画面を表示できる"
+      - "ログアウトでセッションが破棄される"
+
+  - id: MVP-011
+    title: "組織・メンバーシップ・RBAC（admin/member）"
+    status: todo
+    priority: high
+    branch: "feature/mvp-011-rbac"
+    depends_on: [MVP-003, MVP-010]
+    needs_claude_review: true
+    description: "organizations/users/membershipsのRead Modelを用意し、org単位のアクセス制御を実装する。"
+    acceptance_criteria:
+      - "org外データへアクセスできない"
+      - "admin だけがテンプレ作成UIへ入れる"
+
+  # -------------------------
+  # 2. イベントストア + 同期プロジェクション
+  # -------------------------
+  - id: MVP-020
+    title: "event_store スキーマ確定とマイグレーション作成"
+    status: todo
+    priority: high
+    branch: "feature/mvp-020-event-store"
+    depends_on: [MVP-003]
+    needs_claude_review: true
+    description: "event_store（aggregate_id, version, payload, metadataなど）を導入し、制約/インデックスまで入れる。"
+    acceptance_criteria:
+      - "(org_id, aggregate_type, aggregate_id, version) の一意制約がある"
+      - "append時にversion競合が検知できる"
+
+  - id: MVP-021
+    title: "イベント追記（append）+ 楽観ロック + トランザクション境界"
+    status: todo
+    priority: high
+    branch: "feature/mvp-021-event-append"
+    depends_on: [MVP-020, MVP-004]
+    needs_claude_review: true
+    description: "Aggregate単位でイベントを追記し、同一TX内でRead Model更新もできる基盤を作る。"
+    acceptance_criteria:
+      - "同一aggregateに対してversion競合時に失敗する"
+      - "append成功時にイベントが永続化される"
+
+  - id: MVP-022
+    title: "プロジェクター（同期プロジェクション）基盤"
+    status: todo
+    priority: high
+    branch: "feature/mvp-022-projector"
+    depends_on: [MVP-021]
+    needs_claude_review: true
+    description: "イベントを元にRead Model（requests等）へ投影する処理を用意する。"
+    acceptance_criteria:
+      - "イベントを与えるとRead Modelが更新される"
+      - "イベント型が増えても拡張できる構造"
+
+  # -------------------------
+  # 3. 申請（Request）: 作成→提出→承認/却下
+  # -------------------------
+  - id: MVP-030
+    title: "Read Model: requests / request_steps / request_audit_trail 作成"
+    status: todo
+    priority: high
+    branch: "feature/mvp-030-read-model-requests"
+    depends_on: [MVP-003]
+    needs_claude_review: true
+    description: "一覧・詳細・監査表示に必要なRead Modelテーブルを定義する。"
+    acceptance_criteria:
+      - "requests一覧をorg単位で取得できる"
+      - "audit表示に必要な最小情報が取れる"
+
+  - id: MVP-031
+    title: "Request Aggregate（replay）とイベント定義"
+    status: todo
+    priority: high
+    branch: "feature/mvp-031-request-aggregate"
+    depends_on: [MVP-021]
+    needs_claude_review: true
+    description: "request.created/submitted/approved/rejected などのイベントと、replayして状態導出するAggregateを実装。"
+    acceptance_criteria:
+      - "イベント列からRequest状態が再構成できる"
+      - "不正遷移が拒否される（例: approved後にsubmit不可）"
+
+  - id: MVP-032
+    title: "Usecase: createRequest / submitRequest / approveRequest / rejectRequest"
+    status: todo
+    priority: high
+    branch: "feature/mvp-032-usecases"
+    depends_on: [MVP-031, MVP-022, MVP-030, MVP-011]
+    needs_claude_review: true
+    description: "RBACとorg境界を守りつつ、イベント追記→同期投影までを1操作で完了する。"
+    acceptance_criteria:
+      - "作成→提出→承認/却下が通る"
+      - "すべての操作がイベントとして残る"
+
+  # -------------------------
+  # 4. テンプレ（WorkflowTemplate） + 作成UI
+  # -------------------------
+  - id: MVP-040
+    title: "WorkflowTemplate のデータモデル（Read Model）導入"
+    status: todo
+    priority: high
+    branch: "feature/mvp-040-templates-model"
+    depends_on: [MVP-003, MVP-011]
+    needs_claude_review: true
+    description: "テンプレ（直列ステップ）を最小仕様で保存できるようにする（JSONBで可）。"
+    acceptance_criteria:
+      - "テンプレを作成・一覧取得できる"
+      - "テンプレからrequest_stepsを展開できる"
+
+  - id: MVP-041
+    title: "SSR: テンプレ作成UI（adminのみ）"
+    status: todo
+    priority: high
+    branch: "feature/mvp-041-templates-ui"
+    depends_on: [MVP-040, MVP-011]
+    needs_claude_review: false
+    description: "管理者が承認ステップ（承認者）を登録できるUIをSSRで提供する。"
+    acceptance_criteria:
+      - "adminのみアクセス可能"
+      - "作成したテンプレが申請作成時に選択できる"
+
+  # -------------------------
+  # 5. GraphQL（gqlgen）
+  # -------------------------
+  - id: MVP-050
+    title: "gqlgen セットアップ（schema/生成/サーバ統合）"
+    status: todo
+    priority: high
+    branch: "feature/mvp-050-gqlgen"
+    depends_on: [MVP-001]
+    needs_claude_review: true
+    description: "GraphQLサーバを起動し、認証/認可情報をコンテキストに載せる。"
+    acceptance_criteria:
+      - "GraphQL Playground（または同等）で疎通できる"
+      - "未ログイン時はQueryが拒否される"
+
+  - id: MVP-051
+    title: "GraphQLリゾルバ実装（MVP最小Query/Mutation）"
+    status: todo
+    priority: high
+    branch: "feature/mvp-051-graphql-resolvers"
+    depends_on: [MVP-050, MVP-032, MVP-040]
+    needs_claude_review: true
+    description: "me/requests/request/workflowTemplates と create/submit/approve/reject/createWorkflowTemplate を実装。"
+    acceptance_criteria:
+      - "主要フローがGraphQL経由でも実行できる"
+      - "リゾルバでRBAC/ORG境界が担保される"
+
+  # -------------------------
+  # 6. SSR画面（運用投入用）
+  # -------------------------
+  - id: MVP-060
+    title: "SSR: 申請一覧/詳細/新規作成画面"
+    status: todo
+    priority: high
+    branch: "feature/mvp-060-ssr-pages"
+    depends_on: [MVP-010, MVP-032, MVP-041]
+    needs_claude_review: false
+    description: "MVP運用に必要な最小画面（一覧/詳細/作成/提出/承認）をSSRで実装。"
+    acceptance_criteria:
+      - "画面から作成→提出→承認/却下が完結する"
+      - "監査（履歴）表示が見える"
+
+  # -------------------------
+  # 7. 添付（Storage抽象 + MinIO）
+  # -------------------------
+  - id: MVP-070
+    title: "添付: Storageインターフェース + ローカル実装"
+    status: todo
+    priority: medium
+    branch: "feature/mvp-070-storage-local"
+    depends_on: [MVP-001]
+    needs_claude_review: false
+    description: "添付保存の抽象を作り、ローカル保存でまず動かす（開発効率優先）。"
+    acceptance_criteria:
+      - "アップロード→参照ができる"
+      - "添付メタ情報がDBに保存される"
+
+  - id: MVP-071
+    title: "添付: MinIO（S3互換）実装 + デモ向け設定"
+    status: todo
+    priority: high
+    branch: "feature/mvp-071-storage-minio"
+    depends_on: [MVP-070, MVP-002]
+    needs_claude_review: true
+    description: "MinIOに保存できるようにし、デモ運用の“それっぽさ”を担保する。"
+    acceptance_criteria:
+      - "MinIOへ保存される"
+      - "署名URL or プロキシ配信のどちらかで閲覧できる"
+
+  # -------------------------
+  # 8. 通知（Slack）
+  # -------------------------
+  - id: MVP-080
+    title: "Slack通知（Incoming Webhook）"
+    status: todo
+    priority: medium
+    branch: "feature/mvp-080-slack"
+    depends_on: [MVP-032]
+    needs_claude_review: false
+    description: "提出/承認/却下/差し戻し（後半）などのイベントに応じてSlackへ通知する。"
+    acceptance_criteria:
+      - "提出時にSlackへ通知が飛ぶ"
+      - "通知内容に申請タイトル/URL/実行者が含まれる"
+
+  # -------------------------
+  # 9. MVP後半: 差し戻し/再提出
+  # -------------------------
+  - id: MVP-090
+    title: "差し戻し（returned）/再提出（resubmitted）イベントと状態遷移"
+    status: todo
+    priority: high
+    branch: "feature/mvp-090-return-resubmit"
+    depends_on: [MVP-031, MVP-022, MVP-030]
+    needs_claude_review: true
+    description: "return/resubmitのイベント追加、Read Model投影、監査表示を整合させる。"
+    acceptance_criteria:
+      - "差し戻し→修正→再提出が可能"
+      - "監査（イベント）が正しく残る"
+
+  - id: MVP-091
+    title: "SSR/GraphQL: 差し戻し・再提出UIとMutation追加"
+    status: todo
+    priority: high
+    branch: "feature/mvp-091-return-resubmit-ui"
+    depends_on: [MVP-090, MVP-060, MVP-051]
+    needs_claude_review: false
+    description: "差し戻し理由の入力、再提出の導線、GraphQL mutation を追加する。"
+    acceptance_criteria:
+      - "画面から差し戻し・再提出ができる"
+      - "RBAC/担当者以外が操作できない"
+
+  # -------------------------
+  # 10. 品質: テスト/リント/最終受け入れ
+  # -------------------------
+  - id: MVP-100
+    title: "テスト整備（Aggregate replay / 競合 / 主要ユースケース）"
+    status: todo
+    priority: high
+    branch: "feature/mvp-100-tests"
+    depends_on: [MVP-032, MVP-090]
+    needs_claude_review: true
+    description: "イベントソーシングの要所（replay/楽観ロック/投影）と主要フローの自動テストを追加する。"
+    acceptance_criteria:
+      - "主要フローのテストが通る"
+      - "version競合時の挙動がテストで保証される"
+
+  - id: MVP-101
+    title: "MVP受け入れチェック（E2E手順/デモ手順のドキュメント化）"
+    status: todo
+    priority: medium
+    branch: "feature/mvp-101-mvp-check"
+    depends_on: [MVP-060, MVP-071, MVP-080, MVP-091]
+    needs_claude_review: false
+    description: "手動検証の手順とデモシナリオをドキュメント化し、MVP完了条件を満たすか確認できる状態にする。"
+    deliverables:
+      - "docs/mvp-checklist.md（新規）または同等の文書"
+    acceptance_criteria:
+      - "作成→提出→承認/却下→監査参照が手順通りに再現できる"
+      - "差し戻し→再提出が再現できる"

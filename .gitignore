@@ -1,0 +1,30 @@
+
+# Go
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Build output
+bin/
+dist/
+
+# Coverage
+coverage.out
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+Thumbs.db
+Desktop.ini
+
+# Env
+.env
+.env.*
+
+# Local review bundles
+.ai-review/
