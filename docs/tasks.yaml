@@ -234,12 +234,14 @@ tasks:
 
   - id: MVP-032
     title: "Usecase: createRequest / submitRequest / approveRequest / rejectRequest"
-    status: in_progress
+    status: done
     priority: high
     branch: "feature/mvp-032-usecases"
     depends_on: [MVP-031, MVP-022, MVP-030, MVP-011]
     needs_claude_review: true
     description: "RBACとorg境界を守りつつ、イベント追記→同期投影までを1操作で完了する。"
+    start_date: 2026-01-12
+    end_date: 2026-01-12
     acceptance_criteria:
       - "作成→提出→承認/却下が通る"
       - "すべての操作がイベントとして残る"
