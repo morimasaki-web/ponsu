@@ -35,7 +35,7 @@
      - `git status -sb` の結果
      - 変更点サマリ（何を/なぜ/影響範囲）
      - 実行した検証結果（例: `ponsu\\scripts\\verify.cmd`）
-   - **Push**: ユーザーが `OK/Approve` した場合にのみ `git push` を実行する。
+   - **commit/ Push**: ユーザーが `OK/Approve` した場合にのみ `git commit` と `git push` を実行する。
    - **PR**: リポジトリ運用に従ってPRを作成（必要な場合）。
    - **Merge**: CIが成功していることを確認し、ユーザーが `OK/Approve` した場合にのみ `main` へマージする。
    - `docs/tasks.yaml` の `status: done` は **main に反映（マージ）された後** にのみ更新する。
