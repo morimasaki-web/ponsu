@@ -1,3 +1,5 @@
+// Package config は環境変数からアプリ設定を読み込み、接続情報などを組み立てる。
+// MVP段階ではHTTPサーバ設定とPostgreSQL/OIDC/セッション関連の最小構成を扱う。
 package config
 
 import (
@@ -12,13 +14,23 @@ type Config struct {
 	Host string
 	Port int
 
-	PostgresHost    string
-	PostgresPort    int
-	PostgresUser    string
+	PostgresHost     string
+	PostgresPort     int
+	PostgresUser     string
 	PostgresPassword string
-	PostgresDB      string
-	PostgresSSLMode string
+	PostgresDB       string
+	PostgresSSLMode  string
+
+	OIDCIssuerURL    string
+	OIDCClientID     string
+	OIDCClientSecret string
+	OIDCRedirectURL  string
+	OIDCScopes       string
+
+	SessionHashKey  string
+	SessionBlockKey string
 }
+
 
 func LoadFromEnv() (Config, error) {
 	env := getEnv("PONSU_ENV", "dev")
@@ -38,6 +50,15 @@ func LoadFromEnv() (Config, error) {
 	pgDB := getEnv("PONSU_PG_DB", "ponsu")
 	pgSSLMode := getEnv("PONSU_PG_SSLMODE", "disable")
 
+	oidcIssuer := getEnv("PONSU_OIDC_ISSUER_URL", "")
+	oidcClientID := getEnv("PONSU_OIDC_CLIENT_ID", "")
+	oidcClientSecret := getEnv("PONSU_OIDC_CLIENT_SECRET", "")
+	oidcRedirectURL := getEnv("PONSU_OIDC_REDIRECT_URL", "")
+	oidcScopes := getEnv("PONSU_OIDC_SCOPES", "")
+
+	sessionHashKey := getEnv("PONSU_SESSION_HASH_KEY", "")
+	sessionBlockKey := getEnv("PONSU_SESSION_BLOCK_KEY", "")
+
 	cfg := Config{
 		Env:  env,
 		Host: host,
@@ -49,14 +70,25 @@ func LoadFromEnv() (Config, error) {
 		PostgresPassword: pgPassword,
 		PostgresDB:       pgDB,
 		PostgresSSLMode:  pgSSLMode,
+
+		OIDCIssuerURL:    oidcIssuer,
+		OIDCClientID:     oidcClientID,
+		OIDCClientSecret: oidcClientSecret,
+		OIDCRedirectURL:  oidcRedirectURL,
+		OIDCScopes:       oidcScopes,
+
+		SessionHashKey:  sessionHashKey,
+		SessionBlockKey: sessionBlockKey,
 	}
 	return cfg, nil
 }
 
+// HTTPAddr はHTTPサーバの待ち受けアドレス（host:port）を返す。
 func (c Config) HTTPAddr() string {
 	return fmt.Sprintf("%s:%d", c.Host, c.Port)
 }
 
+// PostgresURL は PostgreSQL の接続URLを返す（必須項目が欠けている場合は空文字を返す）。
 func (c Config) PostgresURL() string {
 	if c.PostgresHost == "" || c.PostgresPort == 0 || c.PostgresUser == "" || c.PostgresDB == "" {
 		return ""
@@ -76,6 +108,7 @@ func (c Config) PostgresURL() string {
 	return u.String()
 }
 
+// getEnv は環境変数を読み、未設定/空の場合はデフォルト値を返す。
 func getEnv(key, def string) string {
 	v := os.Getenv(key)
 	if v == "" {
@@ -84,6 +117,7 @@ func getEnv(key, def string) string {
 	return v
 }
 
+// getEnvInt は環境変数を int として読み、未設定/空の場合はデフォルト値を返す。
 func getEnvInt(key string, def int) (int, error) {
 	v := os.Getenv(key)
 	if v == "" {

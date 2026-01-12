@@ -132,7 +132,7 @@ tasks:
   # -------------------------
   - id: MVP-010
     title: "OIDCログイン（Google or Microsoft）とセッション管理"
-    status: todo
+    status: in_progress
     priority: high
     branch: "feature/mvp-010-oidc"
     depends_on: [MVP-001]
