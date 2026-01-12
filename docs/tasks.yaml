@@ -189,12 +189,14 @@ tasks:
 
   - id: MVP-022
     title: "プロジェクター（同期プロジェクション）基盤"
-    status: in_progress
+    status: done
     priority: high
     branch: "feature/mvp-022-projector"
     depends_on: [MVP-021]
     needs_claude_review: true
     description: "イベントを元にRead Model（requests等）へ投影する処理を用意する。"
+    start_date: 2026-01-12
+    end_date: 2026-01-12
     acceptance_criteria:
       - "イベントを与えるとRead Modelが更新される"
       - "イベント型が増えても拡張できる構造"
@@ -204,24 +206,28 @@ tasks:
   # -------------------------
   - id: MVP-030
     title: "Read Model: requests / request_steps / request_audit_trail 作成"
-    status: in_progress
+    status: done
     priority: high
     branch: "feature/mvp-030-read-model-requests"
     depends_on: [MVP-003]
     needs_claude_review: true
     description: "一覧・詳細・監査表示に必要なRead Modelテーブルを定義する。"
+    start_date: 2026-01-12
+    end_date: 2026-01-12
     acceptance_criteria:
       - "requests一覧をorg単位で取得できる"
       - "audit表示に必要な最小情報が取れる"
 
   - id: MVP-031
     title: "Request Aggregate（replay）とイベント定義"
-    status: in_progress
+    status: done
     priority: high
     branch: "feature/mvp-031-request-aggregate"
     depends_on: [MVP-021]
     needs_claude_review: true
     description: "request.created/submitted/approved/rejected などのイベントと、replayして状態導出するAggregateを実装。"
+    start_date: 2026-01-12
+    end_date: 2026-01-12
     acceptance_criteria:
       - "イベント列からRequest状態が再構成できる"
       - "不正遷移が拒否される（例: approved後にsubmit不可）"
