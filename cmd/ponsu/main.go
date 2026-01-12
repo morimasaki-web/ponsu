@@ -4,6 +4,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -11,6 +12,8 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	_ "github.com/jackc/pgx/v5/stdlib"
 
 	"github.com/morimasaki-web/ponsu/internal/infrastructure/config"
 	web "github.com/morimasaki-web/ponsu/internal/interface/http"
@@ -25,9 +28,29 @@ func main() {
 		os.Exit(1)
 	}
 
+	dsn := cfg.PostgresURL()
+	var db *sql.DB
+	if dsn == "" {
+		logger.Warn("postgres is not configured; rbac features disabled")
+	} else {
+		db, err = sql.Open("pgx", dsn)
+		if err != nil {
+			logger.Error("failed to open db", "error", err)
+			os.Exit(1)
+		}
+		defer func() { _ = db.Close() }()
+
+		pingCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := db.PingContext(pingCtx); err != nil {
+			logger.Error("db ping failed", "error", err)
+			os.Exit(1)
+		}
+	}
+
 	server := &http.Server{
 		Addr:              cfg.HTTPAddr(),
-		Handler:           web.NewMux(cfg, logger),
+		Handler:           web.NewMux(cfg, logger, db),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 

@@ -146,12 +146,13 @@ tasks:
 
   - id: MVP-011
     title: "組織・メンバーシップ・RBAC（admin/member）"
-    status: todo
+    status: in_progress
     priority: high
     branch: "feature/mvp-011-rbac"
     depends_on: [MVP-003, MVP-010]
     needs_claude_review: true
     description: "organizations/users/membershipsのRead Modelを用意し、org単位のアクセス制御を実装する。"
+    start_date: 2026-01-12
     acceptance_criteria:
       - "org外データへアクセスできない"
       - "admin だけがテンプレ作成UIへ入れる"

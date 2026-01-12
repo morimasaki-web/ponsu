@@ -5,10 +5,50 @@
 package dbgen
 
 import (
+	"encoding/json"
 	"time"
+
+	"github.com/google/uuid"
 )
+
+type EventStore struct {
+	ID            uuid.UUID       `json:"id"`
+	OrgID         uuid.UUID       `json:"org_id"`
+	AggregateType string          `json:"aggregate_type"`
+	AggregateID   uuid.UUID       `json:"aggregate_id"`
+	Version       int32           `json:"version"`
+	EventType     string          `json:"event_type"`
+	Payload       json.RawMessage `json:"payload"`
+	Metadata      json.RawMessage `json:"metadata"`
+	OccurredAt    time.Time       `json:"occurred_at"`
+}
+
+type Membership struct {
+	OrgID     uuid.UUID `json:"org_id"`
+	UserID    uuid.UUID `json:"user_id"`
+	Role      string    `json:"role"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type Organization struct {
+	ID        uuid.UUID `json:"id"`
+	Name      string    `json:"name"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
 
 type PonsuMigrationsSmoketest struct {
 	ID        int32     `json:"id"`
 	CreatedAt time.Time `json:"created_at"`
+}
+
+type User struct {
+	ID         uuid.UUID `json:"id"`
+	OidcIssuer string    `json:"oidc_issuer"`
+	OidcSub    string    `json:"oidc_sub"`
+	Email      string    `json:"email"`
+	Name       string    `json:"name"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
 }
