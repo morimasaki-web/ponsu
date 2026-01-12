@@ -175,12 +175,14 @@ tasks:
 
   - id: MVP-021
     title: "イベント追記（append）+ 楽観ロック + トランザクション境界"
-    status: todo
+    status: done
     priority: high
     branch: "feature/mvp-021-event-append"
     depends_on: [MVP-020, MVP-004]
     needs_claude_review: true
     description: "Aggregate単位でイベントを追記し、同一TX内でRead Model更新もできる基盤を作る。"
+    start_date: 2026-01-12
+    end_date: 2026-01-12
     acceptance_criteria:
       - "同一aggregateに対してversion競合時に失敗する"
       - "append成功時にイベントが永続化される"
