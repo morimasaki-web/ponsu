@@ -1,3 +1,5 @@
+// Package http は PonSu のHTTPルーティングと最小のハンドラ群を提供する。
+// MVPでは healthz と OIDC 認証関連のエンドポイントを定義する。
 package http
 
 import (
@@ -7,6 +9,7 @@ import (
 	"github.com/morimasaki-web/ponsu/internal/infrastructure/config"
 )
 
+// NewMux はアプリケーションのHTTPルートを登録した ServeMux を返す。
 func NewMux(cfg config.Config, logger *slog.Logger) *http.ServeMux {
 	if logger == nil {
 		logger = slog.Default()

@@ -1,3 +1,5 @@
+// Package http は PonSu のHTTPハンドラを提供する。
+// このファイルは OIDC ログインと、署名/暗号化Cookieによる簡易セッションを担当する。
 package http
 
 import (
@@ -36,7 +38,7 @@ type OIDCAuth struct {
 	verifier *oidc.IDTokenVerifier
 }
 
-// NewOIDCAuth wires OIDC + signed cookie session.
+// NewOIDCAuth は OIDC 認証と Cookie セッションを扱うハンドラを生成する。
 func NewOIDCAuth(cfg config.Config, logger *slog.Logger) *OIDCAuth {
 	if logger == nil {
 		logger = slog.Default()
@@ -65,6 +67,7 @@ func NewOIDCAuth(cfg config.Config, logger *slog.Logger) *OIDCAuth {
 	}
 }
 
+// ensureInit は OIDC Provider のディスカバリと検証器の初期化を1回だけ行う。
 func (a *OIDCAuth) ensureInit(ctx context.Context) error {
 	a.once.Do(func() {
 		if a.cfg.OIDCIssuerURL == "" || a.cfg.OIDCClientID == "" || a.cfg.OIDCClientSecret == "" {
@@ -85,6 +88,7 @@ func (a *OIDCAuth) ensureInit(ctx context.Context) error {
 	return a.initErr
 }
 
+// HandleHome はログイン状態の簡易表示（MVP用）を返す。
 func (a *OIDCAuth) HandleHome(w http.ResponseWriter, r *http.Request) {
 	sess, ok := a.readSession(r)
 
@@ -120,6 +124,7 @@ func (a *OIDCAuth) HandleHome(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write([]byte(b.String()))
 }
 
+// HandleLogin は OIDC の認可エンドポイントへリダイレクトしてログインを開始する。
 func (a *OIDCAuth) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	if err := a.ensureInit(r.Context()); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -153,6 +158,7 @@ func (a *OIDCAuth) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, url, http.StatusFound)
 }
 
+// HandleCallback は OIDC のコールバックを処理し、IDトークン検証後にセッションを確立する。
 func (a *OIDCAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	if err := a.ensureInit(r.Context()); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -245,6 +251,7 @@ func (a *OIDCAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
+// HandleLogout はセッションを破棄してホームに戻す。
 func (a *OIDCAuth) HandleLogout(w http.ResponseWriter, r *http.Request) {
 	a.clearSession(w, r)
 	http.Redirect(w, r, "/", http.StatusFound)
@@ -262,6 +269,7 @@ type sessionData struct {
 	Iat   int64
 }
 
+// writeStateCookie は state/nonce を一時Cookieとして保存する。
 func (a *OIDCAuth) writeStateCookie(w http.ResponseWriter, r *http.Request, st oidcState) error {
 	value := map[string]string{"state": st.State, "nonce": st.Nonce}
 	encoded, err := a.sc.Encode(stateCookieName, value)
@@ -282,6 +290,7 @@ func (a *OIDCAuth) writeStateCookie(w http.ResponseWriter, r *http.Request, st o
 	return nil
 }
 
+// readStateCookie は state/nonce の一時Cookieを読み出す。
 func (a *OIDCAuth) readStateCookie(r *http.Request) (oidcState, bool) {
 	c, err := r.Cookie(stateCookieName)
 	if err != nil {
@@ -296,6 +305,7 @@ func (a *OIDCAuth) readStateCookie(r *http.Request) (oidcState, bool) {
 	return oidcState{State: value["state"], Nonce: value["nonce"]}, true
 }
 
+// clearStateCookie は state/nonce の一時Cookieを削除する。
 func (a *OIDCAuth) clearStateCookie(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     stateCookieName,
@@ -308,6 +318,7 @@ func (a *OIDCAuth) clearStateCookie(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// writeSession はセッション情報を署名/暗号化してCookieに書き込む。
 func (a *OIDCAuth) writeSession(w http.ResponseWriter, r *http.Request, sess sessionData) error {
 	value := map[string]string{
 		"sub":   sess.Sub,
@@ -333,6 +344,7 @@ func (a *OIDCAuth) writeSession(w http.ResponseWriter, r *http.Request, sess ses
 	return nil
 }
 
+// readSession はセッションCookieを読み取り、復号/検証して返す。
 func (a *OIDCAuth) readSession(r *http.Request) (sessionData, bool) {
 	c, err := r.Cookie(sessionCookieName)
 	if err != nil {
@@ -350,6 +362,7 @@ func (a *OIDCAuth) readSession(r *http.Request) (sessionData, bool) {
 	return sessionData{Sub: value["sub"], Email: value["email"], Name: value["name"], Iat: iat}, true
 }
 
+// clearSession はセッションCookieを削除する。
 func (a *OIDCAuth) clearSession(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     sessionCookieName,
@@ -362,6 +375,7 @@ func (a *OIDCAuth) clearSession(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// defaultScopes は設定値から OIDC のスコープ配列を作る。
 func defaultScopes(v string) []string {
 	if strings.TrimSpace(v) == "" {
 		return []string{"openid", "profile", "email"}
@@ -383,11 +397,13 @@ func defaultScopes(v string) []string {
 	return out
 }
 
+// randomToken は URL-safe なランダムトークンを生成する。
 func randomToken(n int) string {
 	b := mustRandomBytes(n)
 	return base64.RawURLEncoding.EncodeToString(b)
 }
 
+// mustRandomBytes は暗号学的に安全な乱数を生成し、失敗時は panic する。
 func mustRandomBytes(n int) []byte {
 	b := make([]byte, n)
 	_, err := rand.Read(b)
@@ -397,6 +413,7 @@ func mustRandomBytes(n int) []byte {
 	return b
 }
 
+// isHTTPS はリクエストが HTTPS 相当かどうかを判定する（TLS または X-Forwarded-Proto）。
 func isHTTPS(r *http.Request) bool {
 	if r.TLS != nil {
 		return true
@@ -405,6 +422,7 @@ func isHTTPS(r *http.Request) bool {
 	return strings.EqualFold(proto, "https")
 }
 
+// inferExternalURL はリクエスト情報から外部向けベースURLを推測する。
 func inferExternalURL(r *http.Request) string {
 	scheme := "http"
 	if isHTTPS(r) {
@@ -413,6 +431,7 @@ func inferExternalURL(r *http.Request) string {
 	return scheme + "://" + r.Host
 }
 
+// htmlEscape は最小限のHTMLエスケープを行う（MVP用）。
 func htmlEscape(s string) string {
 	s = strings.ReplaceAll(s, "&", "&amp;")
 	s = strings.ReplaceAll(s, "<", "&lt;")

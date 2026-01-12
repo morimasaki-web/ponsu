@@ -1,9 +1,10 @@
+// dbcheck は PostgreSQL への接続と sqlc 生成クエリの動作を確認するための小さなCLI。
+// 主に CI / ローカル検証で「DB接続・マイグレーション適用・クエリ実行」をチェックする。
 package main
 
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -15,6 +16,7 @@ import (
 	"github.com/morimasaki-web/ponsu/internal/infrastructure/dbgen"
 )
 
+// main はDBに接続し、生成クエリのスモークテストを実行する。
 func main() {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 
@@ -76,5 +78,3 @@ func main() {
 
 	logger.Info("dbcheck ok", "id", got.ID, "created_at", got.CreatedAt)
 }
-
-var _ = errors.New

@@ -1,3 +1,5 @@
+// PonSu のHTTPサーバを起動するエントリポイント。
+// 設定読み込み・ルーティング設定・Graceful Shutdown を担当する。
 package main
 
 import (
@@ -14,6 +16,7 @@ import (
 	web "github.com/morimasaki-web/ponsu/internal/interface/http"
 )
 
+// main は HTTP サーバを起動し、シグナル受信で安全に停止する。
 func main() {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	cfg, err := config.LoadFromEnv()

@@ -1,3 +1,5 @@
+// Package config は環境変数からアプリ設定を読み込み、接続情報などを組み立てる。
+// MVP段階ではHTTPサーバ設定とPostgreSQL/OIDC/セッション関連の最小構成を扱う。
 package config
 
 import (
@@ -28,6 +30,7 @@ type Config struct {
 	SessionHashKey  string
 	SessionBlockKey string
 }
+
 
 func LoadFromEnv() (Config, error) {
 	env := getEnv("PONSU_ENV", "dev")
@@ -80,10 +83,12 @@ func LoadFromEnv() (Config, error) {
 	return cfg, nil
 }
 
+// HTTPAddr はHTTPサーバの待ち受けアドレス（host:port）を返す。
 func (c Config) HTTPAddr() string {
 	return fmt.Sprintf("%s:%d", c.Host, c.Port)
 }
 
+// PostgresURL は PostgreSQL の接続URLを返す（必須項目が欠けている場合は空文字を返す）。
 func (c Config) PostgresURL() string {
 	if c.PostgresHost == "" || c.PostgresPort == 0 || c.PostgresUser == "" || c.PostgresDB == "" {
 		return ""
@@ -103,6 +108,7 @@ func (c Config) PostgresURL() string {
 	return u.String()
 }
 
+// getEnv は環境変数を読み、未設定/空の場合はデフォルト値を返す。
 func getEnv(key, def string) string {
 	v := os.Getenv(key)
 	if v == "" {
@@ -111,6 +117,7 @@ func getEnv(key, def string) string {
 	return v
 }
 
+// getEnvInt は環境変数を int として読み、未設定/空の場合はデフォルト値を返す。
 func getEnvInt(key string, def int) (int, error) {
 	v := os.Getenv(key)
 	if v == "" {
