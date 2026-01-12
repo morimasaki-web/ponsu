@@ -264,6 +264,14 @@ func (a *OIDCAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		email = claims.PreferredUsername
 	}
 
+	if !isEmailAllowed(a.cfg.OIDCAllowedEmails, email) {
+		a.logger.Warn("oidc login blocked by allowlist", "email", email)
+		a.clearStateCookie(w, r)
+		a.clearSession(w, r)
+		http.Error(w, "login not allowed", http.StatusForbidden)
+		return
+	}
+
 	userID, orgID, role, err := a.ensureUserAndDefaultMembership(r.Context(), a.cfg.OIDCIssuerURL, claims.Sub, email, claims.Name)
 	if err != nil {
 		a.logger.Error("failed to ensure user/membership", "error", err)
@@ -288,6 +296,32 @@ func (a *OIDCAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
 
 	a.clearStateCookie(w, r)
 	http.Redirect(w, r, "/", http.StatusFound)
+}
+
+func isEmailAllowed(allowedList string, email string) bool {
+	allowedList = strings.TrimSpace(allowedList)
+	if allowedList == "" {
+		return true
+	}
+
+	email = strings.TrimSpace(email)
+	if email == "" {
+		return false
+	}
+
+	parts := strings.FieldsFunc(allowedList, func(r rune) bool {
+		return r == ',' || r == ';' || r == ' ' || r == '\t' || r == '\n'
+	})
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p == "" {
+			continue
+		}
+		if strings.EqualFold(p, email) {
+			return true
+		}
+	}
+	return false
 }
 
 // HandleLogout はセッションを破棄してホームに戻す。

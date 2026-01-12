@@ -42,6 +42,10 @@ PonSu はMVPで PostgreSQL と MinIO を使う想定です。
 copy .env.example .env
 ```
 
+補足（推奨）:
+- アプリの認証情報（OIDC クライアントシークレット等）は `.env.local` に置くことを推奨します（git管理しない）。
+- PonSu の起動時に `.env` と `.env.local` を自動で読み込みます（存在しない場合は無視されます）。
+
 起動:
 
 ```powershell
@@ -131,6 +135,54 @@ bash ponsu/scripts/verify.sh
 - `golangci-lint` / `govulncheck` が未インストールでも、`go run <module>@<version>` でフォールバック実行します（無料・ただし遅め）。
 
 ## 4. よくあるトラブル
+
+## 5. ローカル起動（.env.local 利用）
+
+### 5.0 推奨: 秘密情報はワークスペース外へ置く
+
+Copilot / VS Code 拡張は、原理的にワークスペース内のファイルへアクセス可能です。
+そのため、**秘密情報を Copilot から“確実に読めない”状態にしたい場合は、秘密ファイルをワークスペース外へ置く**運用にしてください。
+
+PonSu は `PONSU_DOTENV_FILES` を設定すると、指定したパスの dotenv ファイルのみを読み込みます（デフォルトの `.env/.env.local` は読み込みません）。
+
+OIDC を「特定メールだけログイン可」にしたい場合は、`PONSU_OIDC_ALLOWED_EMAILS` を設定します（カンマ `,` / セミコロン `;` 区切り）。
+
+例（Windows / PowerShell）:
+
+```powershell
+# 例: ホーム配下に秘密ファイルを置く（このパスは例）
+notepad $HOME\.ponsu.secrets.env
+
+# 現在のターミナルセッションだけ有効
+$env:PONSU_DOTENV_FILES = "$HOME\.ponsu.secrets.env"
+
+# 例: 特定メールだけ許可（複数指定も可）
+$env:PONSU_OIDC_ALLOWED_EMAILS = "morimasaki1990@gmail.com"
+
+# 起動
+go run ./cmd/ponsu
+```
+
+補足:
+- `PONSU_DOTENV_FILES` はカンマ `,` またはセミコロン `;` 区切りで複数指定できます。
+- 既にOS環境変数として設定済みのキーは、dotenv で上書きしません。
+
+補足（重要）:
+- これは **アプリ側の強制** です。Google 側の「テストユーザー」設定だけでは、状況によって他アカウントがログインできる場合があります。
+
+`.env.local` を用意して起動する例:
+
+```powershell
+copy .env.example .env.local
+notepad .env.local
+
+# ponsu ルートで起動（.env/.env.local を読み込む）
+go run ./cmd/ponsu
+```
+
+動作確認:
+- http://127.0.0.1:8080/healthz
+- http://127.0.0.1:8080/
 
 ### 4.1 PowerShellの実行ポリシーで弾かれる
 `verify.ps1` を直接実行せず、`verify.cmd` を使ってください。

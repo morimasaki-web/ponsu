@@ -22,6 +22,11 @@ import (
 // main は HTTP サーバを起動し、シグナル受信で安全に停止する。
 func main() {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+	if loaded, err := config.LoadDotenvLocal(); err != nil {
+		logger.Warn("failed to load dotenv", "error", err)
+	} else if len(loaded) > 0 {
+		logger.Info("loaded dotenv", "files", loaded)
+	}
 	cfg, err := config.LoadFromEnv()
 	if err != nil {
 		logger.Error("failed to load config", "error", err)

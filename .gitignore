@@ -17,6 +17,8 @@ coverage.out
 # IDE
 .idea/
 .vscode/
+!.vscode/
+!.vscode/settings.json
 
 # OS
 Thumbs.db

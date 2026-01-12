@@ -19,12 +19,19 @@ import (
 // main はDBに接続し、生成クエリのスモークテストを実行する。
 func main() {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+	if loaded, err := config.LoadDotenvLocal(); err != nil {
+		logger.Warn("failed to load dotenv", "error", err)
+	} else if len(loaded) > 0 {
+		logger.Info("loaded dotenv", "files", loaded)
+	}
 
 	cfg, err := config.LoadFromEnv()
 	if err != nil {
 		logger.Error("failed to load config", "error", err)
 		os.Exit(1)
 	}
+
+	logger.Info("postgres config", "host", cfg.PostgresHost, "port", cfg.PostgresPort, "db", cfg.PostgresDB, "sslmode", cfg.PostgresSSLMode)
 
 	dsn := cfg.PostgresURL()
 	if dsn == "" {

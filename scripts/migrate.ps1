@@ -37,12 +37,13 @@ $pgSSLMode = Get-Env 'PONSU_PG_SSLMODE' 'disable'
 $mode = Get-Env 'PONSU_MIGRATE_MODE' 'docker' # docker | host
 
 $databaseUrl = "postgres://${pgUser}:${pgPassword}@${pgHost}:${pgPort}/${pgDb}?sslmode=${pgSSLMode}"
+$databaseUrlForLog = "postgres://${pgUser}:***@${pgHost}:${pgPort}/${pgDb}?sslmode=${pgSSLMode}"
 $migrationsAbsPath = (Resolve-Path (Join-Path $PSScriptRoot '..\migrations')).Path
 $migrationsAbsPathFwd = ($migrationsAbsPath -replace '\\', '/')
 $sourceUrl = "file://$migrationsAbsPathFwd"
 
 Write-Host "Mode: $mode" -ForegroundColor DarkGray
-Write-Host "DB(host): $databaseUrl" -ForegroundColor DarkGray
+Write-Host "DB(host): $databaseUrlForLog" -ForegroundColor DarkGray
 Write-Host "Migrations: $migrationsAbsPath" -ForegroundColor DarkGray
 Write-Host "Source: $sourceUrl" -ForegroundColor DarkGray
 

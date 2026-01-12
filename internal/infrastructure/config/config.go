@@ -21,16 +21,16 @@ type Config struct {
 	PostgresDB       string
 	PostgresSSLMode  string
 
-	OIDCIssuerURL    string
-	OIDCClientID     string
-	OIDCClientSecret string
-	OIDCRedirectURL  string
-	OIDCScopes       string
+	OIDCIssuerURL     string
+	OIDCClientID      string
+	OIDCClientSecret  string
+	OIDCRedirectURL   string
+	OIDCScopes        string
+	OIDCAllowedEmails string
 
 	SessionHashKey  string
 	SessionBlockKey string
 }
-
 
 func LoadFromEnv() (Config, error) {
 	env := getEnv("PONSU_ENV", "dev")
@@ -55,6 +55,7 @@ func LoadFromEnv() (Config, error) {
 	oidcClientSecret := getEnv("PONSU_OIDC_CLIENT_SECRET", "")
 	oidcRedirectURL := getEnv("PONSU_OIDC_REDIRECT_URL", "")
 	oidcScopes := getEnv("PONSU_OIDC_SCOPES", "")
+	oidcAllowedEmails := getEnv("PONSU_OIDC_ALLOWED_EMAILS", "")
 
 	sessionHashKey := getEnv("PONSU_SESSION_HASH_KEY", "")
 	sessionBlockKey := getEnv("PONSU_SESSION_BLOCK_KEY", "")
@@ -71,11 +72,12 @@ func LoadFromEnv() (Config, error) {
 		PostgresDB:       pgDB,
 		PostgresSSLMode:  pgSSLMode,
 
-		OIDCIssuerURL:    oidcIssuer,
-		OIDCClientID:     oidcClientID,
-		OIDCClientSecret: oidcClientSecret,
-		OIDCRedirectURL:  oidcRedirectURL,
-		OIDCScopes:       oidcScopes,
+		OIDCIssuerURL:     oidcIssuer,
+		OIDCClientID:      oidcClientID,
+		OIDCClientSecret:  oidcClientSecret,
+		OIDCRedirectURL:   oidcRedirectURL,
+		OIDCScopes:        oidcScopes,
+		OIDCAllowedEmails: oidcAllowedEmails,
 
 		SessionHashKey:  sessionHashKey,
 		SessionBlockKey: sessionBlockKey,
