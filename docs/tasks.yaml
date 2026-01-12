@@ -44,13 +44,14 @@ tasks:
 
   - id: MVP-001
     title: "Goプロジェクト初期化（Clean Architecture雛形）"
-    status: in_progress
+    status: done
     priority: high
     branch: "feature/mvp-001-bootstrap"
     depends_on: [MVP-000]
     needs_claude_review: true
     description: "Go module初期化、基本ディレクトリ、最小のmain起動、設定読み込みの足場を作る。"
     start_date: 2026-01-12
+    end_date: 2026-01-12
     deliverables:
       - "go.mod / go.sum"
       - "cmd/ponsu/（エントリポイント）"
