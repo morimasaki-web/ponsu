@@ -216,7 +216,7 @@ tasks:
 
   - id: MVP-031
     title: "Request Aggregate（replay）とイベント定義"
-    status: todo
+    status: in_progress
     priority: high
     branch: "feature/mvp-031-request-aggregate"
     depends_on: [MVP-021]
