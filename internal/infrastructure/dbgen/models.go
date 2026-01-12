@@ -12,15 +12,16 @@ import (
 )
 
 type EventStore struct {
-	ID            uuid.UUID       `json:"id"`
-	OrgID         uuid.UUID       `json:"org_id"`
-	AggregateType string          `json:"aggregate_type"`
-	AggregateID   uuid.UUID       `json:"aggregate_id"`
-	Version       int32           `json:"version"`
-	EventType     string          `json:"event_type"`
-	Payload       json.RawMessage `json:"payload"`
-	Metadata      json.RawMessage `json:"metadata"`
-	OccurredAt    time.Time       `json:"occurred_at"`
+	ID             uuid.UUID       `json:"id"`
+	OrgID          uuid.UUID       `json:"org_id"`
+	AggregateType  string          `json:"aggregate_type"`
+	AggregateID    uuid.UUID       `json:"aggregate_id"`
+	Version        int32           `json:"version"`
+	EventType      string          `json:"event_type"`
+	Payload        json.RawMessage `json:"payload"`
+	Metadata       json.RawMessage `json:"metadata"`
+	OccurredAt     time.Time       `json:"occurred_at"`
+	GlobalPosition int64           `json:"global_position"`
 }
 
 type Membership struct {
@@ -41,6 +42,21 @@ type Organization struct {
 type PonsuMigrationsSmoketest struct {
 	ID        int32     `json:"id"`
 	CreatedAt time.Time `json:"created_at"`
+}
+
+type ProjectionCheckpoint struct {
+	OrgID         uuid.UUID `json:"org_id"`
+	ProjectorName string    `json:"projector_name"`
+	LastPosition  int64     `json:"last_position"`
+	UpdatedAt     time.Time `json:"updated_at"`
+}
+
+type ProjectorDemoAggregateVersion struct {
+	OrgID         uuid.UUID `json:"org_id"`
+	AggregateType string    `json:"aggregate_type"`
+	AggregateID   uuid.UUID `json:"aggregate_id"`
+	LastVersion   int32     `json:"last_version"`
+	UpdatedAt     time.Time `json:"updated_at"`
 }
 
 type User struct {
