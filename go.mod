@@ -6,6 +6,7 @@ toolchain go1.24.11
 
 require (
 	github.com/coreos/go-oidc/v3 v3.17.0
+	github.com/google/uuid v1.6.0
 	github.com/gorilla/securecookie v1.1.2
 	github.com/jackc/pgx/v5 v5.8.0
 	golang.org/x/oauth2 v0.34.0

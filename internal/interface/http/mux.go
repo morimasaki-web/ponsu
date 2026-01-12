@@ -3,6 +3,7 @@
 package http
 
 import (
+	"database/sql"
 	"log/slog"
 	"net/http"
 
@@ -10,12 +11,12 @@ import (
 )
 
 // NewMux はアプリケーションのHTTPルートを登録した ServeMux を返す。
-func NewMux(cfg config.Config, logger *slog.Logger) *http.ServeMux {
+func NewMux(cfg config.Config, logger *slog.Logger, db *sql.DB) *http.ServeMux {
 	if logger == nil {
 		logger = slog.Default()
 	}
 
-	auth := NewOIDCAuth(cfg, logger)
+	auth := NewOIDCAuth(cfg, logger, db)
 
 	mux := http.NewServeMux()
 

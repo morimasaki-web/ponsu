@@ -5,6 +5,7 @@ package http
 import (
 	"context"
 	"crypto/rand"
+	"database/sql"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -17,6 +18,7 @@ import (
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/gorilla/securecookie"
 	"github.com/morimasaki-web/ponsu/internal/infrastructure/config"
+	"github.com/morimasaki-web/ponsu/internal/infrastructure/dbgen"
 	"golang.org/x/oauth2"
 )
 
@@ -27,6 +29,7 @@ const (
 
 type OIDCAuth struct {
 	cfg config.Config
+	db  *sql.DB
 
 	logger *slog.Logger
 
@@ -39,7 +42,8 @@ type OIDCAuth struct {
 }
 
 // NewOIDCAuth は OIDC 認証と Cookie セッションを扱うハンドラを生成する。
-func NewOIDCAuth(cfg config.Config, logger *slog.Logger) *OIDCAuth {
+// db が nil の場合、ログイン後のRBAC確定（ユーザー/所属の保存）は失敗する。
+func NewOIDCAuth(cfg config.Config, logger *slog.Logger, db *sql.DB) *OIDCAuth {
 	if logger == nil {
 		logger = slog.Default()
 	}
@@ -62,9 +66,18 @@ func NewOIDCAuth(cfg config.Config, logger *slog.Logger) *OIDCAuth {
 
 	return &OIDCAuth{
 		cfg:    cfg,
+		db:     db,
 		logger: logger,
 		sc:     sc,
 	}
+}
+
+// ensureDB はRBACのためのDB依存が満たされているかを確認する。
+func (a *OIDCAuth) ensureDB() error {
+	if a.db == nil {
+		return errors.New("db is not configured (set postgres env and run migrations)")
+	}
+	return nil
 }
 
 // ensureInit は OIDC Provider のディスカバリと検証器の初期化を1回だけ行う。
@@ -103,6 +116,15 @@ func (a *OIDCAuth) HandleHome(w http.ResponseWriter, r *http.Request) {
 		b.WriteString("<p>Logged in.</p>")
 		b.WriteString("<ul>")
 		b.WriteString("<li>sub: " + htmlEscape(sess.Sub) + "</li>")
+		if sess.UserID != "" {
+			b.WriteString("<li>user_id: " + htmlEscape(sess.UserID) + "</li>")
+		}
+		if sess.OrgID != "" {
+			b.WriteString("<li>org_id: " + htmlEscape(sess.OrgID) + "</li>")
+		}
+		if sess.Role != "" {
+			b.WriteString("<li>role: " + htmlEscape(sess.Role) + "</li>")
+		}
 		if sess.Email != "" {
 			b.WriteString("<li>email: " + htmlEscape(sess.Email) + "</li>")
 		}
@@ -161,6 +183,10 @@ func (a *OIDCAuth) HandleLogin(w http.ResponseWriter, r *http.Request) {
 // HandleCallback は OIDC のコールバックを処理し、IDトークン検証後にセッションを確立する。
 func (a *OIDCAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	if err := a.ensureInit(r.Context()); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if err := a.ensureDB(); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -235,10 +261,20 @@ func (a *OIDCAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		email = claims.PreferredUsername
 	}
 
+	userID, orgID, role, err := a.ensureUserAndDefaultMembership(r.Context(), a.cfg.OIDCIssuerURL, claims.Sub, email, claims.Name)
+	if err != nil {
+		a.logger.Error("failed to ensure user/membership", "error", err)
+		http.Error(w, "failed to create user/membership", http.StatusInternalServerError)
+		return
+	}
+
 	sess := sessionData{
 		Sub:   claims.Sub,
 		Email: email,
 		Name:  claims.Name,
+		UserID: userID,
+		OrgID:  orgID,
+		Role:   role,
 		Iat:   time.Now().Unix(),
 	}
 	if err := a.writeSession(w, r, sess); err != nil {
@@ -264,9 +300,76 @@ type oidcState struct {
 
 type sessionData struct {
 	Sub   string
+	UserID string
+	OrgID  string
+	Role   string
 	Email string
 	Name  string
 	Iat   int64
+}
+
+// ensureUserAndDefaultMembership はOIDCのID情報からユーザーを upsert し、所属が無ければデフォルト組織を作って admin として所属させる。
+func (a *OIDCAuth) ensureUserAndDefaultMembership(ctx context.Context, issuer, sub, email, name string) (userID string, orgID string, role string, err error) {
+	tx, err := a.db.BeginTx(ctx, nil)
+	if err != nil {
+		return "", "", "", err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	q := dbgen.New(tx)
+	usr, err := q.UpsertUserFromOIDC(ctx, dbgen.UpsertUserFromOIDCParams{
+		OidcIssuer: issuer,
+		OidcSub:    sub,
+		Email:      email,
+		Name:       name,
+	})
+	if err != nil {
+		return "", "", "", err
+	}
+
+	mem, err := q.GetAnyMembershipByUserID(ctx, usr.ID)
+	if err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			return "", "", "", err
+		}
+
+		orgName := defaultOrgName(email, name)
+		org, err := q.CreateOrganization(ctx, orgName)
+		if err != nil {
+			return "", "", "", err
+		}
+
+		up, err := q.UpsertMembership(ctx, dbgen.UpsertMembershipParams{
+			OrgID:  org.ID,
+			UserID: usr.ID,
+			Role:   "admin",
+		})
+		if err != nil {
+			return "", "", "", err
+		}
+
+		mem.OrgID = up.OrgID
+		mem.UserID = up.UserID
+		mem.Role = up.Role
+	}
+
+	if err := tx.Commit(); err != nil {
+		return "", "", "", err
+	}
+
+	return usr.ID.String(), mem.OrgID.String(), mem.Role, nil
+}
+
+// defaultOrgName は新規作成するデフォルト組織名を決める。
+func defaultOrgName(email, name string) string {
+	label := strings.TrimSpace(name)
+	if label == "" {
+		label = strings.TrimSpace(email)
+	}
+	if label == "" {
+		label = "Personal"
+	}
+	return label + " Organization"
 }
 
 // writeStateCookie は state/nonce を一時Cookieとして保存する。
@@ -322,6 +425,9 @@ func (a *OIDCAuth) clearStateCookie(w http.ResponseWriter, r *http.Request) {
 func (a *OIDCAuth) writeSession(w http.ResponseWriter, r *http.Request, sess sessionData) error {
 	value := map[string]string{
 		"sub":   sess.Sub,
+		"user_id": sess.UserID,
+		"org_id":  sess.OrgID,
+		"role":    sess.Role,
 		"email": sess.Email,
 		"name":  sess.Name,
 		"iat":   fmt.Sprintf("%d", sess.Iat),
@@ -359,7 +465,15 @@ func (a *OIDCAuth) readSession(r *http.Request) (sessionData, bool) {
 	var iat int64
 	_, _ = fmt.Sscanf(value["iat"], "%d", &iat)
 
-	return sessionData{Sub: value["sub"], Email: value["email"], Name: value["name"], Iat: iat}, true
+	return sessionData{
+		Sub:    value["sub"],
+		UserID: value["user_id"],
+		OrgID:  value["org_id"],
+		Role:   value["role"],
+		Email:  value["email"],
+		Name:   value["name"],
+		Iat:    iat,
+	}, true
 }
 
 // clearSession はセッションCookieを削除する。
