@@ -50,6 +50,30 @@ func (q *Queries) GetAnyMembershipByUserID(ctx context.Context, userID uuid.UUID
 	return i, err
 }
 
+const getMembershipByOrgAndUserID = `-- name: GetMembershipByOrgAndUserID :one
+SELECT org_id, user_id, role
+FROM public.memberships
+WHERE org_id = $1 AND user_id = $2
+`
+
+type GetMembershipByOrgAndUserIDParams struct {
+	OrgID  uuid.UUID `json:"org_id"`
+	UserID uuid.UUID `json:"user_id"`
+}
+
+type GetMembershipByOrgAndUserIDRow struct {
+	OrgID  uuid.UUID `json:"org_id"`
+	UserID uuid.UUID `json:"user_id"`
+	Role   string    `json:"role"`
+}
+
+func (q *Queries) GetMembershipByOrgAndUserID(ctx context.Context, arg GetMembershipByOrgAndUserIDParams) (GetMembershipByOrgAndUserIDRow, error) {
+	row := q.db.QueryRowContext(ctx, getMembershipByOrgAndUserID, arg.OrgID, arg.UserID)
+	var i GetMembershipByOrgAndUserIDRow
+	err := row.Scan(&i.OrgID, &i.UserID, &i.Role)
+	return i, err
+}
+
 const upsertMembership = `-- name: UpsertMembership :one
 INSERT INTO public.memberships (org_id, user_id, role)
 VALUES ($1, $2, $3)

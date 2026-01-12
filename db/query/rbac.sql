@@ -16,6 +16,11 @@ WHERE user_id = $1
 ORDER BY created_at ASC
 LIMIT 1;
 
+-- name: GetMembershipByOrgAndUserID :one
+SELECT org_id, user_id, role
+FROM public.memberships
+WHERE org_id = $1 AND user_id = $2;
+
 -- name: CreateOrganization :one
 INSERT INTO public.organizations (name)
 VALUES ($1)

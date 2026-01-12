@@ -49,6 +49,66 @@ func (r Runner) loggerOrDefault() *slog.Logger {
 	return slog.Default()
 }
 
+// RunOnceTx は、既存TX（または *sql.DB）上でチェックポイント以降のイベントを最大 BatchSize 件投影する。
+// Usecase側でTX境界を管理したい場合に使う。
+func (r Runner) RunOnceTx(ctx context.Context, dbtx dbgen.DBTX, orgID uuid.UUID) (processed int, lastPosition int64, err error) {
+	if dbtx == nil {
+		return 0, 0, errors.New("dbtx is nil")
+	}
+	if r.ProjectorName == "" {
+		return 0, 0, errors.New("ProjectorName is required")
+	}
+	if r.Apply == nil {
+		return 0, 0, errors.New("Apply is required")
+	}
+
+	q := dbgen.New(dbtx)
+
+	cp, err := q.GetProjectionCheckpoint(ctx, dbgen.GetProjectionCheckpointParams{
+		OrgID:         orgID,
+		ProjectorName: r.ProjectorName,
+	})
+	if err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			return 0, 0, err
+		}
+		lastPosition = 0
+	} else {
+		lastPosition = cp.LastPosition
+	}
+
+	events, err := q.ListEventsForProjector(ctx, dbgen.ListEventsForProjectorParams{
+		OrgID:          orgID,
+		GlobalPosition: lastPosition,
+		Limit:          r.batchSizeOrDefault(),
+	})
+	if err != nil {
+		return 0, lastPosition, err
+	}
+
+	if len(events) == 0 {
+		return 0, lastPosition, nil
+	}
+
+	for _, e := range events {
+		if err := r.Apply(ctx, q, e); err != nil {
+			return 0, lastPosition, err
+		}
+		lastPosition = e.GlobalPosition
+	}
+
+	_, err = q.UpsertProjectionCheckpoint(ctx, dbgen.UpsertProjectionCheckpointParams{
+		OrgID:         orgID,
+		ProjectorName: r.ProjectorName,
+		LastPosition:  lastPosition,
+	})
+	if err != nil {
+		return 0, lastPosition, err
+	}
+
+	return len(events), lastPosition, nil
+}
+
 // RunOnce は、チェックポイント以降のイベントを最大 BatchSize 件投影する。
 // 0 件なら processed=0 を返す。
 func (r Runner) RunOnce(ctx context.Context, db *sql.DB, orgID uuid.UUID) (processed int, err error) {
@@ -141,6 +201,25 @@ func (r Runner) CatchUp(ctx context.Context, db *sql.DB, orgID uuid.UUID) (total
 		total += processed
 		if processed == 0 {
 			return total, nil
+		}
+	}
+}
+
+// CatchUpTx は、RunOnceTx を繰り返して 0 件になるまで投影する。
+// 既存TX上で複数バッチを回すとTXが長くなるため、MVP-032 では基本 1-batch 想定。
+func (r Runner) CatchUpTx(ctx context.Context, dbtx dbgen.DBTX, orgID uuid.UUID) (total int, lastPosition int64, err error) {
+	for {
+		if err := ctx.Err(); err != nil {
+			return total, lastPosition, err
+		}
+		processed, lp, err := r.RunOnceTx(ctx, dbtx, orgID)
+		if err != nil {
+			return total, lastPosition, err
+		}
+		total += processed
+		lastPosition = lp
+		if processed == 0 {
+			return total, lastPosition, nil
 		}
 	}
 }
