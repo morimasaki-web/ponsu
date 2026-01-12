@@ -132,12 +132,14 @@ tasks:
   # -------------------------
   - id: MVP-010
     title: "OIDCログイン（Google or Microsoft）とセッション管理"
-    status: in_progress
+    status: done
     priority: high
     branch: "feature/mvp-010-oidc"
     depends_on: [MVP-001]
     needs_claude_review: true
     description: "HTTPルートで /auth/login, /auth/callback, /auth/logout を実装し、ログイン状態を保持できるようにする。"
+    start_date: 2026-01-12
+    end_date: 2026-01-12
     acceptance_criteria:
       - "ログイン→コールバック→ログイン済みとしてSSR画面を表示できる"
       - "ログアウトでセッションが破棄される"
