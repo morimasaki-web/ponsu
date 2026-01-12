@@ -80,12 +80,14 @@ tasks:
 
   - id: MVP-003
     title: "DBマイグレーション導入（golang-migrate/migrate）"
-    status: todo
+    status: done
     priority: high
     branch: "feature/mvp-003-migrations"
     depends_on: [MVP-002]
     needs_claude_review: true
     description: "SQLマイグレーションの運用を確立し、CI/開発で確実に同じ状態を作れるようにする。"
+    start_date: 2026-01-12
+    end_date: 2026-01-12
     deliverables:
       - "migrations/（up/down SQL）"
       - "migrate実行手段（Makefile/Taskfile/README）"

@@ -64,6 +64,39 @@ docker compose exec postgres pg_isready -U ponsu -d ponsu
 MinIO コンソール:
 - http://127.0.0.1:9001
 
+## 2.1 DBマイグレーション（golang-migrate/migrate）
+
+PonSu は SQL マイグレーションに `golang-migrate/migrate` を使います。
+
+ポイント:
+ - Windows は環境差でホストからDBへ接続しづらいことがあるため、デフォルトは Docker 上の `migrate/migrate` を使って実行します（`docker compose up -d` 済みが前提）。
+- `migrate` コマンドをグローバルに入れていなくても、スクリプトがフォールバック実行します。
+- Windows の PowerShell 実行ポリシー回避のため、`.cmd` ラッパーを推奨します。
+
+事前条件（Postgres起動）:
+
+```powershell
+docker compose up -d
+```
+
+実行例:
+
+```powershell
+# 最新へ適用
+ponsu\scripts\migrate.cmd up
+
+# 直近1つ戻す（デフォルト）
+ponsu\scripts\migrate.cmd down
+
+# 現在のバージョン確認
+ponsu\scripts\migrate.cmd version
+```
+
+補足:
+- `up` / `down` のステップ数を指定したい場合は第2引数で渡します（例: `ponsu\scripts\migrate.cmd up 1`）。
+- Dockerを使わずホストから直接接続したい場合は `PONSU_MIGRATE_MODE=host` を環境変数に設定してください。
+- Bash環境では `bash ponsu/scripts/migrate.sh up` のように実行できます。
+
 ## 3. 無料検証（必ず回す）
 
 PonSu の作業フローでは、外部モデルレビューの代わりに「無料の静的解析・脆弱性チェック」を必ず実行します。
