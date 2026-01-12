@@ -12,12 +12,21 @@ type Config struct {
 	Host string
 	Port int
 
-	PostgresHost    string
-	PostgresPort    int
-	PostgresUser    string
+	PostgresHost     string
+	PostgresPort     int
+	PostgresUser     string
 	PostgresPassword string
-	PostgresDB      string
-	PostgresSSLMode string
+	PostgresDB       string
+	PostgresSSLMode  string
+
+	OIDCIssuerURL    string
+	OIDCClientID     string
+	OIDCClientSecret string
+	OIDCRedirectURL  string
+	OIDCScopes       string
+
+	SessionHashKey  string
+	SessionBlockKey string
 }
 
 func LoadFromEnv() (Config, error) {
@@ -38,6 +47,15 @@ func LoadFromEnv() (Config, error) {
 	pgDB := getEnv("PONSU_PG_DB", "ponsu")
 	pgSSLMode := getEnv("PONSU_PG_SSLMODE", "disable")
 
+	oidcIssuer := getEnv("PONSU_OIDC_ISSUER_URL", "")
+	oidcClientID := getEnv("PONSU_OIDC_CLIENT_ID", "")
+	oidcClientSecret := getEnv("PONSU_OIDC_CLIENT_SECRET", "")
+	oidcRedirectURL := getEnv("PONSU_OIDC_REDIRECT_URL", "")
+	oidcScopes := getEnv("PONSU_OIDC_SCOPES", "")
+
+	sessionHashKey := getEnv("PONSU_SESSION_HASH_KEY", "")
+	sessionBlockKey := getEnv("PONSU_SESSION_BLOCK_KEY", "")
+
 	cfg := Config{
 		Env:  env,
 		Host: host,
@@ -49,6 +67,15 @@ func LoadFromEnv() (Config, error) {
 		PostgresPassword: pgPassword,
 		PostgresDB:       pgDB,
 		PostgresSSLMode:  pgSSLMode,
+
+		OIDCIssuerURL:    oidcIssuer,
+		OIDCClientID:     oidcClientID,
+		OIDCClientSecret: oidcClientSecret,
+		OIDCRedirectURL:  oidcRedirectURL,
+		OIDCScopes:       oidcScopes,
+
+		SessionHashKey:  sessionHashKey,
+		SessionBlockKey: sessionBlockKey,
 	}
 	return cfg, nil
 }

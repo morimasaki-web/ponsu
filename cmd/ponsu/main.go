@@ -24,7 +24,7 @@ func main() {
 
 	server := &http.Server{
 		Addr:              cfg.HTTPAddr(),
-		Handler:           web.NewMux(),
+		Handler:           web.NewMux(cfg, logger),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
