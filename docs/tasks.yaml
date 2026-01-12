@@ -97,7 +97,7 @@ tasks:
 
   - id: MVP-004
     title: "sqlc 導入（クエリ・生成・レイヤ境界の定義）"
-    status: in_progress
+    status: done
     priority: high
     branch: "feature/mvp-004-sqlc"
     depends_on: [MVP-003]
