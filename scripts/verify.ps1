@@ -22,7 +22,7 @@ $env:GOTOOLCHAIN = "go1.24.11"
 
 if (-not $SkipTidy) {
   Invoke-Step "go mod tidy" {
-    go --% mod tidy -go=1.22.0
+    go --% mod tidy -go=1.24.0
   }
 }
 
