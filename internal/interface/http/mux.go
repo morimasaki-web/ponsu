@@ -31,5 +31,9 @@ func NewMux(cfg config.Config, logger *slog.Logger, db *sql.DB) *http.ServeMux {
 	mux.HandleFunc("GET /auth/callback", auth.HandleCallback)
 	mux.HandleFunc("GET /auth/logout", auth.HandleLogout)
 
+	// MVP-011: RBAC
+	mux.HandleFunc("GET /admin/templates/new", auth.RequireRole("admin", auth.HandleAdminTemplatesNewShortcut))
+	mux.HandleFunc("GET /org/{orgID}/admin/templates/new", auth.RequireRole("admin", auth.HandleAdminTemplatesNew))
+
 	return mux
 }

@@ -132,6 +132,9 @@ func (a *OIDCAuth) HandleHome(w http.ResponseWriter, r *http.Request) {
 			b.WriteString("<li>name: " + htmlEscape(sess.Name) + "</li>")
 		}
 		b.WriteString("</ul>")
+		if sess.Role == "admin" {
+			b.WriteString("<p><a href=\"/admin/templates/new\">Admin: New Template</a></p>")
+		}
 		b.WriteString("<p><a href=\"/auth/logout\">Logout</a></p>")
 	} else {
 		b.WriteString("<p>Not logged in.</p>")
@@ -269,13 +272,13 @@ func (a *OIDCAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sess := sessionData{
-		Sub:   claims.Sub,
-		Email: email,
-		Name:  claims.Name,
+		Sub:    claims.Sub,
+		Email:  email,
+		Name:   claims.Name,
 		UserID: userID,
 		OrgID:  orgID,
 		Role:   role,
-		Iat:   time.Now().Unix(),
+		Iat:    time.Now().Unix(),
 	}
 	if err := a.writeSession(w, r, sess); err != nil {
 		a.logger.Error("failed to write session", "error", err)
@@ -299,13 +302,13 @@ type oidcState struct {
 }
 
 type sessionData struct {
-	Sub   string
+	Sub    string
 	UserID string
 	OrgID  string
 	Role   string
-	Email string
-	Name  string
-	Iat   int64
+	Email  string
+	Name   string
+	Iat    int64
 }
 
 // ensureUserAndDefaultMembership はOIDCのID情報からユーザーを upsert し、所属が無ければデフォルト組織を作って admin として所属させる。
@@ -424,13 +427,13 @@ func (a *OIDCAuth) clearStateCookie(w http.ResponseWriter, r *http.Request) {
 // writeSession はセッション情報を署名/暗号化してCookieに書き込む。
 func (a *OIDCAuth) writeSession(w http.ResponseWriter, r *http.Request, sess sessionData) error {
 	value := map[string]string{
-		"sub":   sess.Sub,
+		"sub":     sess.Sub,
 		"user_id": sess.UserID,
 		"org_id":  sess.OrgID,
 		"role":    sess.Role,
-		"email": sess.Email,
-		"name":  sess.Name,
-		"iat":   fmt.Sprintf("%d", sess.Iat),
+		"email":   sess.Email,
+		"name":    sess.Name,
+		"iat":     fmt.Sprintf("%d", sess.Iat),
 	}
 	encoded, err := a.sc.Encode(sessionCookieName, value)
 	if err != nil {
