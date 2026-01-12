@@ -8,6 +8,7 @@ package dbgen
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -52,7 +53,19 @@ type AppendEventParams struct {
 	Column7 json.RawMessage `json:"column_7"`
 }
 
-func (q *Queries) AppendEvent(ctx context.Context, arg AppendEventParams) (EventStore, error) {
+type AppendEventRow struct {
+	ID            uuid.UUID       `json:"id"`
+	OrgID         uuid.UUID       `json:"org_id"`
+	AggregateType string          `json:"aggregate_type"`
+	AggregateID   uuid.UUID       `json:"aggregate_id"`
+	Version       int32           `json:"version"`
+	EventType     string          `json:"event_type"`
+	Payload       json.RawMessage `json:"payload"`
+	Metadata      json.RawMessage `json:"metadata"`
+	OccurredAt    time.Time       `json:"occurred_at"`
+}
+
+func (q *Queries) AppendEvent(ctx context.Context, arg AppendEventParams) (AppendEventRow, error) {
 	row := q.db.QueryRowContext(ctx, appendEvent,
 		arg.Column1,
 		arg.Column2,
@@ -62,7 +75,7 @@ func (q *Queries) AppendEvent(ctx context.Context, arg AppendEventParams) (Event
 		arg.Column6,
 		arg.Column7,
 	)
-	var i EventStore
+	var i AppendEventRow
 	err := row.Scan(
 		&i.ID,
 		&i.OrgID,
@@ -117,7 +130,19 @@ type ListEventsByAggregateParams struct {
 	Version       int32     `json:"version"`
 }
 
-func (q *Queries) ListEventsByAggregate(ctx context.Context, arg ListEventsByAggregateParams) ([]EventStore, error) {
+type ListEventsByAggregateRow struct {
+	ID            uuid.UUID       `json:"id"`
+	OrgID         uuid.UUID       `json:"org_id"`
+	AggregateType string          `json:"aggregate_type"`
+	AggregateID   uuid.UUID       `json:"aggregate_id"`
+	Version       int32           `json:"version"`
+	EventType     string          `json:"event_type"`
+	Payload       json.RawMessage `json:"payload"`
+	Metadata      json.RawMessage `json:"metadata"`
+	OccurredAt    time.Time       `json:"occurred_at"`
+}
+
+func (q *Queries) ListEventsByAggregate(ctx context.Context, arg ListEventsByAggregateParams) ([]ListEventsByAggregateRow, error) {
 	rows, err := q.db.QueryContext(ctx, listEventsByAggregate,
 		arg.OrgID,
 		arg.AggregateType,
@@ -128,9 +153,9 @@ func (q *Queries) ListEventsByAggregate(ctx context.Context, arg ListEventsByAgg
 		return nil, err
 	}
 	defer rows.Close()
-	items := []EventStore{}
+	items := []ListEventsByAggregateRow{}
 	for rows.Next() {
-		var i EventStore
+		var i ListEventsByAggregateRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.OrgID,

@@ -30,7 +30,7 @@ func Append(
 	eventType string,
 	payload json.RawMessage,
 	metadata json.RawMessage,
-) (dbgen.EventStore, error) {
+) (dbgen.AppendEventRow, error) {
 	q := dbgen.New(dbtx)
 	row, err := q.AppendEvent(ctx, dbgen.AppendEventParams{
 		Column1: orgID,
@@ -43,9 +43,9 @@ func Append(
 	})
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return dbgen.EventStore{}, ErrVersionConflict
+			return dbgen.AppendEventRow{}, ErrVersionConflict
 		}
-		return dbgen.EventStore{}, err
+		return dbgen.AppendEventRow{}, err
 	}
 	return row, nil
 }
@@ -74,7 +74,7 @@ func ListByAggregate(
 	aggregateType string,
 	aggregateID uuid.UUID,
 	fromVersion int32,
-) ([]dbgen.EventStore, error) {
+) ([]dbgen.ListEventsByAggregateRow, error) {
 	q := dbgen.New(dbtx)
 	return q.ListEventsByAggregate(ctx, dbgen.ListEventsByAggregateParams{
 		OrgID:         orgID,
