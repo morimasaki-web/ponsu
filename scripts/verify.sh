@@ -15,7 +15,7 @@ step() {
 }
 
 if [ "$skip_tidy" = "0" ]; then
-  step "go mod tidy" go mod tidy -go=1.22.0
+  step "go mod tidy" go mod tidy -go=1.24.0
 fi
 
 step "go test" go test ./...

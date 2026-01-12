@@ -30,7 +30,7 @@ jobs:
 
       - name: go mod tidy (must be clean)
         run: |
-          go mod tidy -go=1.22.0
+          go mod tidy -go=1.24.0
           if [ -n "$(git status --porcelain -- go.mod go.sum)" ]; then
             echo "go.mod/go.sum are dirty after 'go mod tidy'"
             git status --porcelain -- go.mod go.sum
