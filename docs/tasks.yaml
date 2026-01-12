@@ -189,7 +189,7 @@ tasks:
 
   - id: MVP-022
     title: "プロジェクター（同期プロジェクション）基盤"
-    status: todo
+    status: in_progress
     priority: high
     branch: "feature/mvp-022-projector"
     depends_on: [MVP-021]
@@ -204,7 +204,7 @@ tasks:
   # -------------------------
   - id: MVP-030
     title: "Read Model: requests / request_steps / request_audit_trail 作成"
-    status: todo
+    status: in_progress
     priority: high
     branch: "feature/mvp-030-read-model-requests"
     depends_on: [MVP-003]

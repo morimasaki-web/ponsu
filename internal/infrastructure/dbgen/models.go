@@ -5,6 +5,7 @@
 package dbgen
 
 import (
+	"database/sql"
 	"encoding/json"
 	"time"
 
@@ -57,6 +58,38 @@ type ProjectorDemoAggregateVersion struct {
 	AggregateID   uuid.UUID `json:"aggregate_id"`
 	LastVersion   int32     `json:"last_version"`
 	UpdatedAt     time.Time `json:"updated_at"`
+}
+
+type Request struct {
+	ID              uuid.UUID     `json:"id"`
+	OrgID           uuid.UUID     `json:"org_id"`
+	Title           string        `json:"title"`
+	Status          string        `json:"status"`
+	CreatedByUserID uuid.NullUUID `json:"created_by_user_id"`
+	DecidedByUserID uuid.NullUUID `json:"decided_by_user_id"`
+	CreatedAt       time.Time     `json:"created_at"`
+	UpdatedAt       time.Time     `json:"updated_at"`
+	SubmittedAt     sql.NullTime  `json:"submitted_at"`
+	DecidedAt       sql.NullTime  `json:"decided_at"`
+}
+
+type RequestAuditTrail struct {
+	ID          uuid.UUID       `json:"id"`
+	OrgID       uuid.UUID       `json:"org_id"`
+	RequestID   uuid.UUID       `json:"request_id"`
+	ActorUserID uuid.NullUUID   `json:"actor_user_id"`
+	Action      string          `json:"action"`
+	Data        json.RawMessage `json:"data"`
+	OccurredAt  time.Time       `json:"occurred_at"`
+}
+
+type RequestStep struct {
+	RequestID        uuid.UUID     `json:"request_id"`
+	StepIndex        int32         `json:"step_index"`
+	Label            string        `json:"label"`
+	Status           string        `json:"status"`
+	AssignedToUserID uuid.NullUUID `json:"assigned_to_user_id"`
+	UpdatedAt        time.Time     `json:"updated_at"`
 }
 
 type User struct {
