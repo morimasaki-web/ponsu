@@ -159,7 +159,7 @@ tasks:
   # -------------------------
   - id: MVP-020
     title: "event_store スキーマ確定とマイグレーション作成"
-    status: todo
+    status: in_progress
     priority: high
     branch: "feature/mvp-020-event-store"
     depends_on: [MVP-003]
