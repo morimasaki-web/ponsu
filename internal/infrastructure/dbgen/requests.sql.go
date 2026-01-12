@@ -7,6 +7,8 @@ package dbgen
 
 import (
 	"context"
+	"encoding/json"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -52,15 +54,25 @@ type ListRequestAuditTrailParams struct {
 	RequestID uuid.UUID `json:"request_id"`
 }
 
-func (q *Queries) ListRequestAuditTrail(ctx context.Context, arg ListRequestAuditTrailParams) ([]RequestAuditTrail, error) {
+type ListRequestAuditTrailRow struct {
+	ID          uuid.UUID       `json:"id"`
+	OrgID       uuid.UUID       `json:"org_id"`
+	RequestID   uuid.UUID       `json:"request_id"`
+	ActorUserID uuid.NullUUID   `json:"actor_user_id"`
+	Action      string          `json:"action"`
+	Data        json.RawMessage `json:"data"`
+	OccurredAt  time.Time       `json:"occurred_at"`
+}
+
+func (q *Queries) ListRequestAuditTrail(ctx context.Context, arg ListRequestAuditTrailParams) ([]ListRequestAuditTrailRow, error) {
 	rows, err := q.db.QueryContext(ctx, listRequestAuditTrail, arg.OrgID, arg.RequestID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []RequestAuditTrail{}
+	items := []ListRequestAuditTrailRow{}
 	for rows.Next() {
-		var i RequestAuditTrail
+		var i ListRequestAuditTrailRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.OrgID,

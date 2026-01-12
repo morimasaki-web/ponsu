@@ -74,13 +74,14 @@ type Request struct {
 }
 
 type RequestAuditTrail struct {
-	ID          uuid.UUID       `json:"id"`
-	OrgID       uuid.UUID       `json:"org_id"`
-	RequestID   uuid.UUID       `json:"request_id"`
-	ActorUserID uuid.NullUUID   `json:"actor_user_id"`
-	Action      string          `json:"action"`
-	Data        json.RawMessage `json:"data"`
-	OccurredAt  time.Time       `json:"occurred_at"`
+	ID                  uuid.UUID       `json:"id"`
+	OrgID               uuid.UUID       `json:"org_id"`
+	RequestID           uuid.UUID       `json:"request_id"`
+	ActorUserID         uuid.NullUUID   `json:"actor_user_id"`
+	Action              string          `json:"action"`
+	Data                json.RawMessage `json:"data"`
+	OccurredAt          time.Time       `json:"occurred_at"`
+	EventGlobalPosition sql.NullInt64   `json:"event_global_position"`
 }
 
 type RequestStep struct {

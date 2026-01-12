@@ -234,7 +234,7 @@ tasks:
 
   - id: MVP-032
     title: "Usecase: createRequest / submitRequest / approveRequest / rejectRequest"
-    status: todo
+    status: in_progress
     priority: high
     branch: "feature/mvp-032-usecases"
     depends_on: [MVP-031, MVP-022, MVP-030, MVP-011]
