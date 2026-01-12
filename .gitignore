@@ -25,6 +25,7 @@ Desktop.ini
 # Env
 .env
 .env.*
+!.env.example
 
 # Local review bundles
 .ai-review/

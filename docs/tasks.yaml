@@ -63,12 +63,13 @@ tasks:
 
   - id: MVP-002
     title: "ローカル開発環境（Postgres/MinIO）をdocker-composeで用意"
-    status: todo
+    status: in_progress
     priority: high
     branch: "feature/mvp-002-dev-env"
     depends_on: [MVP-001]
     needs_claude_review: false
     description: "イベントストア/Read Modelを動かすための依存サービスをローカルで立ち上げられるようにする。"
+    start_date: 2026-01-12
     deliverables:
       - "compose.yaml（Postgres, MinIO, 必要ならAdminer等）"
       - "環境変数例（.env.example）"

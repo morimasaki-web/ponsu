@@ -36,7 +36,13 @@ where go
 
 PonSu はMVPで PostgreSQL と MinIO を使う想定です。
 
-起動（予定）:
+事前準備:
+
+```powershell
+copy .env.example .env
+```
+
+起動:
 
 ```powershell
 docker compose up -d
@@ -48,7 +54,15 @@ docker compose up -d
 docker compose down
 ```
 
-※ `compose.yaml` はタスク `MVP-002` で整備します。
+疎通チェック例:
+
+```powershell
+docker compose ps
+docker compose exec postgres pg_isready -U ponsu -d ponsu
+```
+
+MinIO コンソール:
+- http://127.0.0.1:9001
 
 ## 3. 無料検証（必ず回す）
 

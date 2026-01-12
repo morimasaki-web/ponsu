@@ -1,0 +1,68 @@
+# Local dev dependencies for PonSu (MVP)
+#
+# Usage:
+#   docker compose up -d
+#   docker compose ps
+#   docker compose down
+#
+# Optional tools:
+#   docker compose --profile tools up -d
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "${PONSU_PG_PORT:-5432}:5432"
+    environment:
+      POSTGRES_USER: ${PONSU_PG_USER:-ponsu}
+      POSTGRES_PASSWORD: ${PONSU_PG_PASSWORD:-ponsu}
+      POSTGRES_DB: ${PONSU_PG_DB:-ponsu}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    ports:
+      - "${PONSU_MINIO_PORT:-9000}:9000"
+      - "${PONSU_MINIO_CONSOLE_PORT:-9001}:9001"
+    environment:
+      MINIO_ROOT_USER: ${PONSU_MINIO_ROOT_USER:-ponsu}
+      MINIO_ROOT_PASSWORD: ${PONSU_MINIO_ROOT_PASSWORD:-ponsu-ponsu}
+    volumes:
+      - minio_data:/data
+
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      - minio
+    entrypoint: ["/bin/sh", "-lc"]
+    environment:
+      PONSU_MINIO_PORT: ${PONSU_MINIO_PORT:-9000}
+      PONSU_MINIO_ROOT_USER: ${PONSU_MINIO_ROOT_USER:-ponsu}
+      PONSU_MINIO_ROOT_PASSWORD: ${PONSU_MINIO_ROOT_PASSWORD:-ponsu-ponsu}
+      PONSU_MINIO_BUCKET: ${PONSU_MINIO_BUCKET:-ponsu}
+    command: |
+      until mc alias set ponsu http://minio:9000 "$$PONSU_MINIO_ROOT_USER" "$$PONSU_MINIO_ROOT_PASSWORD" 2>/dev/null; do
+        sleep 1
+      done
+      mc mb --ignore-existing "ponsu/$$PONSU_MINIO_BUCKET"
+      mc anonymous set download "ponsu/$$PONSU_MINIO_BUCKET" || true
+      echo "MinIO bucket ready: $$PONSU_MINIO_BUCKET"
+
+  adminer:
+    image: adminer:4
+    profiles: ["tools"]
+    ports:
+      - "${PONSU_ADMINER_PORT:-8081}:8080"
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
+  minio_data:
