@@ -773,26 +773,6 @@ func (a *OIDCAuth) HandleAdminTemplatesCreate(w http.ResponseWriter, r *http.Req
 	http.Redirect(w, r, redirect, http.StatusSeeOther)
 }
 
-func parseNonEmptyLines(text string) []string {
-	text = strings.ReplaceAll(text, "\r\n", "\n")
-	text = strings.ReplaceAll(text, "\r", "\n")
-	parts := strings.Split(text, "\n")
-	out := make([]string, 0, len(parts))
-	seen := map[string]struct{}{}
-	for _, p := range parts {
-		p = strings.TrimSpace(p)
-		if p == "" {
-			continue
-		}
-		if _, ok := seen[p]; ok {
-			continue
-		}
-		seen[p] = struct{}{}
-		out = append(out, p)
-	}
-	return out
-}
-
 type approvalStep struct {
 	Approvers []string
 }
