@@ -25,11 +25,13 @@ function Get-Env([string]$Key, [string]$Default) {
 
 $mode = Get-Env 'PONSU_SQLC_MODE' 'docker' # docker | host
 
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+$localSqlcPath = (Join-Path $repoRoot 'tools/sqlc/sqlc.exe')
+
 $sqlc = Get-Command sqlc -ErrorAction SilentlyContinue
 
 function Invoke-Sqlc([string[]]$SqlcArgs) {
   if ($mode -eq 'docker') {
-    $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
     $dockerArgs = @(
       'run', '--rm',
       '-v', "${repoRoot}:/src",
@@ -38,6 +40,11 @@ function Invoke-Sqlc([string[]]$SqlcArgs) {
     ) + $SqlcArgs
 
     & docker @dockerArgs
+    return
+  }
+
+  if (Test-Path $localSqlcPath) {
+    & $localSqlcPath @SqlcArgs
     return
   }
 

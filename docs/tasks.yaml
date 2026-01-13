@@ -251,12 +251,14 @@ tasks:
   # -------------------------
   - id: MVP-040
     title: "WorkflowTemplate のデータモデル（Read Model）導入"
-    status: todo
+    status: done
     priority: high
     branch: "feature/mvp-040-templates-model"
     depends_on: [MVP-003, MVP-011]
     needs_claude_review: true
     description: "テンプレ（直列ステップ）を最小仕様で保存できるようにする（JSONBで可）。"
+    start_date: 2026-01-13
+    end_date: 2026-01-13
     acceptance_criteria:
       - "テンプレを作成・一覧取得できる"
       - "テンプレからrequest_stepsを展開できる"
