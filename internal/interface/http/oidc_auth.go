@@ -132,8 +132,15 @@ func (a *OIDCAuth) HandleHome(w http.ResponseWriter, r *http.Request) {
 			b.WriteString("<li>name: " + htmlEscape(sess.Name) + "</li>")
 		}
 		b.WriteString("</ul>")
+		if sess.OrgID != "" {
+			b.WriteString("<p><a href=\"/requests/new\">New Request</a></p>")
+			b.WriteString("<p><a href=\"/requests\">Requests</a></p>")
+		}
 		if sess.Role == "admin" {
 			b.WriteString("<p><a href=\"/admin/templates/new\">Admin: New Template</a></p>")
+			if sess.OrgID != "" {
+				b.WriteString("<p><a href=\"/org/" + htmlEscape(sess.OrgID) + "/admin/templates\">Admin: Templates</a></p>")
+			}
 		}
 		b.WriteString("<p><a href=\"/auth/logout\">Logout</a></p>")
 	} else {

@@ -28,6 +28,10 @@ type Service struct {
 }
 
 func (s Service) CreateRequest(ctx context.Context, orgID, actorUserID uuid.UUID, title string) (uuid.UUID, error) {
+	return s.CreateRequestWithTemplate(ctx, orgID, actorUserID, title, uuid.Nil)
+}
+
+func (s Service) CreateRequestWithTemplate(ctx context.Context, orgID, actorUserID uuid.UUID, title string, workflowTemplateID uuid.UUID) (uuid.UUID, error) {
 	if s.DB == nil {
 		return uuid.UUID{}, errors.New("db is nil")
 	}
@@ -53,7 +57,21 @@ func (s Service) CreateRequest(ctx context.Context, orgID, actorUserID uuid.UUID
 	}
 	_ = m // membership existence is enough for create in MVP
 
-	payload, err := json.Marshal(request.CreatedPayload{Title: title})
+	if workflowTemplateID != uuid.Nil {
+		if _, err := q.GetWorkflowTemplateByOrgAndID(ctx, dbgen.GetWorkflowTemplateByOrgAndIDParams{OrgID: orgID, ID: workflowTemplateID}); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return uuid.UUID{}, errors.New("workflow template not found")
+			}
+			return uuid.UUID{}, err
+		}
+	}
+
+	workflowTemplateIDStr := ""
+	if workflowTemplateID != uuid.Nil {
+		workflowTemplateIDStr = workflowTemplateID.String()
+	}
+
+	payload, err := json.Marshal(request.CreatedPayload{Title: title, WorkflowTemplateID: workflowTemplateIDStr})
 	if err != nil {
 		return uuid.UUID{}, err
 	}
