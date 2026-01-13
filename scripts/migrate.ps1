@@ -26,6 +26,93 @@ function Get-Env([string]$Key, [string]$Default) {
   return $item.Value
 }
 
+function Get-RepoRoot() {
+  return (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+}
+
+function Split-DotenvPaths([string]$v) {
+  if ([string]::IsNullOrWhiteSpace($v)) { return @() }
+  return $v -split '[,;]' | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' }
+}
+
+function Unquote-DotenvValue([string]$v) {
+  $v = $v.Trim()
+  if ($v.Length -ge 2) {
+    if (($v.StartsWith('"') -and $v.EndsWith('"')) -or ($v.StartsWith("'") -and $v.EndsWith("'"))) {
+      return $v.Substring(1, $v.Length - 2)
+    }
+  }
+  return $v
+}
+
+function Import-Dotenv([string[]]$paths) {
+  $loaded = @()
+  foreach ($p in $paths) {
+    if ([string]::IsNullOrWhiteSpace($p)) { continue }
+
+    $path = $p
+    if (-not [System.IO.Path]::IsPathRooted($path)) {
+      $path = Join-Path (Get-RepoRoot) $path
+    }
+
+    if (-not (Test-Path $path)) {
+      continue
+    }
+
+    $content = Get-Content -LiteralPath $path -Raw -ErrorAction Stop
+    if ($content.Length -gt 0 -and [int]$content[0] -eq 0xFEFF) {
+      # Allow UTF-8 BOM files
+      $content = $content.Substring(1)
+    }
+
+    foreach ($line in ($content -split "`r?`n")) {
+      $t = $line.Trim()
+      if ($t -eq '' -or $t.StartsWith('#')) { continue }
+      if ($t.StartsWith('export ')) { $t = $t.Substring(7).TrimStart() }
+
+      $idx = $t.IndexOf('=')
+      if ($idx -lt 1) { continue }
+
+      $key = $t.Substring(0, $idx).Trim()
+      $value = Unquote-DotenvValue ($t.Substring($idx + 1))
+
+      if ($key -eq '') { continue }
+
+      $existing = Get-Item "Env:$key" -ErrorAction SilentlyContinue
+      if ($null -ne $existing -and -not [string]::IsNullOrWhiteSpace($existing.Value)) {
+        continue
+      }
+
+      Set-Item -Path "Env:$key" -Value $value
+    }
+
+    $loaded += $p
+  }
+  return $loaded
+}
+
+function Import-DotenvLocal() {
+  $envList = Get-Item "Env:PONSU_DOTENV_FILES" -ErrorAction SilentlyContinue
+  $repoRoot = Get-RepoRoot
+
+  $paths = @()
+  if ($null -ne $envList -and -not [string]::IsNullOrWhiteSpace($envList.Value)) {
+    $paths = Split-DotenvPaths $envList.Value
+  } else {
+    $paths = @(
+      (Join-Path $repoRoot '.env'),
+      (Join-Path $repoRoot '.env.local')
+    )
+  }
+
+  $loaded = Import-Dotenv $paths
+  if ($loaded.Count -gt 0) {
+    Write-Host ("Loaded dotenv: " + ($loaded -join ', ')) -ForegroundColor DarkGray
+  }
+}
+
+Import-DotenvLocal
+
 
 $pgHost = Get-Env 'PONSU_PG_HOST' '127.0.0.1'
 $pgPort = Get-Env 'PONSU_PG_PORT' '5432'

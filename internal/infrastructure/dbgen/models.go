@@ -102,3 +102,14 @@ type User struct {
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
 }
+
+type WorkflowTemplate struct {
+	ID              uuid.UUID       `json:"id"`
+	OrgID           uuid.UUID       `json:"org_id"`
+	Name            string          `json:"name"`
+	Description     string          `json:"description"`
+	Definition      json.RawMessage `json:"definition"`
+	CreatedByUserID uuid.NullUUID   `json:"created_by_user_id"`
+	CreatedAt       time.Time       `json:"created_at"`
+	UpdatedAt       time.Time       `json:"updated_at"`
+}

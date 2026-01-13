@@ -101,6 +101,10 @@ ponsu\scripts\migrate.cmd version
 - Dockerを使わずホストから直接接続したい場合は `PONSU_MIGRATE_MODE=host` を環境変数に設定してください。
 - Bash環境では `bash ponsu/scripts/migrate.sh up` のように実行できます。
 
+dotenv 補足:
+- `migrate.cmd` / `migrate.ps1` は `.env` / `.env.local` を読み込みます（OS環境変数が優先で上書きしません）。
+- ワークスペース外の dotenv を使いたい場合は `PONSU_DOTENV_FILES`（カンマ `,` / セミコロン `;` 区切り）を設定してください。
+
 ## 3. 無料検証（必ず回す）
 
 PonSu の作業フローでは、外部モデルレビューの代わりに「無料の静的解析・脆弱性チェック」を必ず実行します。
@@ -135,6 +139,15 @@ bash ponsu/scripts/verify.sh
 - `golangci-lint` / `govulncheck` が未インストールでも、`go run <module>@<version>` でフォールバック実行します（無料・ただし遅め）。
 
 ## 4. よくあるトラブル
+
+## 4.1 設計ポイントの蓄積（開発フロー）
+
+PonSu では、実装を進めながら「設計判断」を蓄積します。
+
+- 設計ポイント集: [docs/design/設計ポイント集.md](design/設計ポイント集.md)
+- タスクが `done` になったら、そのタスクの設計ポイントを **必ず追記**します。
+- 追記する内容（最小）: 背景 / 決定 / 理由 / トレードオフ / 学び
+- 目的: 後から意思決定の理由を追えるようにし、プロダクト設計の再現性を上げる。
 
 ## 5. ローカル起動（.env.local 利用）
 
@@ -192,4 +205,20 @@ Go のインストールが未完了か、PATH が通っていません。`go ve
 
 ### 4.3 Docker が使えない
 Docker Desktop が起動しているか確認してください。`docker version` が通ればOKです。
+
+### 4.4 `sqlc generate` が失敗する（Dockerなし / WASM panic）
+
+Windows 環境によっては、`sqlc` を `go run` フォールバックで実行した際に WASM パーサ由来の panic が出ることがあります。
+
+回避策（推奨）:
+- `sqlc` の Windows バイナリ（`sqlc.exe`）をダウンロードして `tools/sqlc/sqlc.exe` に配置
+- `PONSU_SQLC_MODE=host` を設定して生成を実行
+
+例（PowerShell）:
+
+```powershell
+cd ponsu
+$env:PONSU_SQLC_MODE = "host"
+\scripts\sqlc.cmd generate
+```
 
