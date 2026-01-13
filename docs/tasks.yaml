@@ -265,12 +265,14 @@ tasks:
 
   - id: MVP-041
     title: "SSR: テンプレ作成UI（adminのみ）"
-    status: todo
+    status: done
     priority: high
     branch: "feature/mvp-041-templates-ui"
     depends_on: [MVP-040, MVP-011]
     needs_claude_review: false
     description: "管理者が承認ステップ（承認者）を登録できるUIをSSRで提供する。"
+    start_date: 2026-01-13
+    end_date: 2026-01-13
     acceptance_criteria:
       - "adminのみアクセス可能"
       - "作成したテンプレが申請作成時に選択できる"
@@ -307,12 +309,14 @@ tasks:
   # -------------------------
   - id: MVP-060
     title: "SSR: 申請一覧/詳細/新規作成画面"
-    status: todo
+    status: done
     priority: high
     branch: "feature/mvp-060-ssr-pages"
     depends_on: [MVP-010, MVP-032, MVP-041]
     needs_claude_review: false
     description: "MVP運用に必要な最小画面（一覧/詳細/作成/提出/承認）をSSRで実装。"
+    start_date: 2026-01-13
+    end_date: 2026-01-13
     acceptance_criteria:
       - "画面から作成→提出→承認/却下が完結する"
       - "監査（履歴）表示が見える"

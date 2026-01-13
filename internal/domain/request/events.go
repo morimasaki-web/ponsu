@@ -27,7 +27,8 @@ type Event struct {
 // Payload types (MVP-031 minimal)
 
 type CreatedPayload struct {
-	Title string `json:"title"`
+	Title              string `json:"title"`
+	WorkflowTemplateID string `json:"workflow_template_id,omitempty"`
 }
 
 type RejectedPayload struct {

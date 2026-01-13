@@ -44,7 +44,7 @@ func NewRequestsProjector() Runner {
 				if err != nil {
 					return err
 				}
-				// Minimal steps (MVP): Submit / Approve
+				// Step 1: Submit
 				_ = q.InsertRequestStepIfNotExists(ctx, dbgen.InsertRequestStepIfNotExistsParams{
 					RequestID:        e.AggregateID,
 					StepIndex:        1,
@@ -53,14 +53,33 @@ func NewRequestsProjector() Runner {
 					AssignedToUserID: uuid.NullUUID{},
 					UpdatedAt:        e.OccurredAt,
 				})
-				_ = q.InsertRequestStepIfNotExists(ctx, dbgen.InsertRequestStepIfNotExistsParams{
-					RequestID:        e.AggregateID,
-					StepIndex:        2,
-					Label:            "Approve",
-					Status:           "pending",
-					AssignedToUserID: uuid.NullUUID{},
-					UpdatedAt:        e.OccurredAt,
-				})
+
+				approvalSteps := []workflowTemplateApprovalStep{{Approvers: nil}}
+				if p.WorkflowTemplateID != "" {
+					if tplID, err := uuid.Parse(p.WorkflowTemplateID); err == nil {
+						if tpl, err := q.GetWorkflowTemplateByOrgAndID(ctx, dbgen.GetWorkflowTemplateByOrgAndIDParams{OrgID: e.OrgID, ID: tplID}); err == nil {
+							if steps, err := parseWorkflowTemplateApprovalSteps(tpl.Definition); err == nil && len(steps) > 0 {
+								approvalSteps = steps
+							}
+						}
+					}
+				}
+
+				// approval steps from template (fallback: single Approval)
+				for i, s := range approvalSteps {
+					label := fmt.Sprintf("Approval %d", i+1)
+					if len(s.Approvers) > 0 {
+						label = fmt.Sprintf("Approval %d (%d approvers)", i+1, len(s.Approvers))
+					}
+					_ = q.InsertRequestStepIfNotExists(ctx, dbgen.InsertRequestStepIfNotExistsParams{
+						RequestID:        e.AggregateID,
+						StepIndex:        int32(i + 2),
+						Label:            label,
+						Status:           "pending",
+						AssignedToUserID: uuid.NullUUID{},
+						UpdatedAt:        e.OccurredAt,
+					})
+				}
 
 			case request.EventTypeSubmitted:
 				_, err := q.SetRequestSubmitted(ctx, dbgen.SetRequestSubmittedParams{
@@ -109,6 +128,38 @@ func NewRequestsProjector() Runner {
 			})
 		},
 	}
+}
+
+type workflowTemplateDefinition struct {
+	Version int                         `json:"version"`
+	Steps   []workflowTemplateStepUnion `json:"steps"`
+}
+
+type workflowTemplateStepUnion struct {
+	Type      string   `json:"type"`
+	Approvers []string `json:"approvers"`
+}
+
+type workflowTemplateApprovalStep struct {
+	Approvers []string
+}
+
+func parseWorkflowTemplateApprovalSteps(raw json.RawMessage) ([]workflowTemplateApprovalStep, error) {
+	if len(raw) == 0 {
+		return nil, errors.New("missing template definition")
+	}
+	var d workflowTemplateDefinition
+	if err := json.Unmarshal(raw, &d); err != nil {
+		return nil, err
+	}
+	out := make([]workflowTemplateApprovalStep, 0, len(d.Steps))
+	for _, s := range d.Steps {
+		if s.Type != "approval" {
+			continue
+		}
+		out = append(out, workflowTemplateApprovalStep{Approvers: s.Approvers})
+	}
+	return out, nil
 }
 
 type metadataActor struct {
