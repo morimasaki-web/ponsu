@@ -1,7 +1,11 @@
-# PonSu GraphQL Schema (MVP-050)
+# PonSu GraphQL Schema (MVP-051)
+
+scalar Time
+scalar JSON
 
 schema {
   query: Query
+  mutation: Mutation
 }
 
 type Query {
@@ -10,6 +14,15 @@ type Query {
 
   "Returns the current logged-in user (viewer)."
   me: Me!
+
+  "List requests within the viewer's org."
+  requests(limit: Int = 50, offset: Int = 0): [Request!]!
+
+  "Get a single request within the viewer's org."
+  request(id: ID!): Request
+
+  "List workflow templates within the viewer's org."
+  workflowTemplates(limit: Int = 50, offset: Int = 0): [WorkflowTemplate!]!
 }
 
 type Me {
@@ -18,4 +31,57 @@ type Me {
   role: String!
   name: String
   email: String
+}
+
+type Mutation {
+  createRequest(title: String!, workflowTemplateID: ID): Request!
+  submitRequest(id: ID!): Request!
+  approveRequest(id: ID!): Request!
+  rejectRequest(id: ID!, reason: String!): Request!
+
+  "Create a workflow template (admin only)."
+  createWorkflowTemplate(name: String!, description: String!, definition: JSON!): WorkflowTemplate!
+}
+
+type Request {
+  id: ID!
+  orgID: ID!
+  title: String!
+  status: String!
+  createdByUserID: ID
+  decidedByUserID: ID
+  createdAt: Time!
+  updatedAt: Time!
+  submittedAt: Time
+  decidedAt: Time
+
+  steps: [RequestStep!]!
+  auditTrail: [RequestAudit!]!
+}
+
+type RequestStep {
+  stepIndex: Int!
+  label: String!
+  status: String!
+  assignedToUserID: ID
+  updatedAt: Time!
+}
+
+type RequestAudit {
+  id: ID!
+  actorUserID: ID
+  action: String!
+  data: JSON!
+  occurredAt: Time!
+}
+
+type WorkflowTemplate {
+  id: ID!
+  orgID: ID!
+  name: String!
+  description: String!
+  definition: JSON!
+  createdByUserID: ID
+  createdAt: Time!
+  updatedAt: Time!
 }

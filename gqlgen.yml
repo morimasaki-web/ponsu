@@ -16,3 +16,11 @@ resolver:
   layout: follow-schema
   dir: internal/interface/graphql/graph
   package: graph
+
+models:
+  Time:
+    model:
+      - github.com/99designs/gqlgen/graphql.Time
+  JSON:
+    model:
+      - github.com/99designs/gqlgen/graphql.Map

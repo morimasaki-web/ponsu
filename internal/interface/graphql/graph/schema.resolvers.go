@@ -6,12 +6,174 @@ package graph
 
 import (
 	"context"
+	"database/sql"
+	"encoding/json"
 	"errors"
 
+	"github.com/google/uuid"
+	"github.com/morimasaki-web/ponsu/internal/infrastructure/dbgen"
 	"github.com/morimasaki-web/ponsu/internal/interface/graphql/graph/generated"
 	"github.com/morimasaki-web/ponsu/internal/interface/graphql/graph/model"
-	"github.com/morimasaki-web/ponsu/internal/interface/graphqlctx"
+	requestsuc "github.com/morimasaki-web/ponsu/internal/usecase/requests"
 )
+
+// CreateRequest is the resolver for the createRequest field.
+func (r *mutationResolver) CreateRequest(ctx context.Context, title string, workflowTemplateID *string) (*model.Request, error) {
+	v, err := viewerFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	q, err := r.queries()
+	if err != nil {
+		return nil, err
+	}
+
+	workflowTemplateUUID := uuid.Nil
+	if workflowTemplateID != nil && *workflowTemplateID != "" {
+		uid, err := parseUUID(*workflowTemplateID)
+		if err != nil {
+			return nil, err
+		}
+		workflowTemplateUUID = uid
+	}
+
+	svc := requestsuc.Service{DB: r.DB}
+	requestID, err := svc.CreateRequestWithTemplate(ctx, v.OrgID, v.UserID, title, workflowTemplateUUID)
+	if err != nil {
+		return nil, err
+	}
+
+	row, err := q.GetRequestByOrgAndID(ctx, dbgen.GetRequestByOrgAndIDParams{OrgID: v.OrgID, ID: requestID})
+	if err != nil {
+		return nil, err
+	}
+	out := mapRequestRow(row)
+	return out, nil
+}
+
+// SubmitRequest is the resolver for the submitRequest field.
+func (r *mutationResolver) SubmitRequest(ctx context.Context, id string) (*model.Request, error) {
+	v, err := viewerFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	q, err := r.queries()
+	if err != nil {
+		return nil, err
+	}
+	requestID, err := parseUUID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	svc := requestsuc.Service{DB: r.DB}
+	if err := svc.SubmitRequest(ctx, v.OrgID, v.UserID, requestID); err != nil {
+		return nil, err
+	}
+
+	row, err := q.GetRequestByOrgAndID(ctx, dbgen.GetRequestByOrgAndIDParams{OrgID: v.OrgID, ID: requestID})
+	if err != nil {
+		return nil, err
+	}
+	return mapRequestRow(row), nil
+}
+
+// ApproveRequest is the resolver for the approveRequest field.
+func (r *mutationResolver) ApproveRequest(ctx context.Context, id string) (*model.Request, error) {
+	v, err := viewerFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	q, err := r.queries()
+	if err != nil {
+		return nil, err
+	}
+	requestID, err := parseUUID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	svc := requestsuc.Service{DB: r.DB}
+	if err := svc.ApproveRequest(ctx, v.OrgID, v.UserID, requestID); err != nil {
+		return nil, err
+	}
+
+	row, err := q.GetRequestByOrgAndID(ctx, dbgen.GetRequestByOrgAndIDParams{OrgID: v.OrgID, ID: requestID})
+	if err != nil {
+		return nil, err
+	}
+	return mapRequestRow(row), nil
+}
+
+// RejectRequest is the resolver for the rejectRequest field.
+func (r *mutationResolver) RejectRequest(ctx context.Context, id string, reason string) (*model.Request, error) {
+	v, err := viewerFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	q, err := r.queries()
+	if err != nil {
+		return nil, err
+	}
+	requestID, err := parseUUID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	svc := requestsuc.Service{DB: r.DB}
+	if err := svc.RejectRequest(ctx, v.OrgID, v.UserID, requestID, reason); err != nil {
+		return nil, err
+	}
+
+	row, err := q.GetRequestByOrgAndID(ctx, dbgen.GetRequestByOrgAndIDParams{OrgID: v.OrgID, ID: requestID})
+	if err != nil {
+		return nil, err
+	}
+	return mapRequestRow(row), nil
+}
+
+// CreateWorkflowTemplate is the resolver for the createWorkflowTemplate field.
+func (r *mutationResolver) CreateWorkflowTemplate(ctx context.Context, name string, description string, definition map[string]any) (*model.WorkflowTemplate, error) {
+	v, err := viewerFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	q, err := r.queries()
+	if err != nil {
+		return nil, err
+	}
+
+	mem, err := q.GetMembershipByOrgAndUserID(ctx, dbgen.GetMembershipByOrgAndUserIDParams{OrgID: v.OrgID, UserID: v.UserID})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, errForbidden
+		}
+		return nil, err
+	}
+	if mem.Role != "admin" {
+		return nil, errForbidden
+	}
+
+	defBytes, err := json.Marshal(definition)
+	if err != nil {
+		return nil, errors.New("invalid definition")
+	}
+
+	row, err := q.CreateWorkflowTemplate(ctx, dbgen.CreateWorkflowTemplateParams{
+		OrgID:       v.OrgID,
+		Name:        name,
+		Description: description,
+		Definition:  defBytes,
+		CreatedByUserID: uuid.NullUUID{
+			UUID:  v.UserID,
+			Valid: true,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	return mapWorkflowTemplateRow(row)
+}
 
 // Ping is the resolver for the ping field.
 func (r *queryResolver) Ping(ctx context.Context) (string, error) {
@@ -20,9 +182,9 @@ func (r *queryResolver) Ping(ctx context.Context) (string, error) {
 
 // Me is the resolver for the me field.
 func (r *queryResolver) Me(ctx context.Context) (*model.Me, error) {
-	v, ok := graphqlctx.ViewerFrom(ctx)
-	if !ok {
-		return nil, errors.New("unauthorized")
+	v, err := viewerFromContext(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	var name *string
@@ -43,7 +205,119 @@ func (r *queryResolver) Me(ctx context.Context) (*model.Me, error) {
 	}, nil
 }
 
+// Requests is the resolver for the requests field.
+func (r *queryResolver) Requests(ctx context.Context, limit *int, offset *int) ([]*model.Request, error) {
+	v, err := viewerFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	q, err := r.queries()
+	if err != nil {
+		return nil, err
+	}
+
+	lim := int32(50)
+	off := int32(0)
+	if limit != nil {
+		lim = int32(*limit)
+	}
+	if offset != nil {
+		off = int32(*offset)
+	}
+	items, err := q.ListRequestsByOrg(ctx, dbgen.ListRequestsByOrgParams{OrgID: v.OrgID, Limit: lim, Offset: off})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]*model.Request, 0, len(items))
+	for _, it := range items {
+		out = append(out, mapRequestRow(it))
+	}
+	return out, nil
+}
+
+// Request is the resolver for the request field.
+func (r *queryResolver) Request(ctx context.Context, id string) (*model.Request, error) {
+	v, err := viewerFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	q, err := r.queries()
+	if err != nil {
+		return nil, err
+	}
+	requestID, err := parseUUID(id)
+	if err != nil {
+		return nil, err
+	}
+	row, err := q.GetRequestByOrgAndID(ctx, dbgen.GetRequestByOrgAndIDParams{OrgID: v.OrgID, ID: requestID})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	out := mapRequestRow(row)
+
+	steps, err := q.ListRequestSteps(ctx, requestID)
+	if err != nil {
+		return nil, err
+	}
+	out.Steps = mapRequestSteps(steps)
+
+	auditRows, err := q.ListRequestAuditTrail(ctx, dbgen.ListRequestAuditTrailParams{OrgID: v.OrgID, RequestID: requestID})
+	if err != nil {
+		return nil, err
+	}
+	audit, err := mapAuditTrail(auditRows)
+	if err != nil {
+		return nil, err
+	}
+	out.AuditTrail = audit
+
+	return out, nil
+}
+
+// WorkflowTemplates is the resolver for the workflowTemplates field.
+func (r *queryResolver) WorkflowTemplates(ctx context.Context, limit *int, offset *int) ([]*model.WorkflowTemplate, error) {
+	v, err := viewerFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	q, err := r.queries()
+	if err != nil {
+		return nil, err
+	}
+
+	lim := int32(50)
+	off := int32(0)
+	if limit != nil {
+		lim = int32(*limit)
+	}
+	if offset != nil {
+		off = int32(*offset)
+	}
+	items, err := q.ListWorkflowTemplatesByOrg(ctx, dbgen.ListWorkflowTemplatesByOrgParams{OrgID: v.OrgID, Limit: lim, Offset: off})
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]*model.WorkflowTemplate, 0, len(items))
+	for _, it := range items {
+		m, err := mapWorkflowTemplateRow(it)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, m)
+	}
+	return out, nil
+}
+
+// Mutation returns generated.MutationResolver implementation.
+func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
+
 // Query returns generated.QueryResolver implementation.
 func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
+type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
