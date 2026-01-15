@@ -296,12 +296,14 @@ tasks:
 
   - id: MVP-051
     title: "GraphQLリゾルバ実装（MVP最小Query/Mutation）"
-    status: todo
+    status: done
     priority: high
     branch: "feature/mvp-051-graphql-resolvers"
     depends_on: [MVP-050, MVP-032, MVP-040]
     needs_claude_review: true
     description: "me/requests/request/workflowTemplates と create/submit/approve/reject/createWorkflowTemplate を実装。"
+    start_date: 2026-01-15
+    end_date: 2026-01-15
     acceptance_criteria:
       - "主要フローがGraphQL経由でも実行できる"
       - "リゾルバでRBAC/ORG境界が担保される"

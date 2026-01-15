@@ -19,7 +19,7 @@ func NewMux(cfg config.Config, logger *slog.Logger, db *sql.DB) *http.ServeMux {
 	}
 
 	auth := NewOIDCAuth(cfg, logger, db)
-	gqlServer := gqlapi.NewServer()
+	gqlServer := gqlapi.NewServer(db)
 	playgroundHandler := gqlapi.PlaygroundHandler("/graphql")
 
 	mux := http.NewServeMux()

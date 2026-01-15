@@ -2,6 +2,10 @@
 
 package model
 
+import (
+	"time"
+)
+
 type Me struct {
 	UserID string  `json:"userID"`
 	OrgID  string  `json:"orgID"`
@@ -10,5 +14,50 @@ type Me struct {
 	Email  *string `json:"email,omitempty"`
 }
 
+type Mutation struct {
+}
+
 type Query struct {
+}
+
+type Request struct {
+	ID              string          `json:"id"`
+	OrgID           string          `json:"orgID"`
+	Title           string          `json:"title"`
+	Status          string          `json:"status"`
+	CreatedByUserID *string         `json:"createdByUserID,omitempty"`
+	DecidedByUserID *string         `json:"decidedByUserID,omitempty"`
+	CreatedAt       time.Time       `json:"createdAt"`
+	UpdatedAt       time.Time       `json:"updatedAt"`
+	SubmittedAt     *time.Time      `json:"submittedAt,omitempty"`
+	DecidedAt       *time.Time      `json:"decidedAt,omitempty"`
+	Steps           []*RequestStep  `json:"steps"`
+	AuditTrail      []*RequestAudit `json:"auditTrail"`
+}
+
+type RequestAudit struct {
+	ID          string         `json:"id"`
+	ActorUserID *string        `json:"actorUserID,omitempty"`
+	Action      string         `json:"action"`
+	Data        map[string]any `json:"data"`
+	OccurredAt  time.Time      `json:"occurredAt"`
+}
+
+type RequestStep struct {
+	StepIndex        int       `json:"stepIndex"`
+	Label            string    `json:"label"`
+	Status           string    `json:"status"`
+	AssignedToUserID *string   `json:"assignedToUserID,omitempty"`
+	UpdatedAt        time.Time `json:"updatedAt"`
+}
+
+type WorkflowTemplate struct {
+	ID              string         `json:"id"`
+	OrgID           string         `json:"orgID"`
+	Name            string         `json:"name"`
+	Description     string         `json:"description"`
+	Definition      map[string]any `json:"definition"`
+	CreatedByUserID *string        `json:"createdByUserID,omitempty"`
+	CreatedAt       time.Time      `json:"createdAt"`
+	UpdatedAt       time.Time      `json:"updatedAt"`
 }
