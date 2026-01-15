@@ -8,6 +8,8 @@ import (
 	"net/http"
 
 	"github.com/morimasaki-web/ponsu/internal/infrastructure/config"
+	gqlapi "github.com/morimasaki-web/ponsu/internal/interface/graphql"
+	"github.com/morimasaki-web/ponsu/internal/interface/graphqlctx"
 )
 
 // NewMux はアプリケーションのHTTPルートを登録した ServeMux を返す。
@@ -17,6 +19,8 @@ func NewMux(cfg config.Config, logger *slog.Logger, db *sql.DB) *http.ServeMux {
 	}
 
 	auth := NewOIDCAuth(cfg, logger, db)
+	gqlServer := gqlapi.NewServer()
+	playgroundHandler := gqlapi.PlaygroundHandler("/graphql")
 
 	mux := http.NewServeMux()
 
@@ -30,6 +34,23 @@ func NewMux(cfg config.Config, logger *slog.Logger, db *sql.DB) *http.ServeMux {
 	mux.HandleFunc("GET /auth/login", auth.HandleLogin)
 	mux.HandleFunc("GET /auth/callback", auth.HandleCallback)
 	mux.HandleFunc("GET /auth/logout", auth.HandleLogout)
+
+	// MVP-050: GraphQL (guarded by login)
+	mux.HandleFunc("GET /playground", auth.RequireLogin(func(w http.ResponseWriter, r *http.Request, _ sessionData) {
+		playgroundHandler.ServeHTTP(w, r)
+	}))
+
+	graphqlHandler := func(w http.ResponseWriter, r *http.Request, sess sessionData) {
+		v, err := viewerFromSession(sess)
+		if err != nil {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		r = r.WithContext(graphqlctx.WithViewer(r.Context(), v))
+		gqlServer.ServeHTTP(w, r)
+	}
+	mux.HandleFunc("GET /graphql", auth.RequireLogin(graphqlHandler))
+	mux.HandleFunc("POST /graphql", auth.RequireLogin(graphqlHandler))
 
 	// MVP-041: Request create (SSR minimal)
 	mux.HandleFunc("GET /requests", auth.RequireLogin(auth.HandleRequestsIndexShortcut))
