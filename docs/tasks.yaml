@@ -282,12 +282,14 @@ tasks:
   # -------------------------
   - id: MVP-050
     title: "gqlgen セットアップ（schema/生成/サーバ統合）"
-    status: todo
+    status: done
     priority: high
     branch: "feature/mvp-050-gqlgen"
     depends_on: [MVP-001]
     needs_claude_review: true
     description: "GraphQLサーバを起動し、認証/認可情報をコンテキストに載せる。"
+    start_date: 2026-01-15
+    end_date: 2026-01-15
     acceptance_criteria:
       - "GraphQL Playground（または同等）で疎通できる"
       - "未ログイン時はQueryが拒否される"

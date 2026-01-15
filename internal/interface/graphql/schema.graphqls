@@ -1,0 +1,21 @@
+# PonSu GraphQL Schema (MVP-050)
+
+schema {
+  query: Query
+}
+
+type Query {
+  "Health-check style ping. Requires login because the endpoint is guarded."
+  ping: String!
+
+  "Returns the current logged-in user (viewer)."
+  me: Me!
+}
+
+type Me {
+  userID: ID!
+  orgID: ID!
+  role: String!
+  name: String
+  email: String
+}

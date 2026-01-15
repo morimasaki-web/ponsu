@@ -1,0 +1,18 @@
+# gqlgen configuration for PonSu (MVP-050)
+# https://gqlgen.com/config/
+
+schema:
+  - internal/interface/graphql/schema.graphqls
+
+exec:
+  filename: internal/interface/graphql/graph/generated/generated.go
+  package: generated
+
+model:
+  filename: internal/interface/graphql/graph/model/models_gen.go
+  package: model
+
+resolver:
+  layout: follow-schema
+  dir: internal/interface/graphql/graph
+  package: graph

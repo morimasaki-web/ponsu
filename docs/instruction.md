@@ -138,6 +138,26 @@ bash ponsu/scripts/verify.sh
 補足:
 - `golangci-lint` / `govulncheck` が未インストールでも、`go run <module>@<version>` でフォールバック実行します（無料・ただし遅め）。
 
+## 3.4 開発運用ルール（必ず守る）
+
+### 3.4.1 1タスク完了ごとに main へマージ
+
+PonSu は「1タスクが終わるたびに main へマージ」を徹底します。
+
+完了時チェックリスト:
+
+- 受け入れ条件を満たす
+- 検証を通す（Windows推奨: `ponsu\scripts\verify.cmd`）
+- `docs/design/` に設計ポイントを追記（該当する場合）
+- `docs/tasks.yaml` の対象タスクを `status: done` に更新（開始/終了日も記載）
+- 作業ブランチに commit
+- `main` を最新化し、作業ブランチを `main` へマージ
+- `main` を `origin/main` に push
+
+補足:
+- CIの `go mod tidy` clean ルールがあるため、依存追加や生成コード導入時は `go.mod/go.sum` の差分を必ずコミットに含めます。
+- マージ競合や検証失敗が解決できない場合は、作業を止めて状況を整理し、方針を確認します。
+
 ## 4. よくあるトラブル
 
 ## 4.1 設計ポイントの蓄積（開発フロー）
