@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 )
 
 type Config struct {
@@ -14,8 +15,15 @@ type Config struct {
 	Host string
 	Port int
 
-	AttachmentsLocalDir string
-	AttachmentsMaxBytes int64
+	AttachmentsStorage          string
+	AttachmentsLocalDir         string
+	AttachmentsMaxBytes         int64
+	AttachmentsS3Endpoint       string
+	AttachmentsS3Region         string
+	AttachmentsS3Bucket         string
+	AttachmentsS3AccessKey      string
+	AttachmentsS3SecretKey      string
+	AttachmentsS3ForcePathStyle bool
 
 	PostgresHost     string
 	PostgresPort     int
@@ -43,8 +51,22 @@ func LoadFromEnv() (Config, error) {
 		return Config{}, err
 	}
 
+	attachmentsStorage := getEnv("PONSU_ATTACHMENTS_STORAGE", "local")
 	attachmentsLocalDir := getEnv("PONSU_ATTACHMENTS_LOCAL_DIR", "./.data/attachments")
 	attachmentsMaxBytes, err := getEnvInt64("PONSU_ATTACHMENTS_MAX_BYTES", 10*1024*1024)
+	if err != nil {
+		return Config{}, err
+	}
+	attachmentsS3Endpoint := getEnv("PONSU_ATTACHMENTS_S3_ENDPOINT", "")
+	if strings.TrimSpace(attachmentsS3Endpoint) == "" {
+		minioPort := getEnv("PONSU_MINIO_PORT", "9000")
+		attachmentsS3Endpoint = "http://127.0.0.1:" + minioPort
+	}
+	attachmentsS3Region := getEnv("PONSU_ATTACHMENTS_S3_REGION", "us-east-1")
+	attachmentsS3Bucket := getEnv("PONSU_ATTACHMENTS_S3_BUCKET", getEnv("PONSU_MINIO_BUCKET", "ponsu"))
+	attachmentsS3AccessKey := getEnv("PONSU_ATTACHMENTS_S3_ACCESS_KEY", getEnv("PONSU_MINIO_ROOT_USER", ""))
+	attachmentsS3SecretKey := getEnv("PONSU_ATTACHMENTS_S3_SECRET_KEY", getEnv("PONSU_MINIO_ROOT_PASSWORD", ""))
+	attachmentsS3ForcePathStyle, err := getEnvBool("PONSU_ATTACHMENTS_S3_FORCE_PATH_STYLE", true)
 	if err != nil {
 		return Config{}, err
 	}
@@ -74,8 +96,15 @@ func LoadFromEnv() (Config, error) {
 		Host: host,
 		Port: port,
 
-		AttachmentsLocalDir: attachmentsLocalDir,
-		AttachmentsMaxBytes: attachmentsMaxBytes,
+		AttachmentsStorage:          attachmentsStorage,
+		AttachmentsLocalDir:         attachmentsLocalDir,
+		AttachmentsMaxBytes:         attachmentsMaxBytes,
+		AttachmentsS3Endpoint:       attachmentsS3Endpoint,
+		AttachmentsS3Region:         attachmentsS3Region,
+		AttachmentsS3Bucket:         attachmentsS3Bucket,
+		AttachmentsS3AccessKey:      attachmentsS3AccessKey,
+		AttachmentsS3SecretKey:      attachmentsS3SecretKey,
+		AttachmentsS3ForcePathStyle: attachmentsS3ForcePathStyle,
 
 		PostgresHost:     pgHost,
 		PostgresPort:     pgPort,
@@ -152,6 +181,18 @@ func getEnvInt64(key string, def int64) (int64, error) {
 	parsed, err := strconv.ParseInt(v, 10, 64)
 	if err != nil {
 		return 0, fmt.Errorf("invalid int64 env %s=%q: %w", key, v, err)
+	}
+	return parsed, nil
+}
+
+func getEnvBool(key string, def bool) (bool, error) {
+	v := os.Getenv(key)
+	if v == "" {
+		return def, nil
+	}
+	parsed, err := strconv.ParseBool(v)
+	if err != nil {
+		return false, fmt.Errorf("invalid bool env %s=%q: %w", key, v, err)
 	}
 	return parsed, nil
 }

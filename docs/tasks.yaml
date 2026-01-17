@@ -344,12 +344,14 @@ tasks:
 
   - id: MVP-071
     title: "添付: MinIO（S3互換）実装 + デモ向け設定"
-    status: todo
+    status: done
     priority: high
     branch: "feature/mvp-071-storage-minio"
     depends_on: [MVP-070, MVP-002]
     needs_claude_review: true
     description: "MinIOに保存できるようにし、デモ運用の“それっぽさ”を担保する。"
+    start_date: 2026-01-17
+    end_date: 2026-01-17
     acceptance_criteria:
       - "MinIOへ保存される"
       - "署名URL or プロキシ配信のどちらかで閲覧できる"
