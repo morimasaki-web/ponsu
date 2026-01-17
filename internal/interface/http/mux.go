@@ -8,8 +8,10 @@ import (
 	"net/http"
 
 	"github.com/morimasaki-web/ponsu/internal/infrastructure/config"
+	"github.com/morimasaki-web/ponsu/internal/infrastructure/storage"
 	gqlapi "github.com/morimasaki-web/ponsu/internal/interface/graphql"
 	"github.com/morimasaki-web/ponsu/internal/interface/graphqlctx"
+	attachmentsuc "github.com/morimasaki-web/ponsu/internal/usecase/attachments"
 )
 
 // NewMux はアプリケーションのHTTPルートを登録した ServeMux を返す。
@@ -21,6 +23,10 @@ func NewMux(cfg config.Config, logger *slog.Logger, db *sql.DB) *http.ServeMux {
 	auth := NewOIDCAuth(cfg, logger, db)
 	gqlServer := gqlapi.NewServer(db)
 	playgroundHandler := gqlapi.PlaygroundHandler("/graphql")
+
+	// MVP-070: Attachments (local storage)
+	attachmentsStorage := storage.NewLocalStorage(cfg.AttachmentsLocalDir)
+	attachmentsService := attachmentsuc.Service{DB: db, Storage: attachmentsStorage}
 
 	mux := http.NewServeMux()
 
@@ -68,6 +74,11 @@ func NewMux(cfg config.Config, logger *slog.Logger, db *sql.DB) *http.ServeMux {
 	mux.HandleFunc("GET /org/{orgID}/admin/templates", auth.RequireRole("admin", auth.HandleAdminTemplatesIndex))
 	mux.HandleFunc("GET /org/{orgID}/admin/templates/new", auth.RequireRole("admin", auth.HandleAdminTemplatesNew))
 	mux.HandleFunc("POST /org/{orgID}/admin/templates", auth.RequireRole("admin", auth.HandleAdminTemplatesCreate))
+
+	// MVP-070: Attachments (API)
+	mux.HandleFunc("GET /org/{orgID}/requests/{requestID}/attachments", auth.RequireLogin(handleAttachmentsList(attachmentsService)))
+	mux.HandleFunc("POST /org/{orgID}/requests/{requestID}/attachments", auth.RequireLogin(handleAttachmentsUpload(attachmentsService, cfg.AttachmentsMaxBytes)))
+	mux.HandleFunc("GET /org/{orgID}/requests/{requestID}/attachments/{attachmentID}", auth.RequireLogin(handleAttachmentsDownload(attachmentsService)))
 
 	return mux
 }

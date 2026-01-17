@@ -14,6 +14,9 @@ type Config struct {
 	Host string
 	Port int
 
+	AttachmentsLocalDir string
+	AttachmentsMaxBytes int64
+
 	PostgresHost     string
 	PostgresPort     int
 	PostgresUser     string
@@ -36,6 +39,12 @@ func LoadFromEnv() (Config, error) {
 	env := getEnv("PONSU_ENV", "dev")
 	host := getEnv("PONSU_HOST", "127.0.0.1")
 	port, err := getEnvInt("PONSU_PORT", 8080)
+	if err != nil {
+		return Config{}, err
+	}
+
+	attachmentsLocalDir := getEnv("PONSU_ATTACHMENTS_LOCAL_DIR", "./.data/attachments")
+	attachmentsMaxBytes, err := getEnvInt64("PONSU_ATTACHMENTS_MAX_BYTES", 10*1024*1024)
 	if err != nil {
 		return Config{}, err
 	}
@@ -64,6 +73,9 @@ func LoadFromEnv() (Config, error) {
 		Env:  env,
 		Host: host,
 		Port: port,
+
+		AttachmentsLocalDir: attachmentsLocalDir,
+		AttachmentsMaxBytes: attachmentsMaxBytes,
 
 		PostgresHost:     pgHost,
 		PostgresPort:     pgPort,
@@ -128,6 +140,18 @@ func getEnvInt(key string, def int) (int, error) {
 	parsed, err := strconv.Atoi(v)
 	if err != nil {
 		return 0, fmt.Errorf("invalid int env %s=%q: %w", key, v, err)
+	}
+	return parsed, nil
+}
+
+func getEnvInt64(key string, def int64) (int64, error) {
+	v := os.Getenv(key)
+	if v == "" {
+		return def, nil
+	}
+	parsed, err := strconv.ParseInt(v, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("invalid int64 env %s=%q: %w", key, v, err)
 	}
 	return parsed, nil
 }
