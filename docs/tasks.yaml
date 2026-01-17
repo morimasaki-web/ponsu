@@ -330,12 +330,14 @@ tasks:
   # -------------------------
   - id: MVP-070
     title: "添付: Storageインターフェース + ローカル実装"
-    status: todo
+    status: done
     priority: medium
     branch: "feature/mvp-070-storage-local"
     depends_on: [MVP-001]
     needs_claude_review: false
     description: "添付保存の抽象を作り、ローカル保存でまず動かす（開発効率優先）。"
+    start_date: 2026-01-17
+    end_date: 2026-01-17
     acceptance_criteria:
       - "アップロード→参照ができる"
       - "添付メタ情報がDBに保存される"

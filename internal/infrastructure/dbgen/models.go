@@ -73,6 +73,19 @@ type Request struct {
 	DecidedAt       sql.NullTime  `json:"decided_at"`
 }
 
+type RequestAttachment struct {
+	ID               uuid.UUID     `json:"id"`
+	OrgID            uuid.UUID     `json:"org_id"`
+	RequestID        uuid.UUID     `json:"request_id"`
+	Filename         string        `json:"filename"`
+	ContentType      string        `json:"content_type"`
+	SizeBytes        int64         `json:"size_bytes"`
+	Sha256           string        `json:"sha256"`
+	StorageKey       string        `json:"storage_key"`
+	UploadedByUserID uuid.NullUUID `json:"uploaded_by_user_id"`
+	CreatedAt        time.Time     `json:"created_at"`
+}
+
 type RequestAuditTrail struct {
 	ID                  uuid.UUID       `json:"id"`
 	OrgID               uuid.UUID       `json:"org_id"`
