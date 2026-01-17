@@ -16,8 +16,7 @@ coverage.out
 
 # IDE
 .idea/
-.vscode/
-!.vscode/
+.vscode/*
 !.vscode/settings.json
 
 # OS
