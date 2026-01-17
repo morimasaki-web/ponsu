@@ -3,9 +3,11 @@
 package http
 
 import (
+	"context"
 	"database/sql"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/morimasaki-web/ponsu/internal/infrastructure/config"
 	"github.com/morimasaki-web/ponsu/internal/infrastructure/storage"
@@ -24,8 +26,27 @@ func NewMux(cfg config.Config, logger *slog.Logger, db *sql.DB) *http.ServeMux {
 	gqlServer := gqlapi.NewServer(db)
 	playgroundHandler := gqlapi.PlaygroundHandler("/graphql")
 
-	// MVP-070: Attachments (local storage)
-	attachmentsStorage := storage.NewLocalStorage(cfg.AttachmentsLocalDir)
+	// MVP-070/MVP-071: Attachments (storage backend selectable)
+	var attachmentsStorage attachmentsuc.Storage
+	attachmentsStorage = storage.NewLocalStorage(cfg.AttachmentsLocalDir)
+	if strings.EqualFold(cfg.AttachmentsStorage, "minio") || strings.EqualFold(cfg.AttachmentsStorage, "s3") {
+		s3st, err := storage.NewS3Storage(
+			context.Background(),
+			storage.S3StorageConfig{
+				Endpoint:       cfg.AttachmentsS3Endpoint,
+				Region:         cfg.AttachmentsS3Region,
+				Bucket:         cfg.AttachmentsS3Bucket,
+				AccessKey:      cfg.AttachmentsS3AccessKey,
+				SecretKey:      cfg.AttachmentsS3SecretKey,
+				ForcePathStyle: cfg.AttachmentsS3ForcePathStyle,
+			},
+		)
+		if err != nil {
+			logger.Error("failed to init attachments s3 storage; falling back to local", "error", err)
+		} else {
+			attachmentsStorage = s3st
+		}
+	}
 	attachmentsService := attachmentsuc.Service{DB: db, Storage: attachmentsStorage}
 
 	mux := http.NewServeMux()
