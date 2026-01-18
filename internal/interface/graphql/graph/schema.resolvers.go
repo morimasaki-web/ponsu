@@ -132,6 +132,60 @@ func (r *mutationResolver) RejectRequest(ctx context.Context, id string, reason 
 	return mapRequestRow(row), nil
 }
 
+// ReturnRequest is the resolver for the returnRequest field.
+func (r *mutationResolver) ReturnRequest(ctx context.Context, id string, reason string) (*model.Request, error) {
+	v, err := viewerFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	q, err := r.queries()
+	if err != nil {
+		return nil, err
+	}
+	requestID, err := parseUUID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	svc := requestsuc.Service{DB: r.DB, Notifier: r.RequestsNotifier, PublicBaseURL: r.PublicBaseURL, ActorDisplay: actorDisplayFromViewer(v)}
+	if err := svc.ReturnRequest(ctx, v.OrgID, v.UserID, requestID, reason); err != nil {
+		return nil, err
+	}
+
+	row, err := q.GetRequestByOrgAndID(ctx, dbgen.GetRequestByOrgAndIDParams{OrgID: v.OrgID, ID: requestID})
+	if err != nil {
+		return nil, err
+	}
+	return mapRequestRow(row), nil
+}
+
+// ResubmitRequest is the resolver for the resubmitRequest field.
+func (r *mutationResolver) ResubmitRequest(ctx context.Context, id string) (*model.Request, error) {
+	v, err := viewerFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	q, err := r.queries()
+	if err != nil {
+		return nil, err
+	}
+	requestID, err := parseUUID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	svc := requestsuc.Service{DB: r.DB, Notifier: r.RequestsNotifier, PublicBaseURL: r.PublicBaseURL, ActorDisplay: actorDisplayFromViewer(v)}
+	if err := svc.ResubmitRequest(ctx, v.OrgID, v.UserID, requestID); err != nil {
+		return nil, err
+	}
+
+	row, err := q.GetRequestByOrgAndID(ctx, dbgen.GetRequestByOrgAndIDParams{OrgID: v.OrgID, ID: requestID})
+	if err != nil {
+		return nil, err
+	}
+	return mapRequestRow(row), nil
+}
+
 // CreateWorkflowTemplate is the resolver for the createWorkflowTemplate field.
 func (r *mutationResolver) CreateWorkflowTemplate(ctx context.Context, name string, description string, definition map[string]any) (*model.WorkflowTemplate, error) {
 	v, err := viewerFromContext(ctx)

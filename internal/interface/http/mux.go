@@ -93,6 +93,8 @@ func NewMux(cfg config.Config, logger *slog.Logger, db *sql.DB) *http.ServeMux {
 	mux.HandleFunc("POST /org/{orgID}/requests/{requestID}/submit", auth.RequireLogin(auth.HandleRequestsSubmit))
 	mux.HandleFunc("POST /org/{orgID}/requests/{requestID}/approve", auth.RequireLogin(auth.HandleRequestsApprove))
 	mux.HandleFunc("POST /org/{orgID}/requests/{requestID}/reject", auth.RequireLogin(auth.HandleRequestsReject))
+	mux.HandleFunc("POST /org/{orgID}/requests/{requestID}/return", auth.RequireLogin(auth.HandleRequestsReturn))
+	mux.HandleFunc("POST /org/{orgID}/requests/{requestID}/resubmit", auth.RequireLogin(auth.HandleRequestsResubmit))
 
 	// MVP-011: RBAC
 	mux.HandleFunc("GET /admin/templates/new", auth.RequireRole("admin", auth.HandleAdminTemplatesNewShortcut))

@@ -39,6 +39,9 @@ type Mutation {
   approveRequest(id: ID!): Request!
   rejectRequest(id: ID!, reason: String!): Request!
 
+  returnRequest(id: ID!, reason: String!): Request!
+  resubmitRequest(id: ID!): Request!
+
   "Create a workflow template (admin only)."
   createWorkflowTemplate(name: String!, description: String!, definition: JSON!): WorkflowTemplate!
 }
