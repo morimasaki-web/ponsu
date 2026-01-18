@@ -1,4 +1,4 @@
-# デモ（静的ホスティング）手順（GitHub Pages / Vercel / Cloudflare Pages）
+# デモ（静的ホスティング）手順（Vercel 推奨）
 
 対象: PonSu のポートフォリオ向け「フロントのみ静的デモ」
 
@@ -36,7 +36,36 @@ npm run build
 注意:
 - `VITE_*` はビルド成果物へ埋め込まれるため、秘密情報は入れない（方針は [docs/demo-security.md](demo-security.md)）。
 
-## 2. GitHub Pages（project pages）
+## 2. Vercel（推奨）
+
+sheet-hive 側も Vercel を使っている前提で、PonSu も **Vercel を第一候補** とします。
+
+理由:
+- 設定がシンプル（`ponsu/frontend` をそのままビルドして `dist` を配信）
+- カスタムヘッダ（CSP 等）の適用がしやすい
+- project pages のようなサブパス配信問題を避けやすい
+
+### 2.1 Vercel プロジェクト作成
+
+Project 設定例:
+- Framework Preset: `Vite`
+- Root Directory: `ponsu/frontend`
+- Install Command: `npm ci`
+- Build Command: `npm run build`
+- Output Directory: `dist`
+
+Environment Variables:
+- `VITE_APP_MODE=demo`
+- `PONSU_FRONTEND_BASE=/`（通常は不要。サブパス運用する場合のみ）
+
+デプロイ後、`/#/requests` などが表示できればOKです。
+
+### 2.2 （任意）セキュリティヘッダ
+
+`ponsu/frontend/vercel.json` を配置している場合、基本ヘッダ（CSP/`nosniff` 等）を同梱できます。
+方針は [docs/demo-security.md](demo-security.md) を参照。
+
+## 3. GitHub Pages（project pages）
 
 GitHub Pages は多くの場合 `https://<user>.github.io/<repo>/` の形（サブパス配下）になるため、assets の参照パスに注意します。
 
@@ -118,21 +147,6 @@ jobs:
 
 GitHub Pages の仕様上、手動アップロードよりも Actions を推奨します。
 どうしても手動でやる場合は、`dist` を Pages の公開ソース（`gh-pages` ブランチ等）へ配置します。
-
-## 3. Vercel
-
-Vercel は設定が簡単で、CSP/ヘッダ等も扱いやすいです。
-
-Project 設定例:
-- Root Directory: `ponsu/frontend`
-- Install Command: `npm ci`
-- Build Command: `npm run build`
-- Output Directory: `dist`
-- Environment Variables:
-  - `VITE_APP_MODE=demo`
-  - `PONSU_FRONTEND_BASE=/`（通常は不要。サブパス運用するなら設定）
-
-デプロイ後、`/#/requests` などが表示できればOKです。
 
 ## 4. Cloudflare Pages
 
