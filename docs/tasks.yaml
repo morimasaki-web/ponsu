@@ -597,12 +597,14 @@ tasks:
 
   - id: MVP-119
     title: "デモ: 静的ホスティング手順（GitHub Pages/Vercel等）"
-    status: todo
+    status: done
     priority: high
     branch: "feature/mvp-119-demo-deploy"
     depends_on: [MVP-115, MVP-121]
     needs_claude_review: false
     description: "フロントのみをビルドして静的に公開する手順を整備する（例: GitHub Pages / Vercel / Cloudflare Pages）。"
+    start_date: 2026-01-18
+    end_date: 2026-01-18
     deliverables:
       - "docs/demo-deploy.md（新規）または同等の手順書"
     acceptance_criteria:
