@@ -373,6 +373,20 @@ tasks:
       - "提出時にSlackへ通知が飛ぶ"
       - "通知内容に申請タイトル/URL/実行者が含まれる"
 
+  - id: MVP-081
+    title: "Slack通知: 実行者表示を name/email 優先に改善"
+    status: done
+    priority: low
+    branch: "feature/mvp-081-slack-actor-display"
+    depends_on: [MVP-080]
+    needs_claude_review: false
+    description: "Slack通知の実行者（Actor）を user_id ではなく、可能なら name/email（OIDCセッション/GraphQL Viewer）で表示する。"
+    start_date: 2026-01-18
+    end_date: 2026-01-18
+    acceptance_criteria:
+      - "SSR経路の提出/承認/却下で、Slack通知の実行者が name/email で表示される"
+      - "GraphQL経路の提出/承認/却下でも同様に表示される"
+
   # -------------------------
   # 9. MVP後半: 差し戻し/再提出
   # -------------------------
