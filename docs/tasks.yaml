@@ -406,12 +406,14 @@ tasks:
 
   - id: MVP-091
     title: "SSR/GraphQL: 差し戻し・再提出UIとMutation追加"
-    status: todo
+    status: done
     priority: high
     branch: "feature/mvp-091-return-resubmit-ui"
     depends_on: [MVP-090, MVP-060, MVP-051]
     needs_claude_review: false
     description: "差し戻し理由の入力、再提出の導線、GraphQL mutation を追加する。"
+    start_date: 2026-01-18
+    end_date: 2026-01-18
     acceptance_criteria:
       - "画面から差し戻し・再提出ができる"
       - "RBAC/担当者以外が操作できない"

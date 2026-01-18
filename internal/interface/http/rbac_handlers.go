@@ -385,10 +385,23 @@ func (a *OIDCAuth) HandleRequestsShow(w http.ResponseWriter, r *http.Request, se
 		b.WriteString("</form>")
 		b.WriteString("</div>")
 
+		b.WriteString("<form method=\"post\" action=\"/org/" + htmlEscape(orgIDStr) + "/requests/" + htmlEscape(reqRow.ID.String()) + "/return\" style=\"margin-top:12px\">")
+		b.WriteString("<label for=\"return_reason\" style=\"display:block;font-weight:600;margin:12px 0 6px\">Return reason</label>")
+		b.WriteString("<textarea id=\"return_reason\" name=\"reason\" placeholder=\"Why return?\"></textarea>")
+		b.WriteString("<button class=\"btn\" type=\"submit\" style=\"margin-top:8px\">Return</button>")
+		b.WriteString("</form>")
+
 		b.WriteString("<form method=\"post\" action=\"/org/" + htmlEscape(orgIDStr) + "/requests/" + htmlEscape(reqRow.ID.String()) + "/reject\" style=\"margin-top:12px\">")
 		b.WriteString("<label for=\"reason\" style=\"display:block;font-weight:600;margin:12px 0 6px\">Reject reason</label>")
 		b.WriteString("<textarea id=\"reason\" name=\"reason\" placeholder=\"Why reject?\"></textarea>")
 		b.WriteString("<button class=\"btn danger\" type=\"submit\" style=\"margin-top:8px\">Reject</button>")
+		b.WriteString("</form>")
+	}
+
+	// Returned -> creator can resubmit
+	if reqRow.Status == "returned" && reqRow.CreatedByUserID.Valid && sess.UserID == reqRow.CreatedByUserID.UUID.String() {
+		b.WriteString("<form method=\"post\" action=\"/org/" + htmlEscape(orgIDStr) + "/requests/" + htmlEscape(reqRow.ID.String()) + "/resubmit\" style=\"margin-top:12px\">")
+		b.WriteString("<button class=\"btn primary\" type=\"submit\">Resubmit</button>")
 		b.WriteString("</form>")
 	}
 
@@ -537,6 +550,84 @@ func (a *OIDCAuth) HandleRequestsReject(w http.ResponseWriter, r *http.Request, 
 
 	svc := requestsuc.Service{DB: a.db, Notifier: a.requestsNotifier, PublicBaseURL: a.cfg.PublicBaseURLForLinks(), ActorDisplay: actorDisplayFromSession(sess)}
 	if err := svc.RejectRequest(r.Context(), orgID, actorUserID, requestID, reason); err != nil {
+		msg := url.QueryEscape(err.Error())
+		http.Redirect(w, r, "/org/"+orgIDStr+"/requests/"+requestID.String()+"?err="+msg, http.StatusSeeOther)
+		return
+	}
+	http.Redirect(w, r, "/org/"+orgIDStr+"/requests/"+requestID.String(), http.StatusSeeOther)
+}
+
+func (a *OIDCAuth) HandleRequestsReturn(w http.ResponseWriter, r *http.Request, sess sessionData) {
+	orgIDStr, ok := a.mustOrgIDMatchSession(w, r, sess)
+	if !ok {
+		return
+	}
+	if err := a.ensureDB(); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "bad form", http.StatusBadRequest)
+		return
+	}
+	orgID, err := uuid.Parse(orgIDStr)
+	if err != nil {
+		http.Error(w, "invalid org id", http.StatusBadRequest)
+		return
+	}
+	requestID, err := uuid.Parse(r.PathValue("requestID"))
+	if err != nil {
+		http.Error(w, "invalid request id", http.StatusBadRequest)
+		return
+	}
+	actorUserID, err := uuid.Parse(sess.UserID)
+	if err != nil {
+		http.Error(w, "invalid user id", http.StatusBadRequest)
+		return
+	}
+	reason := strings.TrimSpace(r.FormValue("reason"))
+	if reason == "" {
+		msg := url.QueryEscape("reason is required")
+		http.Redirect(w, r, "/org/"+orgIDStr+"/requests/"+requestID.String()+"?err="+msg, http.StatusSeeOther)
+		return
+	}
+
+	svc := requestsuc.Service{DB: a.db, Notifier: a.requestsNotifier, PublicBaseURL: a.cfg.PublicBaseURLForLinks(), ActorDisplay: actorDisplayFromSession(sess)}
+	if err := svc.ReturnRequest(r.Context(), orgID, actorUserID, requestID, reason); err != nil {
+		msg := url.QueryEscape(err.Error())
+		http.Redirect(w, r, "/org/"+orgIDStr+"/requests/"+requestID.String()+"?err="+msg, http.StatusSeeOther)
+		return
+	}
+	http.Redirect(w, r, "/org/"+orgIDStr+"/requests/"+requestID.String(), http.StatusSeeOther)
+}
+
+func (a *OIDCAuth) HandleRequestsResubmit(w http.ResponseWriter, r *http.Request, sess sessionData) {
+	orgIDStr, ok := a.mustOrgIDMatchSession(w, r, sess)
+	if !ok {
+		return
+	}
+	if err := a.ensureDB(); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	orgID, err := uuid.Parse(orgIDStr)
+	if err != nil {
+		http.Error(w, "invalid org id", http.StatusBadRequest)
+		return
+	}
+	requestID, err := uuid.Parse(r.PathValue("requestID"))
+	if err != nil {
+		http.Error(w, "invalid request id", http.StatusBadRequest)
+		return
+	}
+	actorUserID, err := uuid.Parse(sess.UserID)
+	if err != nil {
+		http.Error(w, "invalid user id", http.StatusBadRequest)
+		return
+	}
+
+	svc := requestsuc.Service{DB: a.db, Notifier: a.requestsNotifier, PublicBaseURL: a.cfg.PublicBaseURLForLinks(), ActorDisplay: actorDisplayFromSession(sess)}
+	if err := svc.ResubmitRequest(r.Context(), orgID, actorUserID, requestID); err != nil {
 		msg := url.QueryEscape(err.Error())
 		http.Redirect(w, r, "/org/"+orgIDStr+"/requests/"+requestID.String()+"?err="+msg, http.StatusSeeOther)
 		return

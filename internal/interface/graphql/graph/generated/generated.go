@@ -60,6 +60,8 @@ type ComplexityRoot struct {
 		CreateRequest          func(childComplexity int, title string, workflowTemplateID *string) int
 		CreateWorkflowTemplate func(childComplexity int, name string, description string, definition map[string]any) int
 		RejectRequest          func(childComplexity int, id string, reason string) int
+		ResubmitRequest        func(childComplexity int, id string) int
+		ReturnRequest          func(childComplexity int, id string, reason string) int
 		SubmitRequest          func(childComplexity int, id string) int
 	}
 
@@ -119,6 +121,8 @@ type MutationResolver interface {
 	SubmitRequest(ctx context.Context, id string) (*model.Request, error)
 	ApproveRequest(ctx context.Context, id string) (*model.Request, error)
 	RejectRequest(ctx context.Context, id string, reason string) (*model.Request, error)
+	ReturnRequest(ctx context.Context, id string, reason string) (*model.Request, error)
+	ResubmitRequest(ctx context.Context, id string) (*model.Request, error)
 	CreateWorkflowTemplate(ctx context.Context, name string, description string, definition map[string]any) (*model.WorkflowTemplate, error)
 }
 type QueryResolver interface {
@@ -230,6 +234,30 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.RejectRequest(childComplexity, args["id"].(string), args["reason"].(string)), true
+
+	case "Mutation.resubmitRequest":
+		if e.complexity.Mutation.ResubmitRequest == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_resubmitRequest_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ResubmitRequest(childComplexity, args["id"].(string)), true
+
+	case "Mutation.returnRequest":
+		if e.complexity.Mutation.ReturnRequest == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_returnRequest_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ReturnRequest(childComplexity, args["id"].(string), args["reason"].(string)), true
 
 	case "Mutation.submitRequest":
 		if e.complexity.Mutation.SubmitRequest == nil {
@@ -648,6 +676,9 @@ type Mutation {
   approveRequest(id: ID!): Request!
   rejectRequest(id: ID!, reason: String!): Request!
 
+  returnRequest(id: ID!, reason: String!): Request!
+  resubmitRequest(id: ID!): Request!
+
   "Create a workflow template (admin only)."
   createWorkflowTemplate(name: String!, description: String!, definition: JSON!): WorkflowTemplate!
 }
@@ -889,6 +920,85 @@ func (ec *executionContext) field_Mutation_rejectRequest_argsID(
 }
 
 func (ec *executionContext) field_Mutation_rejectRequest_argsReason(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["reason"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("reason"))
+	if tmp, ok := rawArgs["reason"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_resubmitRequest_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_resubmitRequest_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_resubmitRequest_argsID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["id"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_returnRequest_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_returnRequest_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	arg1, err := ec.field_Mutation_returnRequest_argsReason(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["reason"] = arg1
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_returnRequest_argsID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["id"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_returnRequest_argsReason(
 	ctx context.Context,
 	rawArgs map[string]any,
 ) (string, error) {
@@ -1744,6 +1854,168 @@ func (ec *executionContext) fieldContext_Mutation_rejectRequest(ctx context.Cont
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_rejectRequest_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_returnRequest(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_returnRequest(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ReturnRequest(rctx, fc.Args["id"].(string), fc.Args["reason"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Request)
+	fc.Result = res
+	return ec.marshalNRequest2ᚖgithubᚗcomᚋmorimasakiᚑwebᚋponsuᚋinternalᚋinterfaceᚋgraphqlᚋgraphᚋmodelᚐRequest(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_returnRequest(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Request_id(ctx, field)
+			case "orgID":
+				return ec.fieldContext_Request_orgID(ctx, field)
+			case "title":
+				return ec.fieldContext_Request_title(ctx, field)
+			case "status":
+				return ec.fieldContext_Request_status(ctx, field)
+			case "createdByUserID":
+				return ec.fieldContext_Request_createdByUserID(ctx, field)
+			case "decidedByUserID":
+				return ec.fieldContext_Request_decidedByUserID(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Request_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Request_updatedAt(ctx, field)
+			case "submittedAt":
+				return ec.fieldContext_Request_submittedAt(ctx, field)
+			case "decidedAt":
+				return ec.fieldContext_Request_decidedAt(ctx, field)
+			case "steps":
+				return ec.fieldContext_Request_steps(ctx, field)
+			case "auditTrail":
+				return ec.fieldContext_Request_auditTrail(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Request", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_returnRequest_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_resubmitRequest(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_resubmitRequest(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ResubmitRequest(rctx, fc.Args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Request)
+	fc.Result = res
+	return ec.marshalNRequest2ᚖgithubᚗcomᚋmorimasakiᚑwebᚋponsuᚋinternalᚋinterfaceᚋgraphqlᚋgraphᚋmodelᚐRequest(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_resubmitRequest(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Request_id(ctx, field)
+			case "orgID":
+				return ec.fieldContext_Request_orgID(ctx, field)
+			case "title":
+				return ec.fieldContext_Request_title(ctx, field)
+			case "status":
+				return ec.fieldContext_Request_status(ctx, field)
+			case "createdByUserID":
+				return ec.fieldContext_Request_createdByUserID(ctx, field)
+			case "decidedByUserID":
+				return ec.fieldContext_Request_decidedByUserID(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Request_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Request_updatedAt(ctx, field)
+			case "submittedAt":
+				return ec.fieldContext_Request_submittedAt(ctx, field)
+			case "decidedAt":
+				return ec.fieldContext_Request_decidedAt(ctx, field)
+			case "steps":
+				return ec.fieldContext_Request_steps(ctx, field)
+			case "auditTrail":
+				return ec.fieldContext_Request_auditTrail(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Request", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_resubmitRequest_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -5664,6 +5936,20 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "rejectRequest":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_rejectRequest(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "returnRequest":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_returnRequest(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "resubmitRequest":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_resubmitRequest(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
