@@ -29,6 +29,19 @@ type Service struct {
 	Notifier      Notifier
 	PublicBaseURL string
 	ActorDisplay  string
+	Projector     RequestsProjector
+}
+
+type RequestsProjector interface {
+	CatchUpTx(ctx context.Context, dbtx dbgen.DBTX, orgID uuid.UUID) (total int, lastPosition int64, err error)
+}
+
+func (s Service) projectorOrDefault() RequestsProjector {
+	if s.Projector != nil {
+		return s.Projector
+	}
+	r := projector.NewRequestsProjector()
+	return r
 }
 
 func (s Service) CreateRequest(ctx context.Context, orgID, actorUserID uuid.UUID, title string) (uuid.UUID, error) {
@@ -88,9 +101,8 @@ func (s Service) CreateRequestWithTemplate(ctx context.Context, orgID, actorUser
 		return uuid.UUID{}, err
 	}
 
-	r := projector.NewRequestsProjector()
 	// 同一TX内で直近のイベントまで投影して read model を同期させる
-	if _, _, err := r.CatchUpTx(ctx, tx, orgID); err != nil {
+	if _, _, err := s.projectorOrDefault().CatchUpTx(ctx, tx, orgID); err != nil {
 		return uuid.UUID{}, err
 	}
 
@@ -249,8 +261,7 @@ func (s Service) applyTransition(
 		return err
 	}
 
-	runner := projector.NewRequestsProjector()
-	if _, _, err := runner.CatchUpTx(ctx, tx, orgID); err != nil {
+	if _, _, err := s.projectorOrDefault().CatchUpTx(ctx, tx, orgID); err != nil {
 		return err
 	}
 
