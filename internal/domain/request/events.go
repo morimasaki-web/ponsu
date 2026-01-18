@@ -11,6 +11,8 @@ import (
 const (
 	EventTypeCreated   = "request.created"
 	EventTypeSubmitted = "request.submitted"
+	EventTypeReturned  = "request.returned"
+	EventTypeResubmitted = "request.resubmitted"
 	EventTypeApproved  = "request.approved"
 	EventTypeRejected  = "request.rejected"
 )
@@ -32,6 +34,10 @@ type CreatedPayload struct {
 }
 
 type RejectedPayload struct {
+	Reason string `json:"reason"`
+}
+
+type ReturnedPayload struct {
 	Reason string `json:"reason"`
 }
 

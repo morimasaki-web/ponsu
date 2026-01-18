@@ -91,6 +91,26 @@ func NewRequestsProjector() Runner {
 					return err
 				}
 
+			case request.EventTypeReturned:
+				_, err := q.SetRequestReturned(ctx, dbgen.SetRequestReturnedParams{
+					OrgID:     e.OrgID,
+					ID:        e.AggregateID,
+					UpdatedAt: e.OccurredAt,
+				})
+				if err != nil {
+					return err
+				}
+
+			case request.EventTypeResubmitted:
+				_, err := q.SetRequestResubmitted(ctx, dbgen.SetRequestResubmittedParams{
+					OrgID:       e.OrgID,
+					ID:          e.AggregateID,
+					SubmittedAt: e.OccurredAt,
+				})
+				if err != nil {
+					return err
+				}
+
 			case request.EventTypeApproved:
 				_, err := q.SetRequestApproved(ctx, dbgen.SetRequestApprovedParams{
 					OrgID:     e.OrgID,
