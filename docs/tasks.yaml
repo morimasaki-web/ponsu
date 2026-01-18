@@ -450,3 +450,145 @@ tasks:
     acceptance_criteria:
       - "作成→提出→承認/却下→監査参照が手順通りに再現できる"
       - "差し戻し→再提出が再現できる"
+
+  # -------------------------
+  # 11. SPA化 & デモ公開（ポートフォリオ）
+  # -------------------------
+  - id: MVP-110
+    title: "SPA基盤: フロントエンド雛形（Vite+React+TS）"
+    status: todo
+    priority: high
+    branch: "feature/mvp-110-spa-scaffold"
+    depends_on: [MVP-101]
+    needs_claude_review: false
+    description: "SPAの土台（ビルド/ルーティング/環境変数/開発プロキシ）を用意し、バックエンドと疎通できる状態にする。"
+    deliverables:
+      - "frontend/（または同等の配置）"
+      - "開発手順（README追記 or docs）"
+    acceptance_criteria:
+      - "ローカルで SPA が起動できる"
+      - "バックエンドのGraphQLに疎通できる（Viewer等の簡易表示でOK）"
+
+  - id: MVP-111
+    title: "SPA認証: OIDCログイン導線とセッション維持"
+    status: todo
+    priority: high
+    branch: "feature/mvp-111-spa-auth"
+    depends_on: [MVP-110, MVP-071]
+    needs_claude_review: false
+    description: "SPAからログイン状態を取得し、未ログイン時はログイン導線へ誘導できるようにする。"
+    acceptance_criteria:
+      - "SPA上でログイン/ログアウトができる"
+      - "ログイン中は current user（email/name）を表示できる"
+
+  - id: MVP-112
+    title: "SPAデータ取得: GraphQLクライアント導入と型付け"
+    status: todo
+    priority: high
+    branch: "feature/mvp-112-spa-graphql-client"
+    depends_on: [MVP-110]
+    needs_claude_review: false
+    description: "GraphQLクライアント（例: urql/apollo）と、クエリ/ミューテーションの型安全な呼び出し基盤を整備する。"
+    acceptance_criteria:
+      - "Requests一覧をGraphQL経由で取得して表示できる"
+      - "GraphQLエラーが画面で分かる形で表示される（最低限）"
+
+  - id: MVP-113
+    title: "SPA画面: Requests一覧/詳細/監査の表示"
+    status: todo
+    priority: high
+    branch: "feature/mvp-113-spa-requests-pages"
+    depends_on: [MVP-112, MVP-080]
+    needs_claude_review: false
+    description: "SPAで主要画面（一覧/詳細/監査）を提供し、SSR無しでも操作対象へ到達できるようにする。"
+    acceptance_criteria:
+      - "一覧→詳細へ遷移できる"
+      - "監査（audit trail）が時系列で表示される"
+
+  - id: MVP-114
+    title: "SPA操作: 作成/提出/承認/却下/差し戻し/再提出"
+    status: todo
+    priority: high
+    branch: "feature/mvp-114-spa-actions"
+    depends_on: [MVP-113, MVP-091]
+    needs_claude_review: false
+    description: "MVPで実装済みの操作をSPAから実行できるようにし、RBACに応じてUIを出し分ける。"
+    acceptance_criteria:
+      - "作成→提出→承認/却下がSPAだけで完結する"
+      - "差し戻し→再提出がSPAだけで完結する"
+      - "権限がない操作は表示されない、または実行時に403相当となる"
+
+  - id: MVP-115
+    title: "SPA運用: CORS/CSRF/セキュリティ方針の確定"
+    status: todo
+    priority: high
+    branch: "feature/mvp-115-spa-security"
+    depends_on: [MVP-111]
+    needs_claude_review: false
+    description: "SPAのホスティング方法（同一オリジンで配信する/別ドメインでCORS対応する）を決め、CSRF等の対策を実装する。"
+    acceptance_criteria:
+      - "SPAからのミューテーションが安全に実行できる"
+      - "本番想定のCORS/Cookie設定がドキュメント化されている"
+
+  - id: MVP-116
+    title: "リファクタ: HTTPハンドラの責務分離（OIDCAuthをミドルウェア化）"
+    status: todo
+    priority: medium
+    branch: "feature/mvp-116-http-handlers-refactor"
+    depends_on: [MVP-110]
+    needs_claude_review: false
+    description: "OIDCAuthに集中しているハンドラ群をドメイン別（RequestsHandler等）へ分離し、認証はミドルウェア責務へ寄せる。"
+    acceptance_criteria:
+      - "OIDCAuthは認証/セッションに専念し、画面/操作ハンドラが別構造体に移る"
+      - "既存ルートの挙動が変わらない（verifyが通る）"
+
+  - id: MVP-117
+    title: "リファクタ: HTMLをhtml/templateへ置換（SSR保守性/XSS耐性）"
+    status: todo
+    priority: medium
+    branch: "feature/mvp-117-templates"
+    depends_on: [MVP-116]
+    needs_claude_review: false
+    description: "strings.BuilderベースのHTML生成を、html/template（テンプレ/レイアウト）に置き換える。"
+    acceptance_criteria:
+      - "主要SSRページがtemplateで描画される"
+      - "手動エスケープが不要になり、XSS耐性が改善される"
+
+  - id: MVP-118
+    title: "改善: エラーハンドリング統一（ユーザー向け表示とログ分離）"
+    status: todo
+    priority: medium
+    branch: "feature/mvp-118-error-handling"
+    depends_on: [MVP-116]
+    needs_claude_review: false
+    description: "http.Errorで生エラーを返す箇所を減らし、ユーザー向けメッセージと内部ログを分離する（SSR/GraphQL共通方針）。"
+    acceptance_criteria:
+      - "ユーザーには汎用メッセージ、詳細はログに出る"
+      - "想定されるNotFound/Forbidden等が統一的に扱える"
+
+  - id: MVP-119
+    title: "デモ: 公開用デプロイ手順（Docker/ホスティング）"
+    status: todo
+    priority: high
+    branch: "feature/mvp-119-demo-deploy"
+    depends_on: [MVP-114, MVP-115]
+    needs_claude_review: false
+    description: "デモ公開のためのデプロイ手順を固める（例: Docker composeで一式起動、またはホスティング先に合わせた構成）。"
+    deliverables:
+      - "docs/demo-deploy.md（新規）または同等の手順書"
+    acceptance_criteria:
+      - "第三者が手順通りにデモ環境を起動/閲覧できる"
+
+  - id: MVP-120
+    title: "ポートフォリオ: デモ掲載（URL/画像/説明/技術スタック）"
+    status: todo
+    priority: high
+    branch: "feature/mvp-120-portfolio-demo"
+    depends_on: [MVP-119]
+    needs_claude_review: false
+    description: "ポートフォリオにデモ版を掲載し、機能・設計・使い方が伝わる形に整える。"
+    deliverables:
+      - "portfolio.github.io 側の更新（リンク/スクリーンショット/説明）"
+    acceptance_criteria:
+      - "ポートフォリオからデモへ到達できる"
+      - "主要機能（承認/却下/差し戻し/再提出/監査）が説明されている"
