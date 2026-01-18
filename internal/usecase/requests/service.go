@@ -28,6 +28,7 @@ type Service struct {
 	DB            *sql.DB
 	Notifier      Notifier
 	PublicBaseURL string
+	ActorDisplay  string
 }
 
 func (s Service) CreateRequest(ctx context.Context, orgID, actorUserID uuid.UUID, title string) (uuid.UUID, error) {
@@ -128,7 +129,10 @@ func (s Service) maybeNotify(ctx context.Context, kind NotificationKind, orgID, 
 	if err != nil {
 		return
 	}
-	actor := actorUserID.String()
+	actor := strings.TrimSpace(s.ActorDisplay)
+	if actor == "" {
+		actor = actorUserID.String()
+	}
 
 	base := strings.TrimRight(strings.TrimSpace(s.PublicBaseURL), "/")
 	url := base + "/org/" + orgID.String() + "/requests/" + requestID.String()

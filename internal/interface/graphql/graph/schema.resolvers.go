@@ -37,7 +37,7 @@ func (r *mutationResolver) CreateRequest(ctx context.Context, title string, work
 		workflowTemplateUUID = uid
 	}
 
-	svc := requestsuc.Service{DB: r.DB, Notifier: r.RequestsNotifier, PublicBaseURL: r.PublicBaseURL}
+	svc := requestsuc.Service{DB: r.DB, Notifier: r.RequestsNotifier, PublicBaseURL: r.PublicBaseURL, ActorDisplay: actorDisplayFromViewer(v)}
 	requestID, err := svc.CreateRequestWithTemplate(ctx, v.OrgID, v.UserID, title, workflowTemplateUUID)
 	if err != nil {
 		return nil, err
@@ -66,7 +66,7 @@ func (r *mutationResolver) SubmitRequest(ctx context.Context, id string) (*model
 		return nil, err
 	}
 
-	svc := requestsuc.Service{DB: r.DB, Notifier: r.RequestsNotifier, PublicBaseURL: r.PublicBaseURL}
+	svc := requestsuc.Service{DB: r.DB, Notifier: r.RequestsNotifier, PublicBaseURL: r.PublicBaseURL, ActorDisplay: actorDisplayFromViewer(v)}
 	if err := svc.SubmitRequest(ctx, v.OrgID, v.UserID, requestID); err != nil {
 		return nil, err
 	}
@@ -93,7 +93,7 @@ func (r *mutationResolver) ApproveRequest(ctx context.Context, id string) (*mode
 		return nil, err
 	}
 
-	svc := requestsuc.Service{DB: r.DB, Notifier: r.RequestsNotifier, PublicBaseURL: r.PublicBaseURL}
+	svc := requestsuc.Service{DB: r.DB, Notifier: r.RequestsNotifier, PublicBaseURL: r.PublicBaseURL, ActorDisplay: actorDisplayFromViewer(v)}
 	if err := svc.ApproveRequest(ctx, v.OrgID, v.UserID, requestID); err != nil {
 		return nil, err
 	}
@@ -120,7 +120,7 @@ func (r *mutationResolver) RejectRequest(ctx context.Context, id string, reason 
 		return nil, err
 	}
 
-	svc := requestsuc.Service{DB: r.DB, Notifier: r.RequestsNotifier, PublicBaseURL: r.PublicBaseURL}
+	svc := requestsuc.Service{DB: r.DB, Notifier: r.RequestsNotifier, PublicBaseURL: r.PublicBaseURL, ActorDisplay: actorDisplayFromViewer(v)}
 	if err := svc.RejectRequest(ctx, v.OrgID, v.UserID, requestID, reason); err != nil {
 		return nil, err
 	}

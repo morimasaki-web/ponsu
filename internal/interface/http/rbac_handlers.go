@@ -291,7 +291,7 @@ func (a *OIDCAuth) HandleRequestsCreate(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	svc := requestsuc.Service{DB: a.db, Notifier: a.requestsNotifier, PublicBaseURL: a.cfg.PublicBaseURLForLinks()}
+	svc := requestsuc.Service{DB: a.db, Notifier: a.requestsNotifier, PublicBaseURL: a.cfg.PublicBaseURLForLinks(), ActorDisplay: actorDisplayFromSession(sess)}
 	requestID, err := svc.CreateRequestWithTemplate(r.Context(), orgID, actorUserID, title, workflowTemplateID)
 	if err != nil {
 		vm.Error = err.Error()
@@ -462,7 +462,7 @@ func (a *OIDCAuth) HandleRequestsSubmit(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	svc := requestsuc.Service{DB: a.db, Notifier: a.requestsNotifier, PublicBaseURL: a.cfg.PublicBaseURLForLinks()}
+	svc := requestsuc.Service{DB: a.db, Notifier: a.requestsNotifier, PublicBaseURL: a.cfg.PublicBaseURLForLinks(), ActorDisplay: actorDisplayFromSession(sess)}
 	if err := svc.SubmitRequest(r.Context(), orgID, actorUserID, requestID); err != nil {
 		msg := url.QueryEscape(err.Error())
 		http.Redirect(w, r, "/org/"+orgIDStr+"/requests/"+requestID.String()+"?err="+msg, http.StatusSeeOther)
@@ -496,7 +496,7 @@ func (a *OIDCAuth) HandleRequestsApprove(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	svc := requestsuc.Service{DB: a.db, Notifier: a.requestsNotifier, PublicBaseURL: a.cfg.PublicBaseURLForLinks()}
+	svc := requestsuc.Service{DB: a.db, Notifier: a.requestsNotifier, PublicBaseURL: a.cfg.PublicBaseURLForLinks(), ActorDisplay: actorDisplayFromSession(sess)}
 	if err := svc.ApproveRequest(r.Context(), orgID, actorUserID, requestID); err != nil {
 		msg := url.QueryEscape(err.Error())
 		http.Redirect(w, r, "/org/"+orgIDStr+"/requests/"+requestID.String()+"?err="+msg, http.StatusSeeOther)
@@ -535,7 +535,7 @@ func (a *OIDCAuth) HandleRequestsReject(w http.ResponseWriter, r *http.Request, 
 	}
 	reason := strings.TrimSpace(r.FormValue("reason"))
 
-	svc := requestsuc.Service{DB: a.db, Notifier: a.requestsNotifier, PublicBaseURL: a.cfg.PublicBaseURLForLinks()}
+	svc := requestsuc.Service{DB: a.db, Notifier: a.requestsNotifier, PublicBaseURL: a.cfg.PublicBaseURLForLinks(), ActorDisplay: actorDisplayFromSession(sess)}
 	if err := svc.RejectRequest(r.Context(), orgID, actorUserID, requestID, reason); err != nil {
 		msg := url.QueryEscape(err.Error())
 		http.Redirect(w, r, "/org/"+orgIDStr+"/requests/"+requestID.String()+"?err="+msg, http.StatusSeeOther)
@@ -569,6 +569,21 @@ func (a *OIDCAuth) mustOrgIDMatchSession(w http.ResponseWriter, r *http.Request,
 		return "", false
 	}
 	return orgID, true
+}
+
+func actorDisplayFromSession(sess sessionData) string {
+	name := strings.TrimSpace(sess.Name)
+	email := strings.TrimSpace(sess.Email)
+	if name != "" && email != "" {
+		return name + " <" + email + ">"
+	}
+	if email != "" {
+		return email
+	}
+	if name != "" {
+		return name
+	}
+	return ""
 }
 
 func defaultWorkflowTemplateDefinitionJSON() string {

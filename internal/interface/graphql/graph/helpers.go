@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/morimasaki-web/ponsu/internal/infrastructure/dbgen"
@@ -25,6 +26,21 @@ func viewerFromContext(ctx context.Context) (graphqlctx.Viewer, error) {
 		return graphqlctx.Viewer{}, errUnauthorized
 	}
 	return v, nil
+}
+
+func actorDisplayFromViewer(v graphqlctx.Viewer) string {
+	name := strings.TrimSpace(v.Name)
+	email := strings.TrimSpace(v.Email)
+	if name != "" && email != "" {
+		return name + " <" + email + ">"
+	}
+	if email != "" {
+		return email
+	}
+	if name != "" {
+		return name
+	}
+	return ""
 }
 
 func (r *Resolver) queries() (*dbgen.Queries, error) {
