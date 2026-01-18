@@ -9,12 +9,12 @@ import (
 )
 
 const (
-	EventTypeCreated   = "request.created"
-	EventTypeSubmitted = "request.submitted"
-	EventTypeReturned  = "request.returned"
+	EventTypeCreated     = "request.created"
+	EventTypeSubmitted   = "request.submitted"
+	EventTypeReturned    = "request.returned"
 	EventTypeResubmitted = "request.resubmitted"
-	EventTypeApproved  = "request.approved"
-	EventTypeRejected  = "request.rejected"
+	EventTypeApproved    = "request.approved"
+	EventTypeRejected    = "request.rejected"
 )
 
 type Event struct {
