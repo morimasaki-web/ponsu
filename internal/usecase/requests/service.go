@@ -116,6 +116,34 @@ func (s Service) RejectRequest(ctx context.Context, orgID, actorUserID, requestI
 	return s.applyTransition(ctx, orgID, actorUserID, requestID, request.EventTypeRejected, payload, true)
 }
 
+func (s Service) ReturnRequest(ctx context.Context, orgID, actorUserID, requestID uuid.UUID, reason string) error {
+	payload, err := json.Marshal(request.ReturnedPayload{Reason: reason})
+	if err != nil {
+		return err
+	}
+	return s.applyTransition(ctx, orgID, actorUserID, requestID, request.EventTypeReturned, payload, true)
+}
+
+func (s Service) ResubmitRequest(ctx context.Context, orgID, actorUserID, requestID uuid.UUID) error {
+	if s.DB == nil {
+		return errors.New("db is nil")
+	}
+
+	q := dbgen.New(s.DB)
+	rm, err := q.GetRequestByOrgAndID(ctx, dbgen.GetRequestByOrgAndIDParams{OrgID: orgID, ID: requestID})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrNotFound
+		}
+		return err
+	}
+	if rm.CreatedByUserID.Valid && rm.CreatedByUserID.UUID != actorUserID {
+		return ErrForbidden
+	}
+
+	return s.applyTransition(ctx, orgID, actorUserID, requestID, request.EventTypeResubmitted, nil, false)
+}
+
 func (s Service) maybeNotify(ctx context.Context, kind NotificationKind, orgID, actorUserID, requestID uuid.UUID) {
 	if s.Notifier == nil {
 		return

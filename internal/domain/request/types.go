@@ -11,6 +11,7 @@ type Status string
 const (
 	StatusDraft     Status = "draft"
 	StatusSubmitted Status = "submitted"
+	StatusReturned  Status = "returned"
 	StatusApproved  Status = "approved"
 	StatusRejected  Status = "rejected"
 )

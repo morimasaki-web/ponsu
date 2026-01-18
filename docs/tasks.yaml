@@ -392,12 +392,14 @@ tasks:
   # -------------------------
   - id: MVP-090
     title: "差し戻し（returned）/再提出（resubmitted）イベントと状態遷移"
-    status: todo
+    status: done
     priority: high
     branch: "feature/mvp-090-return-resubmit"
     depends_on: [MVP-031, MVP-022, MVP-030]
     needs_claude_review: true
     description: "return/resubmitのイベント追加、Read Model投影、監査表示を整合させる。"
+    start_date: 2026-01-18
+    end_date: 2026-01-18
     acceptance_criteria:
       - "差し戻し→修正→再提出が可能"
       - "監査（イベント）が正しく残る"

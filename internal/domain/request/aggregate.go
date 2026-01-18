@@ -57,6 +57,23 @@ func (a *Aggregate) Apply(e Event) error {
 		t := e.OccurredAt
 		a.Request.SubmittedAt = &t
 
+	case EventTypeReturned:
+		if !a.initialized || a.Request.Status != StatusSubmitted {
+			return fmt.Errorf("%w: return requires submitted", ErrInvalidTransition)
+		}
+		if _, err := decodePayload[ReturnedPayload](e.Payload); err != nil {
+			return err
+		}
+		a.Request.Status = StatusReturned
+
+	case EventTypeResubmitted:
+		if !a.initialized || a.Request.Status != StatusReturned {
+			return fmt.Errorf("%w: resubmit requires returned", ErrInvalidTransition)
+		}
+		a.Request.Status = StatusSubmitted
+		t := e.OccurredAt
+		a.Request.SubmittedAt = &t
+
 	case EventTypeApproved:
 		if !a.initialized || a.Request.Status != StatusSubmitted {
 			return fmt.Errorf("%w: approve requires submitted", ErrInvalidTransition)
