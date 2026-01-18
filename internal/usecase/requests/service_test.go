@@ -103,6 +103,101 @@ func TestService_ApproveRequest_RequiresAdmin(t *testing.T) {
 	}
 }
 
+func TestService_ApproveRequest_HappyPath(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("sqlmock.New() error = %v", err)
+	}
+	defer db.Close()
+
+	orgID := uuid.New()
+	actorUserID := uuid.New()
+	requestID := uuid.New()
+
+	createdPayload, _ := json.Marshal(request.CreatedPayload{Title: "Demo"})
+	base := time.Date(2026, 1, 18, 0, 0, 0, 0, time.UTC)
+
+	p := &noopProjector{}
+	s := Service{DB: db, Projector: p}
+
+	mock.ExpectBegin()
+	mock.ExpectQuery("FROM public\\.memberships").
+		WithArgs(orgID, actorUserID).
+		WillReturnRows(sqlmock.NewRows([]string{"org_id", "user_id", "role"}).AddRow(orgID, actorUserID, "admin"))
+
+	mock.ExpectQuery("FROM public\\.event_store").
+		WithArgs(orgID, "request", requestID, int32(1)).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "org_id", "aggregate_type", "aggregate_id", "version", "event_type", "payload", "metadata", "occurred_at"}).
+			AddRow(uuid.New(), orgID, "request", requestID, int32(1), request.EventTypeCreated, createdPayload, []byte("{}"), base).
+			AddRow(uuid.New(), orgID, "request", requestID, int32(2), request.EventTypeSubmitted, []byte("{}"), []byte("{}"), base.Add(1*time.Second)))
+
+	mock.ExpectQuery("(?s)WITH current AS .*INSERT INTO public\\.event_store.*RETURNING").
+		WithArgs(orgID, "request", requestID, int32(3), request.EventTypeApproved, sqlmock.AnyArg(), sqlmock.AnyArg()).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "org_id", "aggregate_type", "aggregate_id", "version", "event_type", "payload", "metadata", "occurred_at"}).
+			AddRow(uuid.New(), orgID, "request", requestID, int32(3), request.EventTypeApproved, []byte("{}"), []byte("{}"), base.Add(2*time.Second)))
+
+	mock.ExpectCommit()
+
+	if err := s.ApproveRequest(context.Background(), orgID, actorUserID, requestID); err != nil {
+		t.Fatalf("ApproveRequest() error = %v", err)
+	}
+	if p.calls != 1 {
+		t.Fatalf("projector calls = %d", p.calls)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("ExpectationsWereMet() error = %v", err)
+	}
+}
+
+func TestService_RejectRequest_HappyPath(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("sqlmock.New() error = %v", err)
+	}
+	defer db.Close()
+
+	orgID := uuid.New()
+	actorUserID := uuid.New()
+	requestID := uuid.New()
+
+	createdPayload, _ := json.Marshal(request.CreatedPayload{Title: "Demo"})
+	rejectedPayload, _ := json.Marshal(request.RejectedPayload{Reason: "no"})
+	base := time.Date(2026, 1, 18, 0, 0, 0, 0, time.UTC)
+
+	p := &noopProjector{}
+	s := Service{DB: db, Projector: p}
+
+	mock.ExpectBegin()
+	mock.ExpectQuery("FROM public\\.memberships").
+		WithArgs(orgID, actorUserID).
+		WillReturnRows(sqlmock.NewRows([]string{"org_id", "user_id", "role"}).AddRow(orgID, actorUserID, "admin"))
+
+	mock.ExpectQuery("FROM public\\.event_store").
+		WithArgs(orgID, "request", requestID, int32(1)).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "org_id", "aggregate_type", "aggregate_id", "version", "event_type", "payload", "metadata", "occurred_at"}).
+			AddRow(uuid.New(), orgID, "request", requestID, int32(1), request.EventTypeCreated, createdPayload, []byte("{}"), base).
+			AddRow(uuid.New(), orgID, "request", requestID, int32(2), request.EventTypeSubmitted, []byte("{}"), []byte("{}"), base.Add(1*time.Second)))
+
+	mock.ExpectQuery("(?s)WITH current AS .*INSERT INTO public\\.event_store.*RETURNING").
+		WithArgs(orgID, "request", requestID, int32(3), request.EventTypeRejected, sqlmock.AnyArg(), sqlmock.AnyArg()).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "org_id", "aggregate_type", "aggregate_id", "version", "event_type", "payload", "metadata", "occurred_at"}).
+			AddRow(uuid.New(), orgID, "request", requestID, int32(3), request.EventTypeRejected, rejectedPayload, []byte("{}"), base.Add(2*time.Second)))
+
+	mock.ExpectCommit()
+
+	if err := s.RejectRequest(context.Background(), orgID, actorUserID, requestID, "no"); err != nil {
+		t.Fatalf("RejectRequest() error = %v", err)
+	}
+	if p.calls != 1 {
+		t.Fatalf("projector calls = %d", p.calls)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("ExpectationsWereMet() error = %v", err)
+	}
+}
+
 func TestService_ReturnAndResubmit_HappyPath(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
