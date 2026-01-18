@@ -545,12 +545,16 @@ tasks:
 
   - id: MVP-115
     title: "SPA運用: 静的ホスティング用セキュリティ方針（秘密情報なし/CSP等）"
-    status: todo
+    status: done
     priority: high
     branch: "feature/mvp-115-spa-security"
     depends_on: [MVP-111]
     needs_claude_review: false
     description: "デモは静的ホスティング（フロントのみ）として運用し、秘密情報を含めない設計・CSP/セキュリティヘッダ・依存脆弱性対応方針を整理する。"
+    start_date: 2026-01-18
+    end_date: 2026-01-18
+    deliverables:
+      - "docs/demo-security.md（新規）"
     acceptance_criteria:
       - "デモ版に秘密情報（Client Secret等）が含まれない"
       - "静的ホスティング向けの基本方針（CSP/依存脆弱性/運用）がドキュメント化されている"
