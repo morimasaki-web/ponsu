@@ -437,12 +437,14 @@ tasks:
 
   - id: MVP-101
     title: "MVP受け入れチェック（E2E手順/デモ手順のドキュメント化）"
-    status: todo
+    status: done
     priority: medium
     branch: "feature/mvp-101-mvp-check"
     depends_on: [MVP-060, MVP-071, MVP-080, MVP-091]
     needs_claude_review: false
     description: "手動検証の手順とデモシナリオをドキュメント化し、MVP完了条件を満たすか確認できる状態にする。"
+    start_date: 2026-01-18
+    end_date: 2026-01-18
     deliverables:
       - "docs/mvp-checklist.md（新規）または同等の文書"
     acceptance_criteria:
