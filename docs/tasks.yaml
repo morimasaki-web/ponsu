@@ -423,13 +423,14 @@ tasks:
   # -------------------------
   - id: MVP-100
     title: "テスト整備（Aggregate replay / 競合 / 主要ユースケース）"
-    status: in_progress
+    status: done
     priority: high
     branch: "feature/mvp-100-tests"
     depends_on: [MVP-032, MVP-090]
     needs_claude_review: true
     description: "イベントソーシングの要所（replay/楽観ロック/投影）と主要フローの自動テストを追加する。"
     start_date: 2026-01-18
+    end_date: 2026-01-18
     acceptance_criteria:
       - "主要フローのテストが通る"
       - "version競合時の挙動がテストで保証される"
