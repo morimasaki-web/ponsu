@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/morimasaki-web/ponsu/internal/infrastructure/config"
+	"github.com/morimasaki-web/ponsu/internal/infrastructure/notify"
 	"github.com/morimasaki-web/ponsu/internal/infrastructure/storage"
 	gqlapi "github.com/morimasaki-web/ponsu/internal/interface/graphql"
 	"github.com/morimasaki-web/ponsu/internal/interface/graphqlctx"
@@ -23,7 +24,10 @@ func NewMux(cfg config.Config, logger *slog.Logger, db *sql.DB) *http.ServeMux {
 	}
 
 	auth := NewOIDCAuth(cfg, logger, db)
-	gqlServer := gqlapi.NewServer(db)
+	requestsNotifier := notify.NewSlackNotifier(cfg.SlackWebhookURL)
+	auth.requestsNotifier = requestsNotifier
+	publicBaseURL := cfg.PublicBaseURLForLinks()
+	gqlServer := gqlapi.NewServer(db, requestsNotifier, publicBaseURL)
 	playgroundHandler := gqlapi.PlaygroundHandler("/graphql")
 
 	// MVP-070/MVP-071: Attachments (storage backend selectable)

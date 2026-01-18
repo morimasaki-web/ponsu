@@ -15,6 +15,9 @@ type Config struct {
 	Host string
 	Port int
 
+	PublicBaseURL   string
+	SlackWebhookURL string
+
 	AttachmentsStorage          string
 	AttachmentsLocalDir         string
 	AttachmentsMaxBytes         int64
@@ -50,6 +53,9 @@ func LoadFromEnv() (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
+
+	publicBaseURL := getEnv("PONSU_PUBLIC_BASE_URL", "")
+	slackWebhookURL := getEnv("PONSU_SLACK_WEBHOOK_URL", "")
 
 	attachmentsStorage := getEnv("PONSU_ATTACHMENTS_STORAGE", "local")
 	attachmentsLocalDir := getEnv("PONSU_ATTACHMENTS_LOCAL_DIR", "./.data/attachments")
@@ -96,6 +102,9 @@ func LoadFromEnv() (Config, error) {
 		Host: host,
 		Port: port,
 
+		PublicBaseURL:   publicBaseURL,
+		SlackWebhookURL: slackWebhookURL,
+
 		AttachmentsStorage:          attachmentsStorage,
 		AttachmentsLocalDir:         attachmentsLocalDir,
 		AttachmentsMaxBytes:         attachmentsMaxBytes,
@@ -124,6 +133,22 @@ func LoadFromEnv() (Config, error) {
 		SessionBlockKey: sessionBlockKey,
 	}
 	return cfg, nil
+}
+
+// PublicBaseURLForLinks は外部共有用のベースURLを返す（末尾スラッシュなし）。
+// 未設定の場合は Host/Port から http://<host>:<port> を推測する。
+func (c Config) PublicBaseURLForLinks() string {
+	if strings.TrimSpace(c.PublicBaseURL) != "" {
+		return strings.TrimRight(strings.TrimSpace(c.PublicBaseURL), "/")
+	}
+	host := c.Host
+	if host == "0.0.0.0" || host == "" {
+		host = "127.0.0.1"
+	}
+	if c.Port == 80 {
+		return "http://" + host
+	}
+	return fmt.Sprintf("http://%s:%d", host, c.Port)
 }
 
 // HTTPAddr はHTTPサーバの待ち受けアドレス（host:port）を返す。

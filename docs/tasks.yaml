@@ -361,12 +361,14 @@ tasks:
   # -------------------------
   - id: MVP-080
     title: "Slack通知（Incoming Webhook）"
-    status: todo
+    status: done
     priority: medium
     branch: "feature/mvp-080-slack"
     depends_on: [MVP-032]
     needs_claude_review: false
     description: "提出/承認/却下/差し戻し（後半）などのイベントに応じてSlackへ通知する。"
+    start_date: 2026-01-18
+    end_date: 2026-01-18
     acceptance_criteria:
       - "提出時にSlackへ通知が飛ぶ"
       - "通知内容に申請タイトル/URL/実行者が含まれる"

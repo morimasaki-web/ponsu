@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -24,7 +25,9 @@ var (
 )
 
 type Service struct {
-	DB *sql.DB
+	DB            *sql.DB
+	Notifier      Notifier
+	PublicBaseURL string
 }
 
 func (s Service) CreateRequest(ctx context.Context, orgID, actorUserID uuid.UUID, title string) (uuid.UUID, error) {
@@ -112,6 +115,34 @@ func (s Service) RejectRequest(ctx context.Context, orgID, actorUserID, requestI
 	return s.applyTransition(ctx, orgID, actorUserID, requestID, request.EventTypeRejected, payload, true)
 }
 
+func (s Service) maybeNotify(ctx context.Context, kind NotificationKind, orgID, actorUserID, requestID uuid.UUID) {
+	if s.Notifier == nil {
+		return
+	}
+	if s.DB == nil {
+		return
+	}
+
+	q := dbgen.New(s.DB)
+	req, err := q.GetRequestByOrgAndID(ctx, dbgen.GetRequestByOrgAndIDParams{OrgID: orgID, ID: requestID})
+	if err != nil {
+		return
+	}
+	actor := actorUserID.String()
+
+	base := strings.TrimRight(strings.TrimSpace(s.PublicBaseURL), "/")
+	url := base + "/org/" + orgID.String() + "/requests/" + requestID.String()
+
+	_ = s.Notifier.Notify(ctx, Notification{
+		Kind:         kind,
+		OrgID:        orgID,
+		RequestID:    requestID,
+		RequestTitle: req.Title,
+		Actor:        actor,
+		URL:          url,
+	})
+}
+
 func (s Service) applyTransition(
 	ctx context.Context,
 	orgID uuid.UUID,
@@ -191,5 +222,17 @@ func (s Service) applyTransition(
 		return err
 	}
 
-	return tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	switch eventType {
+	case request.EventTypeSubmitted:
+		s.maybeNotify(ctx, NotificationKindSubmitted, orgID, actorUserID, requestID)
+	case request.EventTypeApproved:
+		s.maybeNotify(ctx, NotificationKindApproved, orgID, actorUserID, requestID)
+	case request.EventTypeRejected:
+		s.maybeNotify(ctx, NotificationKindRejected, orgID, actorUserID, requestID)
+	}
+	return nil
 }
