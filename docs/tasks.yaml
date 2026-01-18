@@ -456,30 +456,55 @@ tasks:
   # -------------------------
   - id: MVP-110
     title: "SPA基盤: フロントエンド雛形（Vite+React+TS）"
-    status: todo
+    status: done
     priority: high
     branch: "feature/mvp-110-spa-scaffold"
     depends_on: [MVP-101]
     needs_claude_review: false
-    description: "SPAの土台（ビルド/ルーティング/環境変数/開発プロキシ）を用意し、バックエンドと疎通できる状態にする。"
+    description: "SPAの土台（ビルド/ルーティング/環境変数/開発プロキシ）を用意する。デモは静的ホスティング前提（バックエンド不要）としつつ、将来の正規版向けにバックエンド疎通も可能な形にしておく。"
+    start_date: 2026-01-18
+    end_date: 2026-01-18
     deliverables:
       - "frontend/（または同等の配置）"
       - "開発手順（README追記 or docs）"
     acceptance_criteria:
       - "ローカルで SPA が起動できる"
-      - "バックエンドのGraphQLに疎通できる（Viewer等の簡易表示でOK）"
+      - "デモ（静的）としてバックエンド無しでも画面が成立する"
 
   - id: MVP-111
-    title: "SPA認証: OIDCログイン導線とセッション維持"
-    status: todo
+    title: "SPAデモモード: 認証/DBなしで動作確認（mockデータ）"
+    status: done
     priority: high
-    branch: "feature/mvp-111-spa-auth"
-    depends_on: [MVP-110, MVP-071]
+    branch: "feature/mvp-111-spa-demo-mode"
+    depends_on: [MVP-110]
     needs_claude_review: false
-    description: "SPAからログイン状態を取得し、未ログイン時はログイン導線へ誘導できるようにする。"
+    description: "ポートフォリオ用デモは静的ホスティング前提とし、外部認証/DB/課金要素を排除する。demo/prod を切替可能にし、demoではモックデータで画面の動きだけ確認できるようにする。"
+    start_date: 2026-01-18
+    end_date: 2026-01-18
+    deliverables:
+      - "frontend/.env.example（demo/prod 切替）"
+      - "frontend のライト/ダーク/システム切替"
     acceptance_criteria:
-      - "SPA上でログイン/ログアウトができる"
-      - "ログイン中は current user（email/name）を表示できる"
+      - "demo モードではバックエンドへ一切アクセスしない（/graphql や /auth を呼ばない）"
+      - "demo モードで current user 等が表示できる（モックでOK）"
+      - "prod モードに切り替えるとバックエンド接続できる導線が残っている"
+
+  - id: MVP-121
+    title: "SPAデモ画面: 申請一覧/詳細/監査をモックで表示"
+    status: done
+    priority: high
+    branch: "feature/mvp-121-spa-demo-pages"
+    depends_on: [MVP-111]
+    needs_claude_review: false
+    description: "静的デモとして、申請の一覧・詳細・監査ログをモックデータで表示し、操作フロー（提出/承認/却下/差し戻し/再提出）を疑似的に体験できるようにする。"
+    start_date: 2026-01-18
+    end_date: 2026-01-18
+    deliverables:
+      - "frontend の /#/requests（一覧）と /#/requests/:id（詳細）"
+    acceptance_criteria:
+      - "一覧→詳細へ遷移できる（静的ホスティングで動く構成）"
+      - "詳細に監査ログが表示される"
+      - "操作ボタンで状態が変化し、監査ログが追記される（DB保存はしない）"
 
   - id: MVP-112
     title: "SPAデータ取得: GraphQLクライアント導入と型付け"
@@ -519,16 +544,16 @@ tasks:
       - "権限がない操作は表示されない、または実行時に403相当となる"
 
   - id: MVP-115
-    title: "SPA運用: CORS/CSRF/セキュリティ方針の確定"
+    title: "SPA運用: 静的ホスティング用セキュリティ方針（秘密情報なし/CSP等）"
     status: todo
     priority: high
     branch: "feature/mvp-115-spa-security"
     depends_on: [MVP-111]
     needs_claude_review: false
-    description: "SPAのホスティング方法（同一オリジンで配信する/別ドメインでCORS対応する）を決め、CSRF等の対策を実装する。"
+    description: "デモは静的ホスティング（フロントのみ）として運用し、秘密情報を含めない設計・CSP/セキュリティヘッダ・依存脆弱性対応方針を整理する。"
     acceptance_criteria:
-      - "SPAからのミューテーションが安全に実行できる"
-      - "本番想定のCORS/Cookie設定がドキュメント化されている"
+      - "デモ版に秘密情報（Client Secret等）が含まれない"
+      - "静的ホスティング向けの基本方針（CSP/依存脆弱性/運用）がドキュメント化されている"
 
   - id: MVP-116
     title: "リファクタ: HTTPハンドラの責務分離（OIDCAuthをミドルウェア化）"
@@ -567,17 +592,18 @@ tasks:
       - "想定されるNotFound/Forbidden等が統一的に扱える"
 
   - id: MVP-119
-    title: "デモ: 公開用デプロイ手順（Docker/ホスティング）"
+    title: "デモ: 静的ホスティング手順（GitHub Pages/Vercel等）"
     status: todo
     priority: high
     branch: "feature/mvp-119-demo-deploy"
-    depends_on: [MVP-114, MVP-115]
+    depends_on: [MVP-115, MVP-121]
     needs_claude_review: false
-    description: "デモ公開のためのデプロイ手順を固める（例: Docker composeで一式起動、またはホスティング先に合わせた構成）。"
+    description: "フロントのみをビルドして静的に公開する手順を整備する（例: GitHub Pages / Vercel / Cloudflare Pages）。"
     deliverables:
       - "docs/demo-deploy.md（新規）または同等の手順書"
     acceptance_criteria:
-      - "第三者が手順通りにデモ環境を起動/閲覧できる"
+      - "手順通りに `npm run build` の成果物をデプロイできる"
+      - "公開URLで主要なデモ画面が閲覧できる（demo モード）"
 
   - id: MVP-120
     title: "ポートフォリオ: デモ掲載（URL/画像/説明/技術スタック）"

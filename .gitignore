@@ -11,6 +11,9 @@
 bin/
 dist/
 
+# Node
+node_modules/
+
 # Coverage
 coverage.out
 
