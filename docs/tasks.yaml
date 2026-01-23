@@ -525,12 +525,17 @@ tasks:
 
   - id: MVP-113
     title: "SPA画面: Requests一覧/詳細/監査の表示"
-    status: todo
+    status: done
     priority: high
     branch: "feature/mvp-113-spa-requests-pages"
     depends_on: [MVP-112, MVP-080]
     needs_claude_review: false
     description: "SPAで主要画面（一覧/詳細/監査）を提供し、SSR無しでも操作対象へ到達できるようにする。"
+    start_date: 2026-01-24
+    end_date: 2026-01-24
+    deliverables:
+      - "frontend/src/gql/request.graphql（Request詳細クエリ）"
+      - "frontend/src/pages/RequestDetail.tsx（prodで詳細/監査表示）"
     acceptance_criteria:
       - "一覧→詳細へ遷移できる"
       - "監査（audit trail）が時系列で表示される"

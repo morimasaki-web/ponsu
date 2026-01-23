@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { useQuery } from 'urql'
 import {
   demoRequestsSeed,
   formatStatus,
@@ -8,6 +9,8 @@ import {
   type RequestAudit,
   type RequestStatus,
 } from '../demoData'
+import { appMode } from '../graphql'
+import { RequestDocument } from '../gql/graphql'
 
 function canSubmit(status: RequestStatus) {
   return status === 'draft'
@@ -28,6 +31,12 @@ function canResubmit(status: RequestStatus) {
 export default function RequestDetail() {
   const params = useParams()
   const id = decodeURIComponent(params.id ?? '')
+
+  const [{ data, fetching, error }] = useQuery({
+    query: RequestDocument,
+    variables: { id },
+    pause: appMode === 'demo' || !id,
+  })
 
   const seed = useMemo(
     () => demoRequestsSeed.find((r) => r.id === id) ?? null,
@@ -56,6 +65,138 @@ export default function RequestDetail() {
       return { ...prev, status }
     })
     pushAudit({ actor: 'Demo User', action, note })
+  }
+
+  if (appMode === 'prod') {
+    const request = data?.request ?? null
+
+    return (
+      <div className="stack">
+        <section className="card">
+          <h2>申請詳細（GraphQL）</h2>
+
+          {fetching && <p>読み込み中...</p>}
+          {error && (
+            <p className="error">
+              {error.message}
+              <br />
+              未ログインの場合は <a href="/auth/login">ログイン</a> してください。
+            </p>
+          )}
+
+          {!fetching && !error && !request && (
+            <p className="error">申請が見つかりませんでした。</p>
+          )}
+
+          {request && (
+            <div className="row">
+              <div>
+                <div className="kv">
+                  <span className="kvKey">ID</span>
+                  <span className="mono">{request.id}</span>
+                </div>
+                <div className="kv">
+                  <span className="kvKey">タイトル</span>
+                  <span>{request.title}</span>
+                </div>
+                <div className="kv">
+                  <span className="kvKey">ステータス</span>
+                  <span className={`badge badge--${request.status}`}>
+                    {request.status}
+                  </span>
+                </div>
+                <div className="kv">
+                  <span className="kvKey">作成者</span>
+                  <span className="mono">{request.createdByUserID ?? '-'}</span>
+                </div>
+                <div className="kv">
+                  <span className="kvKey">更新日時</span>
+                  <span className="mono">
+                    {new Date(request.updatedAt).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+
+              <div className="actions">
+                <Link className="btn btn--ghost" to="/requests">
+                  一覧へ戻る
+                </Link>
+              </div>
+            </div>
+          )}
+
+          {request && request.steps.length > 0 && (
+            <div className="cardSub">
+              <h3>ステップ</h3>
+              <div className="tableWrap">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>ラベル</th>
+                      <th>ステータス</th>
+                      <th>担当</th>
+                      <th>更新日時</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {request.steps
+                      .slice()
+                      .sort((a, b) => a.stepIndex - b.stepIndex)
+                      .map((s) => (
+                        <tr key={s.stepIndex}>
+                          <td className="mono">{s.stepIndex}</td>
+                          <td>{s.label}</td>
+                          <td>
+                            <span className={`badge badge--${s.status}`}>
+                              {s.status}
+                            </span>
+                          </td>
+                          <td className="mono">{s.assignedToUserID ?? '-'}</td>
+                          <td className="mono">
+                            {new Date(s.updatedAt).toLocaleString()}
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </section>
+
+        {request && (
+          <section className="card">
+            <h2>監査ログ（GraphQL）</h2>
+            <ol className="audit">
+              {request.auditTrail
+                .slice()
+                .sort(
+                  (a, b) =>
+                    new Date(a.occurredAt).getTime() -
+                    new Date(b.occurredAt).getTime(),
+                )
+                .map((a) => (
+                  <li key={a.id} className="auditItem">
+                    <div className="auditTop">
+                      <span className="mono">
+                        {new Date(a.occurredAt).toLocaleString()}
+                      </span>
+                      <span className="auditAction">{a.action}</span>
+                      <span className="auditActor mono">
+                        {a.actorUserID ?? '-'}
+                      </span>
+                    </div>
+                    <pre className="mono" style={{ margin: '8px 0 0' }}>
+                      {JSON.stringify(a.data, null, 2)}
+                    </pre>
+                  </li>
+                ))}
+            </ol>
+          </section>
+        )}
+      </div>
+    )
   }
 
   if (!req) {

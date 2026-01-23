@@ -1,0 +1,30 @@
+query Request($id: ID!) {
+  request(id: $id) {
+    id
+    orgID
+    title
+    status
+    createdByUserID
+    decidedByUserID
+    createdAt
+    updatedAt
+    submittedAt
+    decidedAt
+
+    steps {
+      stepIndex
+      label
+      status
+      assignedToUserID
+      updatedAt
+    }
+
+    auditTrail {
+      id
+      actorUserID
+      action
+      data
+      occurredAt
+    }
+  }
+}
