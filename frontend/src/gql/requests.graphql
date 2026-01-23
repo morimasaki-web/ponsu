@@ -1,0 +1,8 @@
+query Requests($limit: Int = 50, $offset: Int = 0) {
+  requests(limit: $limit, offset: $offset) {
+    id
+    title
+    status
+    updatedAt
+  }
+}

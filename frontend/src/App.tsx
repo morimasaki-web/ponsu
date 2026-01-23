@@ -1,11 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { HashRouter, Link, Route, Routes } from 'react-router-dom'
 import { appMode, fetchMe, type Me } from './graphql'
+import { createGraphqlClient } from './gql/client'
 import { applyTheme, getStoredTheme, type ThemeMode } from './theme'
 import RequestDetail from './pages/RequestDetail'
 import RequestsList from './pages/RequestsList'
+import { Provider } from 'urql'
 
 export default function App() {
+  const graphqlClient = useMemo(() => createGraphqlClient(), [])
   const [me, setMe] = useState<Me | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -78,55 +81,57 @@ export default function App() {
   )
 
   return (
-    <HashRouter>
-      <div className="container">
-        <header className="header">
-        <div>
-          <h1 className="title">PonSu Demo (SPA)</h1>
-          <p className="subtitle">mode: {appMode}</p>
+    <Provider value={graphqlClient}>
+      <HashRouter>
+        <div className="container">
+          <header className="header">
+            <div>
+              <h1 className="title">PonSu Demo (SPA)</h1>
+              <p className="subtitle">mode: {appMode}</p>
+            </div>
+
+            <div className="headerRight">
+              <nav className="nav">
+                <Link to="/">Home</Link>
+                <Link to="/requests">Requests</Link>
+              </nav>
+
+              <label className="themeLabel">
+                Theme
+                <select
+                  className="select"
+                  value={theme}
+                  onChange={(e) => {
+                    const v = e.target.value as ThemeMode
+                    setTheme(v)
+                    applyTheme(v)
+                  }}
+                >
+                  <option value="system">system</option>
+                  <option value="light">light</option>
+                  <option value="dark">dark</option>
+                </select>
+              </label>
+
+              {appMode === 'prod' ? (
+                <nav className="nav">
+                  <a href="/auth/login">ログイン</a>
+                  <a href="/auth/logout">ログアウト</a>
+                  <a href="/playground">GraphQL Playground</a>
+                </nav>
+              ) : (
+                <p className="note">デモは認証/DBなし（静的）</p>
+              )}
+            </div>
+          </header>
+
+          <Routes>
+            <Route path="/" element={home} />
+            <Route path="/requests" element={<RequestsList />} />
+            <Route path="/requests/:id" element={<RequestDetail />} />
+          </Routes>
         </div>
-
-        <div className="headerRight">
-          <nav className="nav">
-            <Link to="/">Home</Link>
-            <Link to="/requests">Requests</Link>
-          </nav>
-
-          <label className="themeLabel">
-            Theme
-            <select
-              className="select"
-              value={theme}
-              onChange={(e) => {
-                const v = e.target.value as ThemeMode
-                setTheme(v)
-                applyTheme(v)
-              }}
-            >
-              <option value="system">system</option>
-              <option value="light">light</option>
-              <option value="dark">dark</option>
-            </select>
-          </label>
-
-          {appMode === 'prod' ? (
-            <nav className="nav">
-              <a href="/auth/login">ログイン</a>
-              <a href="/auth/logout">ログアウト</a>
-              <a href="/playground">GraphQL Playground</a>
-            </nav>
-          ) : (
-            <p className="note">デモは認証/DBなし（静的）</p>
-          )}
-        </div>
-      </header>
-
-        <Routes>
-          <Route path="/" element={home} />
-          <Route path="/requests" element={<RequestsList />} />
-          <Route path="/requests/:id" element={<RequestDetail />} />
-        </Routes>
-      </div>
-    </HashRouter>
+      </HashRouter>
+    </Provider>
   )
 }

@@ -508,12 +508,17 @@ tasks:
 
   - id: MVP-112
     title: "SPAデータ取得: GraphQLクライアント導入と型付け"
-    status: todo
+    status: done
     priority: high
     branch: "feature/mvp-112-spa-graphql-client"
     depends_on: [MVP-110]
     needs_claude_review: false
     description: "GraphQLクライアント（例: urql/apollo）と、クエリ/ミューテーションの型安全な呼び出し基盤を整備する。"
+    start_date: 2026-01-24
+    end_date: 2026-01-24
+    deliverables:
+      - "frontend/codegen.yml（GraphQL Codegen設定）"
+      - "frontend/src/gql/graphql.ts（生成コード）"
     acceptance_criteria:
       - "Requests一覧をGraphQL経由で取得して表示できる"
       - "GraphQLエラーが画面で分かる形で表示される（最低限）"

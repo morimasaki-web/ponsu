@@ -1,0 +1,16 @@
+schema: ../internal/interface/graphql/schema.graphqls
+
+documents:
+  - src/**/*.graphql
+
+generates:
+  src/gql/graphql.ts:
+    plugins:
+      - typescript
+      - typescript-operations
+      - typed-document-node
+    config:
+      scalars:
+        Time: string
+        JSON: any
+      avoidOptionals: true
