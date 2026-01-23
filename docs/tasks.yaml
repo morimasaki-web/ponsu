@@ -613,12 +613,13 @@ tasks:
 
   - id: MVP-120
     title: "ポートフォリオ: デモ掲載（URL/画像/説明/技術スタック）"
-    status: todo
+    status: in_progress
     priority: high
     branch: "feature/mvp-120-portfolio-demo"
     depends_on: [MVP-119]
     needs_claude_review: false
-    description: "ポートフォリオにデモ版を掲載し、機能・設計・使い方が伝わる形に整える。"
+    description: "ポートフォリオにデモ版を掲載し、機能・設計・使い方が伝わる形に整える（デモURLはVercel公開後に確定して追記）。"
+    start_date: 2026-01-24
     deliverables:
       - "portfolio.github.io 側の更新（リンク/スクリーンショット/説明）"
     acceptance_criteria:
