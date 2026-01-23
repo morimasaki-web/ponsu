@@ -166,6 +166,9 @@ func (a *OIDCAuth) HandleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// 認可リダイレクトとstate cookieを書き込むため、キャッシュされるとstate不整合が起きやすい。
+	w.Header().Set("Cache-Control", "no-store")
+
 	redirectURL := a.cfg.OIDCRedirectURL
 	if redirectURL == "" {
 		redirectURL = inferExternalURL(r) + "/auth/callback"
@@ -183,7 +186,7 @@ func (a *OIDCAuth) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	state := randomToken(32)
 	nonce := randomToken(32)
 
-	if err := a.writeStateCookie(w, r, oidcState{State: state, Nonce: nonce}); err != nil {
+	if err := a.appendStateCookie(w, r, oidcState{State: state, Nonce: nonce}); err != nil {
 		a.logger.Error("failed to write state cookie", "error", err)
 		http.Error(w, "failed to start login", http.StatusInternalServerError)
 		return
@@ -211,12 +214,9 @@ func (a *OIDCAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	saved, ok := a.readStateCookie(r)
+	// stateは複数保持し、二重ログイン等でもcallbackを拾えるようにする。
+	saved, ok := a.consumeStateCookie(w, r, state)
 	if !ok {
-		http.Error(w, "missing login state (retry login)", http.StatusBadRequest)
-		return
-	}
-	if saved.State != state {
 		http.Error(w, "invalid state (retry login)", http.StatusBadRequest)
 		return
 	}
@@ -345,6 +345,10 @@ type oidcState struct {
 	Nonce string
 }
 
+type oidcStateCookie struct {
+	Entries []oidcState
+}
+
 type sessionData struct {
 	Sub    string
 	UserID string
@@ -419,15 +423,27 @@ func defaultOrgName(email, name string) string {
 	return label + " Organization"
 }
 
-// writeStateCookie は state/nonce を一時Cookieとして保存する。
-func (a *OIDCAuth) writeStateCookie(w http.ResponseWriter, r *http.Request, st oidcState) error {
-	value := map[string]string{"state": st.State, "nonce": st.Nonce}
-	encoded, err := a.sc.Encode(stateCookieName, value)
+// appendStateCookie は state/nonce を一時Cookieとして追記保存する。
+// 単一値だと二重ログイン等で上書きされ、callback側が state 不整合になりやすい。
+func (a *OIDCAuth) appendStateCookie(w http.ResponseWriter, r *http.Request, st oidcState) error {
+	cur := oidcStateCookie{}
+	if c, err := r.Cookie(stateCookieName); err == nil {
+		_ = a.sc.Decode(stateCookieName, c.Value, &cur)
+	}
+
+	// 末尾に追加し、最大N件に制限
+	cur.Entries = append(cur.Entries, st)
+	const maxEntries = 5
+	if len(cur.Entries) > maxEntries {
+		cur.Entries = cur.Entries[len(cur.Entries)-maxEntries:]
+	}
+
+	encoded, err := a.sc.Encode(stateCookieName, cur)
 	if err != nil {
 		return err
 	}
 
-	cookie := &http.Cookie{
+	http.SetCookie(w, &http.Cookie{
 		Name:     stateCookieName,
 		Value:    encoded,
 		Path:     "/",
@@ -435,24 +451,57 @@ func (a *OIDCAuth) writeStateCookie(w http.ResponseWriter, r *http.Request, st o
 		Secure:   isHTTPS(r),
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   10 * 60,
-	}
-	http.SetCookie(w, cookie)
+	})
 	return nil
 }
 
-// readStateCookie は state/nonce の一時Cookieを読み出す。
-func (a *OIDCAuth) readStateCookie(r *http.Request) (oidcState, bool) {
+// consumeStateCookie は指定stateに一致するエントリを取り出し、cookieから削除して返す。
+func (a *OIDCAuth) consumeStateCookie(w http.ResponseWriter, r *http.Request, state string) (oidcState, bool) {
 	c, err := r.Cookie(stateCookieName)
 	if err != nil {
 		return oidcState{}, false
 	}
 
-	var value map[string]string
-	if err := a.sc.Decode(stateCookieName, c.Value, &value); err != nil {
+	cur := oidcStateCookie{}
+	if err := a.sc.Decode(stateCookieName, c.Value, &cur); err != nil {
 		return oidcState{}, false
 	}
 
-	return oidcState{State: value["state"], Nonce: value["nonce"]}, true
+	idx := -1
+	var found oidcState
+	for i, e := range cur.Entries {
+		if e.State == state {
+			idx = i
+			found = e
+			break
+		}
+	}
+	if idx < 0 {
+		return oidcState{}, false
+	}
+
+	// 該当だけ削除して再書き込み（残り0件ならクリア）
+	cur.Entries = append(cur.Entries[:idx], cur.Entries[idx+1:]...)
+	if len(cur.Entries) == 0 {
+		a.clearStateCookie(w, r)
+		return found, true
+	}
+
+	encoded, err := a.sc.Encode(stateCookieName, cur)
+	if err != nil {
+		return oidcState{}, false
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:     stateCookieName,
+		Value:    encoded,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   isHTTPS(r),
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   10 * 60,
+	})
+
+	return found, true
 }
 
 // clearStateCookie は state/nonce の一時Cookieを削除する。
@@ -589,7 +638,15 @@ func inferExternalURL(r *http.Request) string {
 	if isHTTPS(r) {
 		scheme = "https"
 	}
-	return scheme + "://" + r.Host
+
+	host := r.Host
+	// リバースプロキシ/LB配下ではHostが内部値になることがあるため、X-Forwarded-Hostを優先。
+	if xfHost := r.Header.Get("X-Forwarded-Host"); xfHost != "" {
+		// 複数値は先頭を採用
+		parts := strings.Split(xfHost, ",")
+		host = strings.TrimSpace(parts[0])
+	}
+	return scheme + "://" + host
 }
 
 // htmlEscape は最小限のHTMLエスケープを行う（MVP用）。
