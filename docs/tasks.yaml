@@ -610,12 +610,13 @@ tasks:
 
   - id: MVP-118
     title: "改善: エラーハンドリング統一（ユーザー向け表示とログ分離）"
-    status: todo
+    status: in_progress
     priority: medium
     branch: "feature/mvp-118-error-handling"
     depends_on: [MVP-116]
     needs_claude_review: false
     description: "http.Errorで生エラーを返す箇所を減らし、ユーザー向けメッセージと内部ログを分離する（SSR/GraphQL共通方針）。"
+    start_date: 2026-01-24
     acceptance_criteria:
       - "ユーザーには汎用メッセージ、詳細はログに出る"
       - "想定されるNotFound/Forbidden等が統一的に扱える"
