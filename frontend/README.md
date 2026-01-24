@@ -31,6 +31,16 @@ Vite dev server は `http://localhost:5173` で起動します。
 - バックエンドのオリジンを変える場合は環境変数 `PONSU_BACKEND_ORIGIN` を使ってください
   - 例: `PONSU_BACKEND_ORIGIN=http://localhost:8080`
 
+### OIDCログインで `invalid state` が出る場合
+
+OIDCは `/auth/login` 開始時に `ponsu_oidc_state` cookie を保存し、`/auth/callback` で同じcookieを読み取って検証します。
+そのため **ブラウザ上でアクセスしているホスト名が混在すると失敗**します（例: `http://localhost:5173` でログイン開始 → `http://127.0.0.1:8080/auth/callback` に戻る）。
+
+- 対策: 使うホスト名を統一する（`localhost` か `127.0.0.1` のどちらかに揃える）
+- さらに確実: `PONSU_OIDC_REDIRECT_URL` を「実際にブラウザが受ける callback URL」に固定し、OIDC側の許可リダイレクトURLも同じ値にする
+  - 例（Vite経由で完結させる）: `PONSU_OIDC_REDIRECT_URL=http://localhost:5173/auth/callback`
+  - 例（backend直）: `PONSU_OIDC_REDIRECT_URL=http://127.0.0.1:8080/auth/callback`
+
 ## 動作確認
 
 - demo: 画面にダミーの `me` 情報が表示される

@@ -217,6 +217,12 @@ func (a *OIDCAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	// stateは複数保持し、二重ログイン等でもcallbackを拾えるようにする。
 	saved, ok := a.consumeStateCookie(w, r, state)
 	if !ok {
+		a.logger.Warn(
+			"oidc callback state cookie missing or mismatched",
+			"host", r.Host,
+			"x_forwarded_host", r.Header.Get("X-Forwarded-Host"),
+			"x_forwarded_proto", r.Header.Get("X-Forwarded-Proto"),
+		)
 		http.Error(w, "invalid state (retry login)", http.StatusBadRequest)
 		return
 	}
