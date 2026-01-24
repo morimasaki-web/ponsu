@@ -610,13 +610,14 @@ tasks:
 
   - id: MVP-118
     title: "改善: エラーハンドリング統一（ユーザー向け表示とログ分離）"
-    status: in_progress
+    status: done
     priority: medium
     branch: "feature/mvp-118-error-handling"
     depends_on: [MVP-116]
     needs_claude_review: false
     description: "http.Errorで生エラーを返す箇所を減らし、ユーザー向けメッセージと内部ログを分離する（SSR/GraphQL共通方針）。"
     start_date: 2026-01-24
+    end_date: 2026-01-24
     acceptance_criteria:
       - "ユーザーには汎用メッセージ、詳細はログに出る"
       - "想定されるNotFound/Forbidden等が統一的に扱える"
@@ -651,3 +652,45 @@ tasks:
     acceptance_criteria:
       - "ポートフォリオからデモへ到達できる"
       - "主要機能（承認/却下/差し戻し/再提出/監査）が説明されている"
+
+  # -------------------------
+  # 12. 次のステップ（デモ磨き込み / 正規版UX）
+  # -------------------------
+  - id: MVP-122
+    title: "デモ: 操作フローのガイド/リセット導線（モック状態の再現性）"
+    status: todo
+    priority: medium
+    branch: "feature/mvp-122-demo-guide-reset"
+    depends_on: [MVP-121, MVP-119]
+    needs_claude_review: false
+    description: "デモ閲覧者が迷わず試せるように、サンプルデータ/操作ガイドと『状態リセット』導線を用意する（静的ホスティング前提）。"
+    deliverables:
+      - "frontend にデモの操作ガイド（画面内 or /about）"
+      - "デモ状態を初期化するボタン（ローカル状態の初期化）"
+    acceptance_criteria:
+      - "初見でも『どこを触れば良いか』が分かる"
+      - "状態が壊れてもワンクリックで初期状態に戻せる"
+
+  - id: MVP-123
+    title: "正規版: SPAのログイン/ログアウト導線（OIDCと整合）"
+    status: todo
+    priority: medium
+    branch: "feature/mvp-123-spa-auth-flow"
+    depends_on: [MVP-112, MVP-010]
+    needs_claude_review: false
+    description: "prodモードで、SPAからOIDCログイン/ログアウトを自然に扱えるようにする（未ログイン時の誘導、ログアウト後の遷移など）。"
+    acceptance_criteria:
+      - "未ログイン時にログインへ誘導できる"
+      - "ログアウト後に適切な画面へ遷移し、キャッシュされたデータが残らない"
+
+  - id: MVP-124
+    title: "正規版: GraphQLエラー/ローディング表示の統一（UX最小改善）"
+    status: todo
+    priority: medium
+    branch: "feature/mvp-124-spa-error-ux"
+    depends_on: [MVP-112, MVP-118]
+    needs_claude_review: false
+    description: "GraphQL/ネットワークエラーやローディングを画面全体で統一して扱い、ユーザーに分かる形で表示する（ErrorBoundary/Toast等の最小セット）。"
+    acceptance_criteria:
+      - "エラー時に『何が起きたか/次にどうするか』が表示される"
+      - "主要画面でローディング状態が統一され、操作不能が分かる"
