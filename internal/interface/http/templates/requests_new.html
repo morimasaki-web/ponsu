@@ -1,0 +1,96 @@
+{{define "requests_new"}}
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>PonSu</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body {
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        margin: 24px;
+        max-width: 900px;
+      }
+      label {
+        display: block;
+        font-weight: 600;
+        margin: 12px 0 6px;
+      }
+      input,
+      select {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid rgba(127, 127, 127, 0.35);
+        border-radius: 6px;
+        font: inherit;
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 12px;
+      }
+      .btn {
+        padding: 8px 12px;
+        border: 1px solid rgba(127, 127, 127, 0.35);
+        border-radius: 6px;
+        background: #fff;
+        color: #111;
+        text-decoration: none;
+        display: inline-block;
+      }
+      .btn.primary {
+        background: #111;
+        color: #fff;
+        border-color: #111;
+      }
+      .err {
+        background: #fff1f1;
+        border: 1px solid #ffb4b4;
+        padding: 10px;
+        border-radius: 8px;
+        margin: 12px 0;
+      }
+      .muted {
+        opacity: 0.8;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>New Request</h1>
+    <p class="muted">org_id: {{.OrgID}}</p>
+
+    {{if .VM.Error}}
+      <div class="err">{{.VM.Error}}</div>
+    {{end}}
+
+    {{if eq (len .VM.Templates) 0}}
+      <p>No workflow templates available.</p>
+      {{if eq .Sess.Role "admin"}}
+        <p><a class="btn" href="/admin/templates/new">Create template (admin)</a></p>
+      {{end}}
+      <p><a class="btn" href="/">Home</a></p>
+    {{else}}
+      <form method="post" action="/org/{{.OrgID}}/requests">
+        <label for="title">Title</label>
+        <input id="title" name="title" required value="{{.VM.Title}}" />
+
+        <label for="workflow_template_id">Workflow Template</label>
+        <select id="workflow_template_id" name="workflow_template_id" required>
+          <option value="" disabled {{if eq .VM.TemplateID ""}}selected{{end}}>Select a template</option>
+          {{range .VM.Templates}}
+            <option value="{{.ID}}" {{if eq (printf "%v" .ID) $.VM.TemplateID}}selected{{end}}>
+              {{.Name}}
+            </option>
+          {{end}}
+        </select>
+
+        <div class="row">
+          <button class="btn primary" type="submit">Create</button>
+          <a class="btn" href="/">Home</a>
+        </div>
+      </form>
+    {{end}}
+  </body>
+</html>
+{{end}}

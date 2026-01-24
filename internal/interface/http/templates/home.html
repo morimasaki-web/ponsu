@@ -1,0 +1,53 @@
+{{define "home"}}
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PonSu</title>
+  </head>
+  <body>
+    <h1>PonSu</h1>
+
+    {{if .LoggedIn}}
+      <p>Logged in.</p>
+      <ul>
+        <li>sub: {{.Sess.Sub}}</li>
+        {{if .Sess.UserID}}<li>user_id: {{.Sess.UserID}}</li>{{end}}
+        {{if .Sess.OrgID}}<li>org_id: {{.Sess.OrgID}}</li>{{end}}
+        {{if .Sess.Role}}<li>role: {{.Sess.Role}}</li>{{end}}
+        {{if .Sess.Email}}<li>email: {{.Sess.Email}}</li>{{end}}
+        {{if .Sess.Name}}<li>name: {{.Sess.Name}}</li>{{end}}
+      </ul>
+
+      {{if .Sess.OrgID}}
+        <p><a href="/requests/new">New Request</a></p>
+        <p><a href="/requests">Requests</a></p>
+      {{end}}
+
+      {{if eq .Sess.Role "admin"}}
+        <p><a href="/admin/templates/new">Admin: New Template</a></p>
+        {{if .Sess.OrgID}}
+          <p>
+            <a href="/org/{{.Sess.OrgID}}/admin/templates">Admin: Templates</a>
+          </p>
+        {{end}}
+      {{end}}
+
+      <p><a href="/auth/logout">Logout</a></p>
+    {{else}}
+      <p>Not logged in.</p>
+      <p><a href="/auth/login">Login with OIDC</a></p>
+
+      {{if not .OIDCConfigured}}
+        <p>
+          <small>
+            OIDC not configured. Set PONSU_OIDC_ISSUER_URL / PONSU_OIDC_CLIENT_ID /
+            PONSU_OIDC_CLIENT_SECRET.
+          </small>
+        </p>
+      {{end}}
+    {{end}}
+  </body>
+</html>
+{{end}}

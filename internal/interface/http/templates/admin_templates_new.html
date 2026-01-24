@@ -1,0 +1,131 @@
+{{define "admin_templates_new"}}
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>PonSu</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body {
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        margin: 24px;
+        max-width: 900px;
+      }
+      label {
+        display: block;
+        font-weight: 600;
+        margin: 12px 0 6px;
+      }
+      input,
+      textarea,
+      select {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid rgba(127, 127, 127, 0.35);
+        border-radius: 6px;
+        font: inherit;
+      }
+      textarea {
+        min-height: 220px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      }
+      textarea.small {
+        min-height: 100px;
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 12px;
+      }
+      .btn {
+        padding: 8px 12px;
+        border: 1px solid rgba(127, 127, 127, 0.35);
+        border-radius: 6px;
+        background: #fff;
+        color: #111;
+        text-decoration: none;
+        display: inline-block;
+      }
+      .btn.primary {
+        background: #111;
+        color: #fff;
+        border-color: #111;
+      }
+      .err {
+        background: #fff1f1;
+        border: 1px solid #ffb4b4;
+        padding: 10px;
+        border-radius: 8px;
+        margin: 12px 0;
+      }
+      .muted {
+        opacity: 0.8;
+      }
+      .card {
+        border: 1px solid rgba(127, 127, 127, 0.25);
+        border-radius: 10px;
+        padding: 12px;
+        margin-top: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>New Workflow Template (admin)</h1>
+    <p class="muted">org_id: {{.OrgID}}</p>
+
+    {{if .VM.Error}}
+      <div class="err">{{.VM.Error}}</div>
+    {{end}}
+
+    <form method="post" action="/org/{{.OrgID}}/admin/templates">
+      <label for="name">Name</label>
+      <input id="name" name="name" required value="{{.VM.Name}}" />
+
+      <label for="description">Description</label>
+      <input id="description" name="description" value="{{.VM.Description}}" />
+
+      <label for="definition_mode">Definition input</label>
+      <select id="definition_mode" name="definition_mode">
+        <option value="builder" {{if ne .VM.Mode "json"}}selected{{end}}>Builder (approvers)</option>
+        <option value="json" {{if eq .VM.Mode "json"}}selected{{end}}>Raw JSON</option>
+      </select>
+
+      <div class="card">
+        <div style="font-weight: 700">Builder: approvers</div>
+        <div class="muted" style="margin-top: 4px">
+          空行でステップ区切り。各ステップは1行1人（メール or ユーザーID）。builder選択時はこの入力からdefinition(JSON)を自動生成します。
+        </div>
+        <label for="steps">Steps</label>
+        <textarea
+          class="small"
+          id="steps"
+          name="steps"
+          spellcheck="false"
+          placeholder="# Step 1
+alice@example.com
+bob@example.com
+
+# Step 2
+carol@example.com
+"
+        >{{.VM.StepsText}}</textarea>
+        <div class="muted" style="margin-top: 6px">※ 先頭の <code>#</code> 行はコメントとして無視します。</div>
+      </div>
+
+      <div class="card">
+        <div style="font-weight: 700">Raw JSON</div>
+        <div class="muted" style="margin-top: 4px">json選択時はこの内容をそのまま保存します。</div>
+        <label for="definition">Definition (JSON)</label>
+        <textarea id="definition" name="definition" spellcheck="false">{{.VM.Definition}}</textarea>
+      </div>
+
+      <div class="row">
+        <button class="btn primary" type="submit">Create</button>
+        <a class="btn" href="/org/{{.OrgID}}/admin/templates">Back to list</a>
+        <a class="btn" href="/">Home</a>
+      </div>
+    </form>
+  </body>
+</html>
+{{end}}
