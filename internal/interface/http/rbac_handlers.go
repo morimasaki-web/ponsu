@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -59,7 +58,7 @@ func (a *AdminTemplatesHandler) HandleAdminTemplatesNew(w http.ResponseWriter, r
 // HandleAdminTemplatesNewShortcut は、ログイン中の org_id を使って org スコープのURLへリダイレクトする。
 func (a *AdminTemplatesHandler) HandleAdminTemplatesNewShortcut(w http.ResponseWriter, r *http.Request, sess sessionData) {
 	if sess.OrgID == "" {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		writeUnauthorized(w, r)
 		return
 	}
 	http.Redirect(w, r, "/org/"+sess.OrgID+"/admin/templates/new", http.StatusFound)
@@ -69,7 +68,7 @@ func (a *AdminTemplatesHandler) HandleAdminTemplatesNewShortcut(w http.ResponseW
 
 func (a *RequestsHandler) HandleRequestsIndexShortcut(w http.ResponseWriter, r *http.Request, sess sessionData) {
 	if sess.OrgID == "" {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		writeUnauthorized(w, r)
 		return
 	}
 	http.Redirect(w, r, "/org/"+sess.OrgID+"/requests", http.StatusFound)
@@ -86,12 +85,12 @@ func (a *RequestsHandler) HandleRequestsIndex(w http.ResponseWriter, r *http.Req
 		return
 	}
 	if err := a.ensureDB(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeInternalError(w, r, nil, err)
 		return
 	}
 	orgID, err := uuid.Parse(orgIDStr)
 	if err != nil {
-		http.Error(w, "invalid org id", http.StatusBadRequest)
+		writeBadRequest(w, r, "invalid org id")
 		return
 	}
 
@@ -100,7 +99,7 @@ func (a *RequestsHandler) HandleRequestsIndex(w http.ResponseWriter, r *http.Req
 	q := dbgen.New(a.db)
 	items, err := q.ListRequestsByOrg(r.Context(), dbgen.ListRequestsByOrgParams{OrgID: orgID, Limit: limit, Offset: offset})
 	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to list requests: %v", err), http.StatusInternalServerError)
+		writeInternalError(w, r, nil, err)
 		return
 	}
 	showRequestsIndex(w, sess, orgIDStr, requestsIndexViewModel{Items: items})
@@ -117,7 +116,7 @@ func showRequestsIndex(w http.ResponseWriter, sess sessionData, orgID string, vm
 
 func (a *RequestsHandler) HandleRequestsNewShortcut(w http.ResponseWriter, r *http.Request, sess sessionData) {
 	if sess.OrgID == "" {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		writeUnauthorized(w, r)
 		return
 	}
 	http.Redirect(w, r, "/org/"+sess.OrgID+"/requests/new", http.StatusFound)
@@ -136,19 +135,19 @@ func (a *RequestsHandler) HandleRequestsNew(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	if err := a.ensureDB(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeInternalError(w, r, nil, err)
 		return
 	}
 	orgID, err := uuid.Parse(orgIDStr)
 	if err != nil {
-		http.Error(w, "invalid org id", http.StatusBadRequest)
+		writeBadRequest(w, r, "invalid org id")
 		return
 	}
 
 	q := dbgen.New(a.db)
 	tpls, err := q.ListWorkflowTemplatesByOrg(r.Context(), dbgen.ListWorkflowTemplatesByOrgParams{OrgID: orgID, Limit: 200, Offset: 0})
 	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to list templates: %v", err), http.StatusInternalServerError)
+		writeInternalError(w, r, nil, err)
 		return
 	}
 	showRequestsNew(w, sess, orgIDStr, requestsNewViewModel{Templates: tpls})
@@ -169,11 +168,11 @@ func (a *RequestsHandler) HandleRequestsCreate(w http.ResponseWriter, r *http.Re
 		return
 	}
 	if err := a.ensureDB(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeInternalError(w, r, nil, err)
 		return
 	}
 	if err := r.ParseForm(); err != nil {
-		http.Error(w, "bad form", http.StatusBadRequest)
+		writeBadRequest(w, r, "bad form")
 		return
 	}
 
@@ -182,12 +181,12 @@ func (a *RequestsHandler) HandleRequestsCreate(w http.ResponseWriter, r *http.Re
 
 	orgID, err := uuid.Parse(orgIDStr)
 	if err != nil {
-		http.Error(w, "invalid org id", http.StatusBadRequest)
+		writeBadRequest(w, r, "invalid org id")
 		return
 	}
 	actorUserID, err := uuid.Parse(sess.UserID)
 	if err != nil {
-		http.Error(w, "invalid user id", http.StatusBadRequest)
+		writeBadRequest(w, r, "invalid user id")
 		return
 	}
 	vm := requestsNewViewModel{Title: title, TemplateID: tplIDStr}
@@ -234,19 +233,19 @@ func (a *RequestsHandler) HandleRequestsShow(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	if err := a.ensureDB(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeInternalError(w, r, nil, err)
 		return
 	}
 
 	orgID, err := uuid.Parse(orgIDStr)
 	if err != nil {
-		http.Error(w, "invalid org id", http.StatusBadRequest)
+		writeBadRequest(w, r, "invalid org id")
 		return
 	}
 	requestIDStr := r.PathValue("requestID")
 	requestID, err := uuid.Parse(requestIDStr)
 	if err != nil {
-		http.Error(w, "invalid request id", http.StatusBadRequest)
+		writeBadRequest(w, r, "invalid request id")
 		return
 	}
 
@@ -254,21 +253,21 @@ func (a *RequestsHandler) HandleRequestsShow(w http.ResponseWriter, r *http.Requ
 	reqRow, err := q.GetRequestByOrgAndID(r.Context(), dbgen.GetRequestByOrgAndIDParams{OrgID: orgID, ID: requestID})
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			http.Error(w, "not found", http.StatusNotFound)
+			writeNotFound(w, r)
 			return
 		}
-		http.Error(w, fmt.Sprintf("failed to get request: %v", err), http.StatusInternalServerError)
+		writeInternalError(w, r, nil, err)
 		return
 	}
 	steps, err := q.ListRequestSteps(r.Context(), requestID)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to list steps: %v", err), http.StatusInternalServerError)
+		writeInternalError(w, r, nil, err)
 		return
 	}
 
 	audit, err := q.ListRequestAuditTrail(r.Context(), dbgen.ListRequestAuditTrailParams{OrgID: orgID, RequestID: requestID})
 	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to list audit: %v", err), http.StatusInternalServerError)
+		writeInternalError(w, r, nil, err)
 		return
 	}
 
@@ -343,22 +342,22 @@ func (a *RequestsHandler) HandleRequestsSubmit(w http.ResponseWriter, r *http.Re
 		return
 	}
 	if err := a.ensureDB(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeInternalError(w, r, nil, err)
 		return
 	}
 	orgID, err := uuid.Parse(orgIDStr)
 	if err != nil {
-		http.Error(w, "invalid org id", http.StatusBadRequest)
+		writeBadRequest(w, r, "invalid org id")
 		return
 	}
 	requestID, err := uuid.Parse(r.PathValue("requestID"))
 	if err != nil {
-		http.Error(w, "invalid request id", http.StatusBadRequest)
+		writeBadRequest(w, r, "invalid request id")
 		return
 	}
 	actorUserID, err := uuid.Parse(sess.UserID)
 	if err != nil {
-		http.Error(w, "invalid user id", http.StatusBadRequest)
+		writeBadRequest(w, r, "invalid user id")
 		return
 	}
 
@@ -377,22 +376,22 @@ func (a *RequestsHandler) HandleRequestsApprove(w http.ResponseWriter, r *http.R
 		return
 	}
 	if err := a.ensureDB(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeInternalError(w, r, nil, err)
 		return
 	}
 	orgID, err := uuid.Parse(orgIDStr)
 	if err != nil {
-		http.Error(w, "invalid org id", http.StatusBadRequest)
+		writeBadRequest(w, r, "invalid org id")
 		return
 	}
 	requestID, err := uuid.Parse(r.PathValue("requestID"))
 	if err != nil {
-		http.Error(w, "invalid request id", http.StatusBadRequest)
+		writeBadRequest(w, r, "invalid request id")
 		return
 	}
 	actorUserID, err := uuid.Parse(sess.UserID)
 	if err != nil {
-		http.Error(w, "invalid user id", http.StatusBadRequest)
+		writeBadRequest(w, r, "invalid user id")
 		return
 	}
 
@@ -411,26 +410,26 @@ func (a *RequestsHandler) HandleRequestsReject(w http.ResponseWriter, r *http.Re
 		return
 	}
 	if err := a.ensureDB(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeInternalError(w, r, nil, err)
 		return
 	}
 	if err := r.ParseForm(); err != nil {
-		http.Error(w, "bad form", http.StatusBadRequest)
+		writeBadRequest(w, r, "bad form")
 		return
 	}
 	orgID, err := uuid.Parse(orgIDStr)
 	if err != nil {
-		http.Error(w, "invalid org id", http.StatusBadRequest)
+		writeBadRequest(w, r, "invalid org id")
 		return
 	}
 	requestID, err := uuid.Parse(r.PathValue("requestID"))
 	if err != nil {
-		http.Error(w, "invalid request id", http.StatusBadRequest)
+		writeBadRequest(w, r, "invalid request id")
 		return
 	}
 	actorUserID, err := uuid.Parse(sess.UserID)
 	if err != nil {
-		http.Error(w, "invalid user id", http.StatusBadRequest)
+		writeBadRequest(w, r, "invalid user id")
 		return
 	}
 	reason := strings.TrimSpace(r.FormValue("reason"))
@@ -450,26 +449,26 @@ func (a *RequestsHandler) HandleRequestsReturn(w http.ResponseWriter, r *http.Re
 		return
 	}
 	if err := a.ensureDB(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeInternalError(w, r, nil, err)
 		return
 	}
 	if err := r.ParseForm(); err != nil {
-		http.Error(w, "bad form", http.StatusBadRequest)
+		writeBadRequest(w, r, "bad form")
 		return
 	}
 	orgID, err := uuid.Parse(orgIDStr)
 	if err != nil {
-		http.Error(w, "invalid org id", http.StatusBadRequest)
+		writeBadRequest(w, r, "invalid org id")
 		return
 	}
 	requestID, err := uuid.Parse(r.PathValue("requestID"))
 	if err != nil {
-		http.Error(w, "invalid request id", http.StatusBadRequest)
+		writeBadRequest(w, r, "invalid request id")
 		return
 	}
 	actorUserID, err := uuid.Parse(sess.UserID)
 	if err != nil {
-		http.Error(w, "invalid user id", http.StatusBadRequest)
+		writeBadRequest(w, r, "invalid user id")
 		return
 	}
 	reason := strings.TrimSpace(r.FormValue("reason"))
@@ -494,22 +493,22 @@ func (a *RequestsHandler) HandleRequestsResubmit(w http.ResponseWriter, r *http.
 		return
 	}
 	if err := a.ensureDB(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeInternalError(w, r, nil, err)
 		return
 	}
 	orgID, err := uuid.Parse(orgIDStr)
 	if err != nil {
-		http.Error(w, "invalid org id", http.StatusBadRequest)
+		writeBadRequest(w, r, "invalid org id")
 		return
 	}
 	requestID, err := uuid.Parse(r.PathValue("requestID"))
 	if err != nil {
-		http.Error(w, "invalid request id", http.StatusBadRequest)
+		writeBadRequest(w, r, "invalid request id")
 		return
 	}
 	actorUserID, err := uuid.Parse(sess.UserID)
 	if err != nil {
-		http.Error(w, "invalid user id", http.StatusBadRequest)
+		writeBadRequest(w, r, "invalid user id")
 		return
 	}
 
@@ -535,15 +534,15 @@ type adminTemplatesNewViewModel struct {
 func mustOrgIDMatchSession(w http.ResponseWriter, r *http.Request, sess sessionData) (orgID string, ok bool) {
 	orgID = r.PathValue("orgID")
 	if orgID == "" {
-		http.Error(w, "missing org id", http.StatusBadRequest)
+		writeBadRequest(w, r, "missing org id")
 		return "", false
 	}
 	if sess.OrgID == "" {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		writeUnauthorized(w, r)
 		return "", false
 	}
 	if sess.OrgID != orgID {
-		http.Error(w, "forbidden", http.StatusForbidden)
+		writeForbidden(w, r)
 		return "", false
 	}
 	return orgID, true
@@ -580,15 +579,15 @@ func defaultWorkflowTemplateDefinitionJSON() string {
 func showAdminTemplatesNew(w http.ResponseWriter, r *http.Request, sess sessionData, vm adminTemplatesNewViewModel) {
 	orgID := r.PathValue("orgID")
 	if orgID == "" {
-		http.Error(w, "missing org id", http.StatusBadRequest)
+		writeBadRequest(w, r, "missing org id")
 		return
 	}
 	if sess.OrgID == "" {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		writeUnauthorized(w, r)
 		return
 	}
 	if sess.OrgID != orgID {
-		http.Error(w, "forbidden", http.StatusForbidden)
+		writeForbidden(w, r)
 		return
 	}
 
@@ -618,11 +617,11 @@ func (a *AdminTemplatesHandler) HandleAdminTemplatesCreate(w http.ResponseWriter
 		return
 	}
 	if err := a.ensureDB(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeInternalError(w, r, nil, err)
 		return
 	}
 	if err := r.ParseForm(); err != nil {
-		http.Error(w, "bad form", http.StatusBadRequest)
+		writeBadRequest(w, r, "bad form")
 		return
 	}
 
@@ -680,7 +679,7 @@ func (a *AdminTemplatesHandler) HandleAdminTemplatesCreate(w http.ResponseWriter
 
 	orgUUID, err := uuid.Parse(orgIDStr)
 	if err != nil {
-		http.Error(w, "invalid org id", http.StatusBadRequest)
+		writeBadRequest(w, r, "invalid org id")
 		return
 	}
 
@@ -709,7 +708,7 @@ func (a *AdminTemplatesHandler) HandleAdminTemplatesCreate(w http.ResponseWriter
 				return
 			}
 		}
-		http.Error(w, fmt.Sprintf("failed to create template: %v", err), http.StatusInternalServerError)
+		writeInternalError(w, r, nil, err)
 		return
 	}
 
@@ -802,13 +801,13 @@ func (a *AdminTemplatesHandler) HandleAdminTemplatesIndex(w http.ResponseWriter,
 		return
 	}
 	if err := a.ensureDB(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeInternalError(w, r, nil, err)
 		return
 	}
 
 	orgUUID, err := uuid.Parse(orgIDStr)
 	if err != nil {
-		http.Error(w, "invalid org id", http.StatusBadRequest)
+		writeBadRequest(w, r, "invalid org id")
 		return
 	}
 
@@ -819,7 +818,7 @@ func (a *AdminTemplatesHandler) HandleAdminTemplatesIndex(w http.ResponseWriter,
 		Offset: 0,
 	})
 	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to list templates: %v", err), http.StatusInternalServerError)
+		writeInternalError(w, r, nil, err)
 		return
 	}
 

@@ -9,7 +9,7 @@ func (a *OIDCAuth) RequireLogin(next authedHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		sess, ok := a.readSession(r)
 		if !ok || sess.UserID == "" {
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			writeUnauthorized(w, r)
 			return
 		}
 		next(w, r, sess)
@@ -20,7 +20,7 @@ func (a *OIDCAuth) RequireLogin(next authedHandler) http.HandlerFunc {
 func (a *OIDCAuth) RequireRole(role string, next authedHandler) http.HandlerFunc {
 	return a.RequireLogin(func(w http.ResponseWriter, r *http.Request, sess sessionData) {
 		if sess.Role != role {
-			http.Error(w, "forbidden", http.StatusForbidden)
+			writeForbidden(w, r)
 			return
 		}
 		next(w, r, sess)
