@@ -76,7 +76,7 @@ func NewMux(cfg config.Config, logger *slog.Logger, db *sql.DB) *http.ServeMux {
 	graphqlHandler := func(w http.ResponseWriter, r *http.Request, sess sessionData) {
 		v, err := viewerFromSession(sess)
 		if err != nil {
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			writeUnauthorized(w, r)
 			return
 		}
 		r = r.WithContext(graphqlctx.WithViewer(r.Context(), v))

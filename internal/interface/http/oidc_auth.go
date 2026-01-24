@@ -121,7 +121,7 @@ func (a *OIDCAuth) HandleHome(w http.ResponseWriter, r *http.Request) {
 // HandleLogin は OIDC の認可エンドポイントへリダイレクトしてログインを開始する。
 func (a *OIDCAuth) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	if err := a.ensureInit(r.Context()); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeInternalError(w, r, a.logger, err)
 		return
 	}
 
@@ -158,11 +158,11 @@ func (a *OIDCAuth) HandleLogin(w http.ResponseWriter, r *http.Request) {
 // HandleCallback は OIDC のコールバックを処理し、IDトークン検証後にセッションを確立する。
 func (a *OIDCAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	if err := a.ensureInit(r.Context()); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeInternalError(w, r, a.logger, err)
 		return
 	}
 	if err := a.ensureDB(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeInternalError(w, r, a.logger, err)
 		return
 	}
 

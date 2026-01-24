@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"embed"
 	"html/template"
+	"log/slog"
 	"net/http"
 )
 
@@ -15,7 +16,8 @@ var htmlTemplates = template.Must(template.New("root").ParseFS(templatesFS, "tem
 func renderHTML(w http.ResponseWriter, templateName string, data any, status int) {
 	var buf bytes.Buffer
 	if err := htmlTemplates.ExecuteTemplate(&buf, templateName, data); err != nil {
-		http.Error(w, "template error", http.StatusInternalServerError)
+		slog.Default().Error("template render failed", "template", templateName, "error", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("content-type", "text/html; charset=utf-8")

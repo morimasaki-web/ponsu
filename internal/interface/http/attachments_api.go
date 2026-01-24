@@ -55,17 +55,17 @@ func handleAttachmentsUpload(svc attachmentsuc.Service, maxBytes int64) authedHa
 		}
 		orgID, err := uuid.Parse(orgIDStr)
 		if err != nil {
-			http.Error(w, "invalid org id", http.StatusBadRequest)
+			writeBadRequest(w, r, "invalid org id")
 			return
 		}
 		requestID, err := uuid.Parse(r.PathValue("requestID"))
 		if err != nil {
-			http.Error(w, "invalid request id", http.StatusBadRequest)
+			writeBadRequest(w, r, "invalid request id")
 			return
 		}
 		actorUserID, err := uuid.Parse(sess.UserID)
 		if err != nil {
-			http.Error(w, "invalid user id", http.StatusUnauthorized)
+			writeUnauthorized(w, r)
 			return
 		}
 
@@ -76,10 +76,10 @@ func handleAttachmentsUpload(svc attachmentsuc.Service, maxBytes int64) authedHa
 		file, header, err := r.FormFile("file")
 		if err != nil {
 			if errors.Is(err, http.ErrMissingFile) {
-				http.Error(w, "missing file", http.StatusBadRequest)
+				writeBadRequest(w, r, "missing file")
 				return
 			}
-			http.Error(w, "invalid multipart form", http.StatusBadRequest)
+			writeBadRequest(w, r, "invalid multipart form")
 			return
 		}
 		defer func() { _ = file.Close() }()
@@ -92,7 +92,7 @@ func handleAttachmentsUpload(svc attachmentsuc.Service, maxBytes int64) authedHa
 
 		created, err := svc.Upload(r.Context(), orgID, actorUserID, requestID, filename, contentType, file)
 		if err != nil {
-			writeAttachmentError(w, err)
+			writeAttachmentError(w, r, err)
 			return
 		}
 
@@ -108,23 +108,23 @@ func handleAttachmentsList(svc attachmentsuc.Service) authedHandler {
 		}
 		orgID, err := uuid.Parse(orgIDStr)
 		if err != nil {
-			http.Error(w, "invalid org id", http.StatusBadRequest)
+			writeBadRequest(w, r, "invalid org id")
 			return
 		}
 		requestID, err := uuid.Parse(r.PathValue("requestID"))
 		if err != nil {
-			http.Error(w, "invalid request id", http.StatusBadRequest)
+			writeBadRequest(w, r, "invalid request id")
 			return
 		}
 		actorUserID, err := uuid.Parse(sess.UserID)
 		if err != nil {
-			http.Error(w, "invalid user id", http.StatusUnauthorized)
+			writeUnauthorized(w, r)
 			return
 		}
 
 		rows, err := svc.ListByRequest(r.Context(), orgID, actorUserID, requestID)
 		if err != nil {
-			writeAttachmentError(w, err)
+			writeAttachmentError(w, r, err)
 			return
 		}
 		out := make([]attachmentJSON, 0, len(rows))
@@ -143,28 +143,28 @@ func handleAttachmentsDownload(svc attachmentsuc.Service) authedHandler {
 		}
 		orgID, err := uuid.Parse(orgIDStr)
 		if err != nil {
-			http.Error(w, "invalid org id", http.StatusBadRequest)
+			writeBadRequest(w, r, "invalid org id")
 			return
 		}
 		requestID, err := uuid.Parse(r.PathValue("requestID"))
 		if err != nil {
-			http.Error(w, "invalid request id", http.StatusBadRequest)
+			writeBadRequest(w, r, "invalid request id")
 			return
 		}
 		attachmentID, err := uuid.Parse(r.PathValue("attachmentID"))
 		if err != nil {
-			http.Error(w, "invalid attachment id", http.StatusBadRequest)
+			writeBadRequest(w, r, "invalid attachment id")
 			return
 		}
 		actorUserID, err := uuid.Parse(sess.UserID)
 		if err != nil {
-			http.Error(w, "invalid user id", http.StatusUnauthorized)
+			writeUnauthorized(w, r)
 			return
 		}
 
 		meta, rc, err := svc.Open(r.Context(), orgID, actorUserID, requestID, attachmentID)
 		if err != nil {
-			writeAttachmentError(w, err)
+			writeAttachmentError(w, r, err)
 			return
 		}
 		defer func() { _ = rc.Close() }()
@@ -186,15 +186,15 @@ func handleAttachmentsDownload(svc attachmentsuc.Service) authedHandler {
 func mustOrgIDMatchSessionForAPI(w http.ResponseWriter, r *http.Request, sess sessionData) (string, bool) {
 	orgID := r.PathValue("orgID")
 	if orgID == "" {
-		http.Error(w, "missing org id", http.StatusBadRequest)
+		writeBadRequest(w, r, "missing org id")
 		return "", false
 	}
 	if sess.OrgID == "" {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		writeUnauthorized(w, r)
 		return "", false
 	}
 	if sess.OrgID != orgID {
-		http.Error(w, "forbidden", http.StatusForbidden)
+		writeForbidden(w, r)
 		return "", false
 	}
 	return orgID, true
@@ -213,17 +213,17 @@ func sanitizeFilename(name string) string {
 	return name
 }
 
-func writeAttachmentError(w http.ResponseWriter, err error) {
+func writeAttachmentError(w http.ResponseWriter, r *http.Request, err error) {
 	if errors.Is(err, attachmentsuc.ErrForbidden) {
-		http.Error(w, "forbidden", http.StatusForbidden)
+		writeForbidden(w, r)
 		return
 	}
 	if errors.Is(err, attachmentsuc.ErrNotFound) {
-		http.Error(w, "not found", http.StatusNotFound)
+		writeNotFound(w, r)
 		return
 	}
 	if errors.Is(err, sql.ErrNoRows) {
-		http.Error(w, "not found", http.StatusNotFound)
+		writeNotFound(w, r)
 		return
 	}
 	var maxErr *http.MaxBytesError
@@ -232,10 +232,10 @@ func writeAttachmentError(w http.ResponseWriter, err error) {
 		return
 	}
 	if strings.Contains(err.Error(), "invalid storage key") {
-		http.Error(w, "invalid storage key", http.StatusBadRequest)
+		writeBadRequest(w, r, "invalid storage key")
 		return
 	}
-	http.Error(w, "internal server error", http.StatusInternalServerError)
+	writeInternalError(w, r, nil, err)
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
