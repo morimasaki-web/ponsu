@@ -13,6 +13,7 @@ export default defineConfig({
     // 127.0.0.1 でも開けるようにバインド先を広げておく。
     host: true,
     port: 5173,
+    strictPort: true,
     proxy: {
       '/graphql': {
         target: process.env.PONSU_BACKEND_ORIGIN ?? 'http://localhost:8080',

@@ -25,6 +25,9 @@
 Vite dev server は `http://localhost:5173` で起動します。
 （設定により `http://127.0.0.1:5173` でもアクセスできるはずです。開けない場合は `vite.config.ts` の `server.host` を確認してください）
 
+※ `Port 5173 is in use, trying another one...` と出る場合、Viteが別ポート（例: 5174）に逃げます。
+OIDCの許可リダイレクトURLは **ポートも含めて一致**が必要なので、ログインを試す前に 5173 を使っているプロセスを止めるのが確実です。
+
 ## 正規版（prod）: バックエンドへのプロキシ
 
 - `VITE_APP_MODE=prod` にして起動します（`.env` を編集）
