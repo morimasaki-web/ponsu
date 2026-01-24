@@ -9,6 +9,9 @@ export default defineConfig({
   base: process.env.PONSU_FRONTEND_BASE ?? '/',
   plugins: [react()],
   server: {
+    // `npm run dev` の表示は localhost になりがちだが、OIDCのcookie/stateはホスト名不一致で壊れやすい。
+    // 127.0.0.1 でも開けるようにバインド先を広げておく。
+    host: true,
     port: 5173,
     proxy: {
       '/graphql': {

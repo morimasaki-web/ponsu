@@ -23,6 +23,7 @@
 - `npm run dev`
 
 Vite dev server は `http://localhost:5173` で起動します。
+（設定により `http://127.0.0.1:5173` でもアクセスできるはずです。開けない場合は `vite.config.ts` の `server.host` を確認してください）
 
 ## 正規版（prod）: バックエンドへのプロキシ
 
