@@ -578,12 +578,18 @@ tasks:
 
   - id: MVP-116
     title: "リファクタ: HTTPハンドラの責務分離（OIDCAuthをミドルウェア化）"
-    status: todo
+    status: done
     priority: medium
     branch: "feature/mvp-116-http-handlers-refactor"
     depends_on: [MVP-110]
     needs_claude_review: false
     description: "OIDCAuthに集中しているハンドラ群をドメイン別（RequestsHandler等）へ分離し、認証はミドルウェア責務へ寄せる。"
+    start_date: 2026-01-24
+    end_date: 2026-01-24
+    deliverables:
+      - "internal/interface/http/auth_middleware.go（RequireLogin/RequireRole）"
+      - "internal/interface/http/rbac_handlers.go（Requests/AdminTemplatesへ分離）"
+      - "internal/interface/http/mux.go（配線の更新）"
     acceptance_criteria:
       - "OIDCAuthは認証/セッションに専念し、画面/操作ハンドラが別構造体に移る"
       - "既存ルートの挙動が変わらない（verifyが通る）"

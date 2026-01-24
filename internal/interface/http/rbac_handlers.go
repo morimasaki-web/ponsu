@@ -13,43 +13,51 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/morimasaki-web/ponsu/internal/infrastructure/config"
 	"github.com/morimasaki-web/ponsu/internal/infrastructure/dbgen"
 	requestsuc "github.com/morimasaki-web/ponsu/internal/usecase/requests"
 )
 
-type authedHandler func(http.ResponseWriter, *http.Request, sessionData)
-
-// RequireLogin はログイン済みセッションを要求し、未ログインの場合は 401 を返す。
-func (a *OIDCAuth) RequireLogin(next authedHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		sess, ok := a.readSession(r)
-		if !ok || sess.UserID == "" {
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
-			return
-		}
-		next(w, r, sess)
-	}
+type RequestsHandler struct {
+	cfg              config.Config
+	db               *sql.DB
+	requestsNotifier requestsuc.Notifier
 }
 
-// RequireRole はログイン済みであることに加え、指定ロールを要求する。
-func (a *OIDCAuth) RequireRole(role string, next authedHandler) http.HandlerFunc {
-	return a.RequireLogin(func(w http.ResponseWriter, r *http.Request, sess sessionData) {
-		if sess.Role != role {
-			http.Error(w, "forbidden", http.StatusForbidden)
-			return
-		}
-		next(w, r, sess)
-	})
+func NewRequestsHandler(cfg config.Config, db *sql.DB, requestsNotifier requestsuc.Notifier) *RequestsHandler {
+	return &RequestsHandler{cfg: cfg, db: db, requestsNotifier: requestsNotifier}
+}
+
+type AdminTemplatesHandler struct {
+	db *sql.DB
+}
+
+func NewAdminTemplatesHandler(db *sql.DB) *AdminTemplatesHandler {
+	return &AdminTemplatesHandler{db: db}
+}
+
+func (a *RequestsHandler) ensureDB() error {
+	if a.db == nil {
+		return errors.New("db is not configured")
+	}
+	return nil
+}
+
+func (a *AdminTemplatesHandler) ensureDB() error {
+	if a.db == nil {
+		return errors.New("db is not configured")
+	}
+	return nil
 }
 
 // HandleAdminTemplatesNew はテンプレ作成画面（プレースホルダ）を返す。
 // orgID をURLから受け取り、セッションの org_id と一致しない場合は 403 を返す。
-func (a *OIDCAuth) HandleAdminTemplatesNew(w http.ResponseWriter, r *http.Request, sess sessionData) {
+func (a *AdminTemplatesHandler) HandleAdminTemplatesNew(w http.ResponseWriter, r *http.Request, sess sessionData) {
 	showAdminTemplatesNew(w, r, sess, adminTemplatesNewViewModel{})
 }
 
 // HandleAdminTemplatesNewShortcut は、ログイン中の org_id を使って org スコープのURLへリダイレクトする。
-func (a *OIDCAuth) HandleAdminTemplatesNewShortcut(w http.ResponseWriter, r *http.Request, sess sessionData) {
+func (a *AdminTemplatesHandler) HandleAdminTemplatesNewShortcut(w http.ResponseWriter, r *http.Request, sess sessionData) {
 	if sess.OrgID == "" {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
@@ -59,7 +67,7 @@ func (a *OIDCAuth) HandleAdminTemplatesNewShortcut(w http.ResponseWriter, r *htt
 
 // --- MVP-041: minimal SSR for request creation with template selection ---
 
-func (a *OIDCAuth) HandleRequestsIndexShortcut(w http.ResponseWriter, r *http.Request, sess sessionData) {
+func (a *RequestsHandler) HandleRequestsIndexShortcut(w http.ResponseWriter, r *http.Request, sess sessionData) {
 	if sess.OrgID == "" {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
@@ -72,7 +80,7 @@ type requestsIndexViewModel struct {
 	Items []dbgen.Request
 }
 
-func (a *OIDCAuth) HandleRequestsIndex(w http.ResponseWriter, r *http.Request, sess sessionData) {
+func (a *RequestsHandler) HandleRequestsIndex(w http.ResponseWriter, r *http.Request, sess sessionData) {
 	orgIDStr, ok := a.mustOrgIDMatchSession(w, r, sess)
 	if !ok {
 		return
@@ -144,7 +152,7 @@ func showRequestsIndex(w http.ResponseWriter, sess sessionData, orgID string, vm
 	_, _ = w.Write([]byte(b.String()))
 }
 
-func (a *OIDCAuth) HandleRequestsNewShortcut(w http.ResponseWriter, r *http.Request, sess sessionData) {
+func (a *RequestsHandler) HandleRequestsNewShortcut(w http.ResponseWriter, r *http.Request, sess sessionData) {
 	if sess.OrgID == "" {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
@@ -159,7 +167,7 @@ type requestsNewViewModel struct {
 	Templates  []dbgen.WorkflowTemplate
 }
 
-func (a *OIDCAuth) HandleRequestsNew(w http.ResponseWriter, r *http.Request, sess sessionData) {
+func (a *RequestsHandler) HandleRequestsNew(w http.ResponseWriter, r *http.Request, sess sessionData) {
 	orgIDStr, ok := a.mustOrgIDMatchSession(w, r, sess)
 	if !ok {
 		return
@@ -239,7 +247,7 @@ func showRequestsNew(w http.ResponseWriter, sess sessionData, orgID string, vm r
 	_, _ = w.Write([]byte(b.String()))
 }
 
-func (a *OIDCAuth) HandleRequestsCreate(w http.ResponseWriter, r *http.Request, sess sessionData) {
+func (a *RequestsHandler) HandleRequestsCreate(w http.ResponseWriter, r *http.Request, sess sessionData) {
 	orgIDStr, ok := a.mustOrgIDMatchSession(w, r, sess)
 	if !ok {
 		return
@@ -304,7 +312,7 @@ func (a *OIDCAuth) HandleRequestsCreate(w http.ResponseWriter, r *http.Request, 
 	http.Redirect(w, r, "/org/"+orgIDStr+"/requests/"+requestID.String(), http.StatusSeeOther)
 }
 
-func (a *OIDCAuth) HandleRequestsShow(w http.ResponseWriter, r *http.Request, sess sessionData) {
+func (a *RequestsHandler) HandleRequestsShow(w http.ResponseWriter, r *http.Request, sess sessionData) {
 	orgIDStr, ok := a.mustOrgIDMatchSession(w, r, sess)
 	if !ok {
 		return
@@ -450,7 +458,7 @@ func (a *OIDCAuth) HandleRequestsShow(w http.ResponseWriter, r *http.Request, se
 	_, _ = w.Write([]byte(b.String()))
 }
 
-func (a *OIDCAuth) HandleRequestsSubmit(w http.ResponseWriter, r *http.Request, sess sessionData) {
+func (a *RequestsHandler) HandleRequestsSubmit(w http.ResponseWriter, r *http.Request, sess sessionData) {
 	orgIDStr, ok := a.mustOrgIDMatchSession(w, r, sess)
 	if !ok {
 		return
@@ -484,7 +492,7 @@ func (a *OIDCAuth) HandleRequestsSubmit(w http.ResponseWriter, r *http.Request, 
 	http.Redirect(w, r, "/org/"+orgIDStr+"/requests/"+requestID.String(), http.StatusSeeOther)
 }
 
-func (a *OIDCAuth) HandleRequestsApprove(w http.ResponseWriter, r *http.Request, sess sessionData) {
+func (a *RequestsHandler) HandleRequestsApprove(w http.ResponseWriter, r *http.Request, sess sessionData) {
 	orgIDStr, ok := a.mustOrgIDMatchSession(w, r, sess)
 	if !ok {
 		return
@@ -518,7 +526,7 @@ func (a *OIDCAuth) HandleRequestsApprove(w http.ResponseWriter, r *http.Request,
 	http.Redirect(w, r, "/org/"+orgIDStr+"/requests/"+requestID.String(), http.StatusSeeOther)
 }
 
-func (a *OIDCAuth) HandleRequestsReject(w http.ResponseWriter, r *http.Request, sess sessionData) {
+func (a *RequestsHandler) HandleRequestsReject(w http.ResponseWriter, r *http.Request, sess sessionData) {
 	orgIDStr, ok := a.mustOrgIDMatchSession(w, r, sess)
 	if !ok {
 		return
@@ -557,7 +565,7 @@ func (a *OIDCAuth) HandleRequestsReject(w http.ResponseWriter, r *http.Request, 
 	http.Redirect(w, r, "/org/"+orgIDStr+"/requests/"+requestID.String(), http.StatusSeeOther)
 }
 
-func (a *OIDCAuth) HandleRequestsReturn(w http.ResponseWriter, r *http.Request, sess sessionData) {
+func (a *RequestsHandler) HandleRequestsReturn(w http.ResponseWriter, r *http.Request, sess sessionData) {
 	orgIDStr, ok := a.mustOrgIDMatchSession(w, r, sess)
 	if !ok {
 		return
@@ -601,7 +609,7 @@ func (a *OIDCAuth) HandleRequestsReturn(w http.ResponseWriter, r *http.Request, 
 	http.Redirect(w, r, "/org/"+orgIDStr+"/requests/"+requestID.String(), http.StatusSeeOther)
 }
 
-func (a *OIDCAuth) HandleRequestsResubmit(w http.ResponseWriter, r *http.Request, sess sessionData) {
+func (a *RequestsHandler) HandleRequestsResubmit(w http.ResponseWriter, r *http.Request, sess sessionData) {
 	orgIDStr, ok := a.mustOrgIDMatchSession(w, r, sess)
 	if !ok {
 		return
@@ -645,7 +653,7 @@ type adminTemplatesNewViewModel struct {
 	Definition  string
 }
 
-func (a *OIDCAuth) mustOrgIDMatchSession(w http.ResponseWriter, r *http.Request, sess sessionData) (orgID string, ok bool) {
+func mustOrgIDMatchSession(w http.ResponseWriter, r *http.Request, sess sessionData) (orgID string, ok bool) {
 	orgID = r.PathValue("orgID")
 	if orgID == "" {
 		http.Error(w, "missing org id", http.StatusBadRequest)
@@ -660,6 +668,14 @@ func (a *OIDCAuth) mustOrgIDMatchSession(w http.ResponseWriter, r *http.Request,
 		return "", false
 	}
 	return orgID, true
+}
+
+func (a *RequestsHandler) mustOrgIDMatchSession(w http.ResponseWriter, r *http.Request, sess sessionData) (string, bool) {
+	return mustOrgIDMatchSession(w, r, sess)
+}
+
+func (a *AdminTemplatesHandler) mustOrgIDMatchSession(w http.ResponseWriter, r *http.Request, sess sessionData) (string, bool) {
+	return mustOrgIDMatchSession(w, r, sess)
 }
 
 func actorDisplayFromSession(sess sessionData) string {
@@ -774,7 +790,7 @@ carol@example.com
 }
 
 // HandleAdminTemplatesCreate はテンプレを作成して一覧へリダイレクトする。
-func (a *OIDCAuth) HandleAdminTemplatesCreate(w http.ResponseWriter, r *http.Request, sess sessionData) {
+func (a *AdminTemplatesHandler) HandleAdminTemplatesCreate(w http.ResponseWriter, r *http.Request, sess sessionData) {
 	orgIDStr, ok := a.mustOrgIDMatchSession(w, r, sess)
 	if !ok {
 		return
@@ -958,7 +974,7 @@ func buildWorkflowTemplateDefinitionJSONFromApprovalSteps(steps []approvalStep) 
 }
 
 // HandleAdminTemplatesIndex はテンプレ一覧を返す。
-func (a *OIDCAuth) HandleAdminTemplatesIndex(w http.ResponseWriter, r *http.Request, sess sessionData) {
+func (a *AdminTemplatesHandler) HandleAdminTemplatesIndex(w http.ResponseWriter, r *http.Request, sess sessionData) {
 	orgIDStr, ok := a.mustOrgIDMatchSession(w, r, sess)
 	if !ok {
 		return

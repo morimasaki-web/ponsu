@@ -19,7 +19,6 @@ import (
 	"github.com/gorilla/securecookie"
 	"github.com/morimasaki-web/ponsu/internal/infrastructure/config"
 	"github.com/morimasaki-web/ponsu/internal/infrastructure/dbgen"
-	requestsuc "github.com/morimasaki-web/ponsu/internal/usecase/requests"
 	"golang.org/x/oauth2"
 )
 
@@ -35,8 +34,6 @@ type OIDCAuth struct {
 	logger *slog.Logger
 
 	sc *securecookie.SecureCookie
-
-	requestsNotifier requestsuc.Notifier
 
 	once     sync.Once
 	initErr  error

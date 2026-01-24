@@ -25,10 +25,12 @@ func NewMux(cfg config.Config, logger *slog.Logger, db *sql.DB) *http.ServeMux {
 
 	auth := NewOIDCAuth(cfg, logger, db)
 	requestsNotifier := notify.NewSlackNotifier(cfg.SlackWebhookURL)
-	auth.requestsNotifier = requestsNotifier
 	publicBaseURL := cfg.PublicBaseURLForLinks()
 	gqlServer := gqlapi.NewServer(db, requestsNotifier, publicBaseURL)
 	playgroundHandler := gqlapi.PlaygroundHandler("/graphql")
+
+	requestsHandler := NewRequestsHandler(cfg, db, requestsNotifier)
+	adminTemplatesHandler := NewAdminTemplatesHandler(db)
 
 	// MVP-070/MVP-071: Attachments (storage backend selectable)
 	var attachmentsStorage attachmentsuc.Storage
@@ -84,23 +86,23 @@ func NewMux(cfg config.Config, logger *slog.Logger, db *sql.DB) *http.ServeMux {
 	mux.HandleFunc("POST /graphql", auth.RequireLogin(graphqlHandler))
 
 	// MVP-041: Request create (SSR minimal)
-	mux.HandleFunc("GET /requests", auth.RequireLogin(auth.HandleRequestsIndexShortcut))
-	mux.HandleFunc("GET /requests/new", auth.RequireLogin(auth.HandleRequestsNewShortcut))
-	mux.HandleFunc("GET /org/{orgID}/requests", auth.RequireLogin(auth.HandleRequestsIndex))
-	mux.HandleFunc("GET /org/{orgID}/requests/new", auth.RequireLogin(auth.HandleRequestsNew))
-	mux.HandleFunc("POST /org/{orgID}/requests", auth.RequireLogin(auth.HandleRequestsCreate))
-	mux.HandleFunc("GET /org/{orgID}/requests/{requestID}", auth.RequireLogin(auth.HandleRequestsShow))
-	mux.HandleFunc("POST /org/{orgID}/requests/{requestID}/submit", auth.RequireLogin(auth.HandleRequestsSubmit))
-	mux.HandleFunc("POST /org/{orgID}/requests/{requestID}/approve", auth.RequireLogin(auth.HandleRequestsApprove))
-	mux.HandleFunc("POST /org/{orgID}/requests/{requestID}/reject", auth.RequireLogin(auth.HandleRequestsReject))
-	mux.HandleFunc("POST /org/{orgID}/requests/{requestID}/return", auth.RequireLogin(auth.HandleRequestsReturn))
-	mux.HandleFunc("POST /org/{orgID}/requests/{requestID}/resubmit", auth.RequireLogin(auth.HandleRequestsResubmit))
+	mux.HandleFunc("GET /requests", auth.RequireLogin(requestsHandler.HandleRequestsIndexShortcut))
+	mux.HandleFunc("GET /requests/new", auth.RequireLogin(requestsHandler.HandleRequestsNewShortcut))
+	mux.HandleFunc("GET /org/{orgID}/requests", auth.RequireLogin(requestsHandler.HandleRequestsIndex))
+	mux.HandleFunc("GET /org/{orgID}/requests/new", auth.RequireLogin(requestsHandler.HandleRequestsNew))
+	mux.HandleFunc("POST /org/{orgID}/requests", auth.RequireLogin(requestsHandler.HandleRequestsCreate))
+	mux.HandleFunc("GET /org/{orgID}/requests/{requestID}", auth.RequireLogin(requestsHandler.HandleRequestsShow))
+	mux.HandleFunc("POST /org/{orgID}/requests/{requestID}/submit", auth.RequireLogin(requestsHandler.HandleRequestsSubmit))
+	mux.HandleFunc("POST /org/{orgID}/requests/{requestID}/approve", auth.RequireLogin(requestsHandler.HandleRequestsApprove))
+	mux.HandleFunc("POST /org/{orgID}/requests/{requestID}/reject", auth.RequireLogin(requestsHandler.HandleRequestsReject))
+	mux.HandleFunc("POST /org/{orgID}/requests/{requestID}/return", auth.RequireLogin(requestsHandler.HandleRequestsReturn))
+	mux.HandleFunc("POST /org/{orgID}/requests/{requestID}/resubmit", auth.RequireLogin(requestsHandler.HandleRequestsResubmit))
 
 	// MVP-011: RBAC
-	mux.HandleFunc("GET /admin/templates/new", auth.RequireRole("admin", auth.HandleAdminTemplatesNewShortcut))
-	mux.HandleFunc("GET /org/{orgID}/admin/templates", auth.RequireRole("admin", auth.HandleAdminTemplatesIndex))
-	mux.HandleFunc("GET /org/{orgID}/admin/templates/new", auth.RequireRole("admin", auth.HandleAdminTemplatesNew))
-	mux.HandleFunc("POST /org/{orgID}/admin/templates", auth.RequireRole("admin", auth.HandleAdminTemplatesCreate))
+	mux.HandleFunc("GET /admin/templates/new", auth.RequireRole("admin", adminTemplatesHandler.HandleAdminTemplatesNewShortcut))
+	mux.HandleFunc("GET /org/{orgID}/admin/templates", auth.RequireRole("admin", adminTemplatesHandler.HandleAdminTemplatesIndex))
+	mux.HandleFunc("GET /org/{orgID}/admin/templates/new", auth.RequireRole("admin", adminTemplatesHandler.HandleAdminTemplatesNew))
+	mux.HandleFunc("POST /org/{orgID}/admin/templates", auth.RequireRole("admin", adminTemplatesHandler.HandleAdminTemplatesCreate))
 
 	// MVP-070: Attachments (API)
 	mux.HandleFunc("GET /org/{orgID}/requests/{requestID}/attachments", auth.RequireLogin(handleAttachmentsList(attachmentsService)))
