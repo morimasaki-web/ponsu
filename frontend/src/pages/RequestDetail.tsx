@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { useQuery } from 'urql'
+import { useMutation, useQuery } from 'urql'
 import {
   demoRequestsSeed,
   formatStatus,
@@ -10,7 +10,15 @@ import {
   type RequestStatus,
 } from '../demoData'
 import { appMode } from '../graphql'
-import { RequestDocument } from '../gql/graphql'
+import {
+  ApproveRequestDocument,
+  MeDocument,
+  RejectRequestDocument,
+  RequestDocument,
+  ResubmitRequestDocument,
+  ReturnRequestDocument,
+  SubmitRequestDocument,
+} from '../gql/graphql'
 
 function canSubmit(status: RequestStatus) {
   return status === 'draft'
@@ -32,11 +40,34 @@ export default function RequestDetail() {
   const params = useParams()
   const id = decodeURIComponent(params.id ?? '')
 
-  const [{ data, fetching, error }] = useQuery({
+  const [{ data, fetching, error }, reexecuteRequest] = useQuery({
     query: RequestDocument,
     variables: { id },
     pause: appMode === 'demo' || !id,
   })
+
+  const [{ data: meData, fetching: meFetching, error: meError }] = useQuery({
+    query: MeDocument,
+    pause: appMode === 'demo',
+  })
+
+  const [{ fetching: submitFetching }, submitRequest] = useMutation(
+    SubmitRequestDocument,
+  )
+  const [{ fetching: approveFetching }, approveRequest] = useMutation(
+    ApproveRequestDocument,
+  )
+  const [{ fetching: rejectFetching }, rejectRequest] = useMutation(
+    RejectRequestDocument,
+  )
+  const [{ fetching: returnFetching }, returnRequest] = useMutation(
+    ReturnRequestDocument,
+  )
+  const [{ fetching: resubmitFetching }, resubmitRequest] = useMutation(
+    ResubmitRequestDocument,
+  )
+
+  const [actionError, setActionError] = useState<string | null>(null)
 
   const seed = useMemo(
     () => demoRequestsSeed.find((r) => r.id === id) ?? null,
@@ -69,6 +100,30 @@ export default function RequestDetail() {
 
   if (appMode === 'prod') {
     const request = data?.request ?? null
+    const me = meData?.me ?? null
+    const role = me?.role ?? null
+    const isAdmin = role === 'admin'
+    const isCreator =
+      !!me?.userID && !!request?.createdByUserID && request.createdByUserID === me.userID
+    const status = request?.status ?? ''
+
+    const canSubmitProd = status === 'draft' && isCreator
+    const canApproveProd =
+      (status === 'submitted' || status === 'resubmitted') && isAdmin
+    const canRejectProd =
+      (status === 'submitted' || status === 'resubmitted') && isAdmin
+    const canReturnProd =
+      (status === 'submitted' || status === 'resubmitted') && isAdmin
+    const canResubmitProd = status === 'returned' && isCreator
+
+    const busy =
+      fetching ||
+      meFetching ||
+      submitFetching ||
+      approveFetching ||
+      rejectFetching ||
+      returnFetching ||
+      resubmitFetching
 
     return (
       <div className="stack">
@@ -83,6 +138,9 @@ export default function RequestDetail() {
               未ログインの場合は <a href="/auth/login">ログイン</a> してください。
             </p>
           )}
+
+          {meError && <p className="error">{meError.message}</p>}
+          {actionError && <p className="error">{actionError}</p>}
 
           {!fetching && !error && !request && (
             <p className="error">申請が見つかりませんでした。</p>
@@ -121,8 +179,119 @@ export default function RequestDetail() {
                 <Link className="btn btn--ghost" to="/requests">
                   一覧へ戻る
                 </Link>
+
+                <button
+                  className="btn"
+                  disabled={!canSubmitProd || busy}
+                  onClick={async () => {
+                    if (!request) return
+                    setActionError(null)
+                    const res = await submitRequest({ id: request.id })
+                    if (res.error) {
+                      setActionError(res.error.message)
+                      return
+                    }
+                    reexecuteRequest({ requestPolicy: 'network-only' })
+                  }}
+                >
+                  提出
+                </button>
+
+                <button
+                  className="btn btn--ok"
+                  disabled={!canApproveProd || busy}
+                  onClick={async () => {
+                    if (!request) return
+                    setActionError(null)
+                    const res = await approveRequest({ id: request.id })
+                    if (res.error) {
+                      setActionError(res.error.message)
+                      return
+                    }
+                    reexecuteRequest({ requestPolicy: 'network-only' })
+                  }}
+                >
+                  承認
+                </button>
+
+                <button
+                  className="btn btn--danger"
+                  disabled={!canRejectProd || busy}
+                  onClick={async () => {
+                    if (!request) return
+                    const reason = window.prompt('却下理由', '')
+                    if (reason == null) return
+                    if (reason.trim().length === 0) {
+                      setActionError('却下理由を入力してください')
+                      return
+                    }
+                    setActionError(null)
+                    const res = await rejectRequest({
+                      id: request.id,
+                      reason: reason.trim(),
+                    })
+                    if (res.error) {
+                      setActionError(res.error.message)
+                      return
+                    }
+                    reexecuteRequest({ requestPolicy: 'network-only' })
+                  }}
+                >
+                  却下
+                </button>
+
+                <button
+                  className="btn btn--warn"
+                  disabled={!canReturnProd || busy}
+                  onClick={async () => {
+                    if (!request) return
+                    const reason = window.prompt('差し戻し理由', '')
+                    if (reason == null) return
+                    if (reason.trim().length === 0) {
+                      setActionError('差し戻し理由を入力してください')
+                      return
+                    }
+                    setActionError(null)
+                    const res = await returnRequest({
+                      id: request.id,
+                      reason: reason.trim(),
+                    })
+                    if (res.error) {
+                      setActionError(res.error.message)
+                      return
+                    }
+                    reexecuteRequest({ requestPolicy: 'network-only' })
+                  }}
+                >
+                  差し戻し
+                </button>
+
+                <button
+                  className="btn"
+                  disabled={!canResubmitProd || busy}
+                  onClick={async () => {
+                    if (!request) return
+                    setActionError(null)
+                    const res = await resubmitRequest({ id: request.id })
+                    if (res.error) {
+                      setActionError(res.error.message)
+                      return
+                    }
+                    reexecuteRequest({ requestPolicy: 'network-only' })
+                  }}
+                >
+                  再提出
+                </button>
               </div>
             </div>
+          )}
+
+          {request && me && (
+            <p className="note" style={{ marginTop: 10 }}>
+              role: <span className="mono">{me.role}</span> / user:
+              <span className="mono"> {me.userID}</span>
+              {isCreator ? '（作成者）' : ''}
+            </p>
           )}
 
           {request && request.steps.length > 0 && (

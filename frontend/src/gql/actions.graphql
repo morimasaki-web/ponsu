@@ -1,0 +1,48 @@
+mutation CreateRequest($title: String!, $workflowTemplateID: ID) {
+  createRequest(title: $title, workflowTemplateID: $workflowTemplateID) {
+    id
+    title
+    status
+    updatedAt
+  }
+}
+
+mutation SubmitRequest($id: ID!) {
+  submitRequest(id: $id) {
+    id
+    status
+    updatedAt
+  }
+}
+
+mutation ApproveRequest($id: ID!) {
+  approveRequest(id: $id) {
+    id
+    status
+    updatedAt
+  }
+}
+
+mutation RejectRequest($id: ID!, $reason: String!) {
+  rejectRequest(id: $id, reason: $reason) {
+    id
+    status
+    updatedAt
+  }
+}
+
+mutation ReturnRequest($id: ID!, $reason: String!) {
+  returnRequest(id: $id, reason: $reason) {
+    id
+    status
+    updatedAt
+  }
+}
+
+mutation ResubmitRequest($id: ID!) {
+  resubmitRequest(id: $id) {
+    id
+    status
+    updatedAt
+  }
+}

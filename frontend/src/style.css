@@ -293,6 +293,19 @@ body {
   background: color-mix(in srgb, var(--card-bg) 85%, #ef4444);
 }
 
+.input {
+  width: 100%;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--card-bg) 92%, var(--accent2));
+  color: var(--fg);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+.input:disabled {
+  opacity: 0.6;
+}
+
 .audit {
   margin: 0;
   padding-left: 18px;

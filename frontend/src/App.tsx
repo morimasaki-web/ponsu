@@ -4,6 +4,7 @@ import { appMode, fetchMe, type Me } from './graphql'
 import { createGraphqlClient } from './gql/client'
 import { applyTheme, getStoredTheme, type ThemeMode } from './theme'
 import RequestDetail from './pages/RequestDetail'
+import RequestNew from './pages/RequestNew'
 import RequestsList from './pages/RequestsList'
 import { Provider } from 'urql'
 
@@ -128,6 +129,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={home} />
             <Route path="/requests" element={<RequestsList />} />
+            <Route path="/requests/new" element={<RequestNew />} />
             <Route path="/requests/:id" element={<RequestDetail />} />
           </Routes>
         </div>

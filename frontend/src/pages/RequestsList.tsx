@@ -15,6 +15,11 @@ export default function RequestsList() {
     return (
       <section className="card">
         <h2>申請一覧（GraphQL）</h2>
+        <div className="actions" style={{ marginBottom: 10 }}>
+          <Link className="btn" to="/requests/new">
+            新規作成
+          </Link>
+        </div>
         {fetching && <p>読み込み中...</p>}
         {error && (
           <p className="error">

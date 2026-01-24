@@ -542,12 +542,19 @@ tasks:
 
   - id: MVP-114
     title: "SPA操作: 作成/提出/承認/却下/差し戻し/再提出"
-    status: todo
+    status: done
     priority: high
     branch: "feature/mvp-114-spa-actions"
     depends_on: [MVP-113, MVP-091]
     needs_claude_review: false
     description: "MVPで実装済みの操作をSPAから実行できるようにし、RBACに応じてUIを出し分ける。"
+    start_date: 2026-01-24
+    end_date: 2026-01-24
+    deliverables:
+      - "frontend/src/gql/actions.graphql（操作Mutation定義）"
+      - "frontend/src/pages/RequestNew.tsx（作成画面）"
+      - "frontend/src/pages/RequestDetail.tsx（prodの操作UI+RBAC）"
+      - "frontend/src/pages/RequestsList.tsx（作成導線）"
     acceptance_criteria:
       - "作成→提出→承認/却下がSPAだけで完結する"
       - "差し戻し→再提出がSPAだけで完結する"
