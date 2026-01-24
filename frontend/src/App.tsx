@@ -3,6 +3,7 @@ import { HashRouter, Link, Route, Routes } from 'react-router-dom'
 import { appMode, fetchMe, type Me } from './graphql'
 import { createGraphqlClient } from './gql/client'
 import { applyTheme, getStoredTheme, type ThemeMode } from './theme'
+import About from './pages/About'
 import RequestDetail from './pages/RequestDetail'
 import RequestNew from './pages/RequestNew'
 import RequestsList from './pages/RequestsList'
@@ -14,6 +15,15 @@ export default function App() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [theme, setTheme] = useState<ThemeMode>(() => getStoredTheme())
+  const [demoResetNonce, setDemoResetNonce] = useState(0)
+
+  const resetDemo = () => {
+    if (appMode !== 'demo') return
+    const ok = window.confirm('デモの状態を初期化しますか？')
+    if (!ok) return
+    setDemoResetNonce((v) => v + 1)
+    window.location.hash = '#/'
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -71,12 +81,20 @@ export default function App() {
       </section>
 
       <section className="card">
-        <h2>次のステップ</h2>
+        <h2>デモガイド</h2>
+        <p className="note">
+          デモでは Requests の一覧→詳細→操作→監査ログ追記の流れを、モックデータで体験できます。
+        </p>
         <ul>
-          <li>デモ: 画面遷移と操作フローをモックデータで再現</li>
-          <li>正規版: GraphQLクライアント導入＋型付け</li>
-          <li>正規版: Requests一覧/詳細/監査のSPA画面と操作</li>
+          <li>
+            <Link to="/requests">Requests</Link> を開く
+          </li>
+          <li>任意の申請の詳細へ</li>
+          <li>提出→承認/却下/差し戻し→再提出（状態遷移を確認）</li>
         </ul>
+        <p style={{ marginBottom: 0 }}>
+          <Link to="/about">ガイド（詳しい説明）を見る</Link>
+        </p>
       </section>
     </>
   )
@@ -95,6 +113,7 @@ export default function App() {
               <nav className="nav">
                 <Link to="/">Home</Link>
                 <Link to="/requests">Requests</Link>
+                <Link to="/about">Guide</Link>
               </nav>
 
               <label className="themeLabel">
@@ -121,16 +140,22 @@ export default function App() {
                   <a href="/playground">GraphQL Playground</a>
                 </nav>
               ) : (
-                <p className="note">デモは認証/DBなし（静的）</p>
+                <div className="actions">
+                  <button className="btn btn--ghost" onClick={resetDemo}>
+                    デモを初期化
+                  </button>
+                  <p className="note">デモは認証/DBなし（静的）</p>
+                </div>
               )}
             </div>
           </header>
 
-          <Routes>
+          <Routes key={demoResetNonce}>
             <Route path="/" element={home} />
             <Route path="/requests" element={<RequestsList />} />
             <Route path="/requests/new" element={<RequestNew />} />
             <Route path="/requests/:id" element={<RequestDetail />} />
+            <Route path="/about" element={<About onResetDemo={resetDemo} />} />
           </Routes>
         </div>
       </HashRouter>
