@@ -107,49 +107,12 @@ func (a *RequestsHandler) HandleRequestsIndex(w http.ResponseWriter, r *http.Req
 }
 
 func showRequestsIndex(w http.ResponseWriter, sess sessionData, orgID string, vm requestsIndexViewModel) {
-	w.Header().Set("content-type", "text/html; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-
-	var b strings.Builder
-	b.WriteString("<!doctype html><html><head><meta charset=\"utf-8\"><title>PonSu</title>")
-	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">")
-	b.WriteString("<style>body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:24px;max-width:1100px}table{width:100%;border-collapse:collapse;margin-top:12px}th,td{border-bottom:1px solid rgba(127,127,127,.25);padding:8px;text-align:left;vertical-align:top}th{font-weight:700} .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px} .btn{padding:8px 12px;border:1px solid rgba(127,127,127,.35);border-radius:6px;background:#fff;color:#111;text-decoration:none;display:inline-block} .muted{opacity:.8} .err{background:#fff1f1;border:1px solid #ffb4b4;padding:10px;border-radius:8px;margin:12px 0}</style>")
-	b.WriteString("</head><body>")
-	b.WriteString("<h1>Requests</h1>")
-	b.WriteString("<p class=\"muted\">org_id: " + htmlEscape(orgID) + "</p>")
-
-	if strings.TrimSpace(vm.Error) != "" {
-		b.WriteString("<div class=\"err\">" + htmlEscape(vm.Error) + "</div>")
+	type pageData struct {
+		OrgID string
+		Sess  sessionData
+		VM    requestsIndexViewModel
 	}
-
-	b.WriteString("<div class=\"row\">")
-	b.WriteString("<a class=\"btn\" href=\"/org/" + htmlEscape(orgID) + "/requests/new\">New Request</a>")
-	b.WriteString("<a class=\"btn\" href=\"/\">Home</a>")
-	b.WriteString("</div>")
-
-	if len(vm.Items) == 0 {
-		b.WriteString("<p>No requests yet.</p>")
-		b.WriteString("</body></html>")
-		_, _ = w.Write([]byte(b.String()))
-		return
-	}
-
-	b.WriteString("<table><thead><tr><th>Title</th><th>Status</th><th>Created</th><th>ID</th></tr></thead><tbody>")
-	for _, it := range vm.Items {
-		createdAtStr := it.CreatedAt.Local().Format("2006-01-02 15:04:05")
-		if it.CreatedAt.IsZero() {
-			createdAtStr = "-"
-		}
-		b.WriteString("<tr>")
-		b.WriteString("<td><a href=\"/org/" + htmlEscape(orgID) + "/requests/" + htmlEscape(it.ID.String()) + "\">" + htmlEscape(it.Title) + "</a></td>")
-		b.WriteString("<td>" + htmlEscape(it.Status) + "</td>")
-		b.WriteString("<td>" + htmlEscape(createdAtStr) + "</td>")
-		b.WriteString("<td><code>" + htmlEscape(it.ID.String()) + "</code></td>")
-		b.WriteString("</tr>")
-	}
-	b.WriteString("</tbody></table>")
-	b.WriteString("</body></html>")
-	_, _ = w.Write([]byte(b.String()))
+	renderHTML(w, "requests_index", pageData{OrgID: orgID, Sess: sess, VM: vm}, http.StatusOK)
 }
 
 func (a *RequestsHandler) HandleRequestsNewShortcut(w http.ResponseWriter, r *http.Request, sess sessionData) {
@@ -192,59 +155,12 @@ func (a *RequestsHandler) HandleRequestsNew(w http.ResponseWriter, r *http.Reque
 }
 
 func showRequestsNew(w http.ResponseWriter, sess sessionData, orgID string, vm requestsNewViewModel) {
-	w.Header().Set("content-type", "text/html; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-
-	var b strings.Builder
-	b.WriteString("<!doctype html><html><head><meta charset=\"utf-8\"><title>PonSu</title>")
-	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">")
-	b.WriteString("<style>body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:24px;max-width:900px}label{display:block;font-weight:600;margin:12px 0 6px}input,select{width:100%;padding:8px;border:1px solid rgba(127,127,127,.35);border-radius:6px;font:inherit} .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px} .btn{padding:8px 12px;border:1px solid rgba(127,127,127,.35);border-radius:6px;background:#fff;color:#111;text-decoration:none;display:inline-block} .btn.primary{background:#111;color:#fff;border-color:#111} .err{background:#fff1f1;border:1px solid #ffb4b4;padding:10px;border-radius:8px;margin:12px 0} .muted{opacity:.8}</style>")
-	b.WriteString("</head><body>")
-	b.WriteString("<h1>New Request</h1>")
-	b.WriteString("<p class=\"muted\">org_id: " + htmlEscape(orgID) + "</p>")
-
-	if strings.TrimSpace(vm.Error) != "" {
-		b.WriteString("<div class=\"err\">" + htmlEscape(vm.Error) + "</div>")
+	type pageData struct {
+		OrgID string
+		Sess  sessionData
+		VM    requestsNewViewModel
 	}
-
-	if len(vm.Templates) == 0 {
-		b.WriteString("<p>No workflow templates available.</p>")
-		if sess.Role == "admin" {
-			b.WriteString("<p><a class=\"btn\" href=\"/admin/templates/new\">Create template (admin)</a></p>")
-		}
-		b.WriteString("<p><a class=\"btn\" href=\"/\">Home</a></p>")
-		b.WriteString("</body></html>")
-		_, _ = w.Write([]byte(b.String()))
-		return
-	}
-
-	action := "/org/" + orgID + "/requests"
-	b.WriteString("<form method=\"post\" action=\"" + htmlEscape(action) + "\">")
-	b.WriteString("<label for=\"title\">Title</label>")
-	b.WriteString("<input id=\"title\" name=\"title\" required value=\"" + htmlEscape(vm.Title) + "\" />")
-	b.WriteString("<label for=\"workflow_template_id\">Workflow Template</label>")
-	b.WriteString("<select id=\"workflow_template_id\" name=\"workflow_template_id\" required>")
-	b.WriteString("<option value=\"\" disabled")
-	if strings.TrimSpace(vm.TemplateID) == "" {
-		b.WriteString(" selected")
-	}
-	b.WriteString(">Select a template</option>")
-	for _, t := range vm.Templates {
-		id := t.ID.String()
-		b.WriteString("<option value=\"" + htmlEscape(id) + "\"")
-		if id == vm.TemplateID {
-			b.WriteString(" selected")
-		}
-		b.WriteString(">" + htmlEscape(t.Name) + "</option>")
-	}
-	b.WriteString("</select>")
-	b.WriteString("<div class=\"row\">")
-	b.WriteString("<button class=\"btn primary\" type=\"submit\">Create</button>")
-	b.WriteString("<a class=\"btn\" href=\"/\">Home</a>")
-	b.WriteString("</div>")
-	b.WriteString("</form>")
-	b.WriteString("</body></html>")
-	_, _ = w.Write([]byte(b.String()))
+	renderHTML(w, "requests_new", pageData{OrgID: orgID, Sess: sess, VM: vm}, http.StatusOK)
 }
 
 func (a *RequestsHandler) HandleRequestsCreate(w http.ResponseWriter, r *http.Request, sess sessionData) {
@@ -358,104 +274,67 @@ func (a *RequestsHandler) HandleRequestsShow(w http.ResponseWriter, r *http.Requ
 
 	flashErr := strings.TrimSpace(r.URL.Query().Get("err"))
 
-	w.Header().Set("content-type", "text/html; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	var b strings.Builder
-	b.WriteString("<!doctype html><html><head><meta charset=\"utf-8\"><title>PonSu</title>")
-	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">")
-	b.WriteString("<style>body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:24px;max-width:1000px}table{width:100%;border-collapse:collapse;margin-top:12px}th,td{border-bottom:1px solid rgba(127,127,127,.25);padding:8px;text-align:left;vertical-align:top}th{font-weight:700} .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px} .btn{padding:8px 12px;border:1px solid rgba(127,127,127,.35);border-radius:6px;background:#fff;color:#111;text-decoration:none;display:inline-block} .btn.danger{border-color:#b42318;color:#b42318} .btn.primary{background:#111;color:#fff;border-color:#111} .muted{opacity:.8} .err{background:#fff1f1;border:1px solid #ffb4b4;padding:10px;border-radius:8px;margin:12px 0} textarea{width:100%;padding:8px;border:1px solid rgba(127,127,127,.35);border-radius:6px;font:inherit;min-height:90px}</style>")
-	b.WriteString("</head><body>")
-	b.WriteString("<h1>Request</h1>")
-	b.WriteString("<p class=\"muted\">org_id: " + htmlEscape(orgIDStr) + "</p>")
-	if flashErr != "" {
-		b.WriteString("<div class=\"err\">" + htmlEscape(flashErr) + "</div>")
+	type stepVM struct {
+		StepIndex int32
+		Label     string
+		Status    string
 	}
-	b.WriteString("<p><strong>Title</strong>: " + htmlEscape(reqRow.Title) + "</p>")
-	b.WriteString("<p><strong>Status</strong>: " + htmlEscape(reqRow.Status) + "</p>")
-	b.WriteString("<p><strong>ID</strong>: <code>" + htmlEscape(reqRow.ID.String()) + "</code></p>")
-
-	b.WriteString("<h2>Actions</h2>")
-	b.WriteString("<div class=\"row\">")
-	b.WriteString("<a class=\"btn\" href=\"/org/" + htmlEscape(orgIDStr) + "/requests\">Back to list</a>")
-	b.WriteString("<a class=\"btn\" href=\"/org/" + htmlEscape(orgIDStr) + "/requests/new\">New Request</a>")
-	b.WriteString("</div>")
-
-	if reqRow.Status == "draft" {
-		b.WriteString("<form method=\"post\" action=\"/org/" + htmlEscape(orgIDStr) + "/requests/" + htmlEscape(reqRow.ID.String()) + "/submit\" style=\"margin-top:12px\">")
-		b.WriteString("<button class=\"btn primary\" type=\"submit\">Submit</button>")
-		b.WriteString("</form>")
+	type auditVM struct {
+		When   string
+		Action string
+		Actor  string
+		Data   string
+	}
+	type pageData struct {
+		OrgID                  string
+		Sess                   sessionData
+		Req                    dbgen.Request
+		Steps                  []stepVM
+		Audit                  []auditVM
+		FlashErr               string
+		CanSubmit              bool
+		CanApproveRejectReturn bool
+		CanResubmit            bool
 	}
 
-	if reqRow.Status == "submitted" && sess.Role == "admin" {
-		b.WriteString("<div class=\"row\" style=\"margin-top:12px\">")
-		b.WriteString("<form method=\"post\" action=\"/org/" + htmlEscape(orgIDStr) + "/requests/" + htmlEscape(reqRow.ID.String()) + "/approve\">")
-		b.WriteString("<button class=\"btn primary\" type=\"submit\">Approve</button>")
-		b.WriteString("</form>")
-		b.WriteString("</div>")
-
-		b.WriteString("<form method=\"post\" action=\"/org/" + htmlEscape(orgIDStr) + "/requests/" + htmlEscape(reqRow.ID.String()) + "/return\" style=\"margin-top:12px\">")
-		b.WriteString("<label for=\"return_reason\" style=\"display:block;font-weight:600;margin:12px 0 6px\">Return reason</label>")
-		b.WriteString("<textarea id=\"return_reason\" name=\"reason\" placeholder=\"Why return?\"></textarea>")
-		b.WriteString("<button class=\"btn\" type=\"submit\" style=\"margin-top:8px\">Return</button>")
-		b.WriteString("</form>")
-
-		b.WriteString("<form method=\"post\" action=\"/org/" + htmlEscape(orgIDStr) + "/requests/" + htmlEscape(reqRow.ID.String()) + "/reject\" style=\"margin-top:12px\">")
-		b.WriteString("<label for=\"reason\" style=\"display:block;font-weight:600;margin:12px 0 6px\">Reject reason</label>")
-		b.WriteString("<textarea id=\"reason\" name=\"reason\" placeholder=\"Why reject?\"></textarea>")
-		b.WriteString("<button class=\"btn danger\" type=\"submit\" style=\"margin-top:8px\">Reject</button>")
-		b.WriteString("</form>")
+	stepsVM := make([]stepVM, 0, len(steps))
+	for _, s := range steps {
+		stepsVM = append(stepsVM, stepVM{StepIndex: s.StepIndex, Label: s.Label, Status: s.Status})
 	}
-
-	// Returned -> creator can resubmit
-	if reqRow.Status == "returned" && reqRow.CreatedByUserID.Valid && sess.UserID == reqRow.CreatedByUserID.UUID.String() {
-		b.WriteString("<form method=\"post\" action=\"/org/" + htmlEscape(orgIDStr) + "/requests/" + htmlEscape(reqRow.ID.String()) + "/resubmit\" style=\"margin-top:12px\">")
-		b.WriteString("<button class=\"btn primary\" type=\"submit\">Resubmit</button>")
-		b.WriteString("</form>")
-	}
-
-	b.WriteString("<h2>Steps</h2>")
-	if len(steps) == 0 {
-		b.WriteString("<p>No steps.</p>")
-	} else {
-		b.WriteString("<table><thead><tr><th>#</th><th>Label</th><th>Status</th></tr></thead><tbody>")
-		for _, s := range steps {
-			b.WriteString("<tr><td>" + htmlEscape(fmt.Sprintf("%d", s.StepIndex)) + "</td><td>" + htmlEscape(s.Label) + "</td><td>" + htmlEscape(s.Status) + "</td></tr>")
+	auditVMs := make([]auditVM, 0, len(audit))
+	for _, a := range audit {
+		when := a.OccurredAt.Local().Format("2006-01-02 15:04:05")
+		actor := "-"
+		if a.ActorUserID.Valid {
+			actor = a.ActorUserID.UUID.String()
 		}
-		b.WriteString("</tbody></table>")
-	}
-
-	b.WriteString("<h2>Audit</h2>")
-	if len(audit) == 0 {
-		b.WriteString("<p>No audit entries.</p>")
-	} else {
-		b.WriteString("<table><thead><tr><th>When</th><th>Action</th><th>Actor</th><th>Data</th></tr></thead><tbody>")
-		for _, a := range audit {
-			when := a.OccurredAt.Local().Format("2006-01-02 15:04:05")
-			actor := "-"
-			if a.ActorUserID.Valid {
-				actor = a.ActorUserID.UUID.String()
-			}
-			data := "{}"
-			if len(a.Data) > 0 {
-				data = string(a.Data)
-			}
-			b.WriteString("<tr>")
-			b.WriteString("<td>" + htmlEscape(when) + "</td>")
-			b.WriteString("<td>" + htmlEscape(a.Action) + "</td>")
-			b.WriteString("<td><code>" + htmlEscape(actor) + "</code></td>")
-			b.WriteString("<td><code>" + htmlEscape(data) + "</code></td>")
-			b.WriteString("</tr>")
+		data := "{}"
+		if len(a.Data) > 0 {
+			data = string(a.Data)
 		}
-		b.WriteString("</tbody></table>")
+		auditVMs = append(auditVMs, auditVM{When: when, Action: a.Action, Actor: actor, Data: data})
 	}
 
-	b.WriteString("<div class=\"row\">")
-	b.WriteString("<a class=\"btn\" href=\"/org/" + htmlEscape(orgIDStr) + "/requests\">Requests</a>")
-	b.WriteString("<a class=\"btn\" href=\"/org/" + htmlEscape(orgIDStr) + "/requests/new\">New Request</a>")
-	b.WriteString("<a class=\"btn\" href=\"/\">Home</a>")
-	b.WriteString("</div>")
-	b.WriteString("</body></html>")
-	_, _ = w.Write([]byte(b.String()))
+	canSubmit := reqRow.Status == "draft"
+	canApproveRejectReturn := reqRow.Status == "submitted" && sess.Role == "admin"
+	canResubmit := reqRow.Status == "returned" && reqRow.CreatedByUserID.Valid && sess.UserID == reqRow.CreatedByUserID.UUID.String()
+
+	renderHTML(
+		w,
+		"requests_show",
+		pageData{
+			OrgID:                  orgIDStr,
+			Sess:                   sess,
+			Req:                    reqRow,
+			Steps:                  stepsVM,
+			Audit:                  auditVMs,
+			FlashErr:               flashErr,
+			CanSubmit:              canSubmit,
+			CanApproveRejectReturn: canApproveRejectReturn,
+			CanResubmit:            canResubmit,
+		},
+		http.StatusOK,
+	)
 }
 
 func (a *RequestsHandler) HandleRequestsSubmit(w http.ResponseWriter, r *http.Request, sess sessionData) {
@@ -724,69 +603,12 @@ func showAdminTemplatesNew(w http.ResponseWriter, r *http.Request, sess sessionD
 		vm.StepsText = vm.Approvers
 	}
 
-	w.Header().Set("content-type", "text/html; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-
-	var b strings.Builder
-	b.WriteString("<!doctype html><html><head><meta charset=\"utf-8\"><title>PonSu</title>")
-	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">")
-	b.WriteString("<style>body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:24px;max-width:900px}label{display:block;font-weight:600;margin:12px 0 6px}input,textarea,select{width:100%;padding:8px;border:1px solid rgba(127,127,127,.35);border-radius:6px;font:inherit}textarea{min-height:220px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}textarea.small{min-height:100px} .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px} .btn{padding:8px 12px;border:1px solid rgba(127,127,127,.35);border-radius:6px;background:#fff;color:#111;text-decoration:none;display:inline-block} .btn.primary{background:#111;color:#fff;border-color:#111} .err{background:#fff1f1;border:1px solid #ffb4b4;padding:10px;border-radius:8px;margin:12px 0} .muted{opacity:.8} .card{border:1px solid rgba(127,127,127,.25);border-radius:10px;padding:12px;margin-top:12px}</style>")
-	b.WriteString("</head><body>")
-	b.WriteString("<h1>New Workflow Template (admin)</h1>")
-	b.WriteString("<p class=\"muted\">org_id: " + htmlEscape(orgID) + "</p>")
-
-	if strings.TrimSpace(vm.Error) != "" {
-		b.WriteString("<div class=\"err\">" + htmlEscape(vm.Error) + "</div>")
+	type pageData struct {
+		OrgID string
+		Sess  sessionData
+		VM    adminTemplatesNewViewModel
 	}
-
-	action := "/org/" + orgID + "/admin/templates"
-	b.WriteString("<form method=\"post\" action=\"" + htmlEscape(action) + "\">")
-	b.WriteString("<label for=\"name\">Name</label>")
-	b.WriteString("<input id=\"name\" name=\"name\" required value=\"" + htmlEscape(vm.Name) + "\" />")
-	b.WriteString("<label for=\"description\">Description</label>")
-	b.WriteString("<input id=\"description\" name=\"description\" value=\"" + htmlEscape(vm.Description) + "\" />")
-
-	b.WriteString("<label for=\"definition_mode\">Definition input</label>")
-	b.WriteString("<select id=\"definition_mode\" name=\"definition_mode\">")
-	if vm.Mode == "json" {
-		b.WriteString("<option value=\"builder\">Builder (approvers)</option><option value=\"json\" selected>Raw JSON</option>")
-	} else {
-		b.WriteString("<option value=\"builder\" selected>Builder (approvers)</option><option value=\"json\">Raw JSON</option>")
-	}
-	b.WriteString("</select>")
-
-	b.WriteString("<div class=\"card\">")
-	b.WriteString("<div style=\"font-weight:700\">Builder: approvers</div>")
-	b.WriteString("<div class=\"muted\" style=\"margin-top:4px\">空行でステップ区切り。各ステップは1行1人（メール or ユーザーID）。builder選択時はこの入力からdefinition(JSON)を自動生成します。</div>\n")
-	b.WriteString("<label for=\"steps\">Steps</label>\n")
-	b.WriteString(`<textarea class="small" id="steps" name="steps" spellcheck="false" placeholder="# Step 1
-alice@example.com
-bob@example.com
-
-# Step 2
-carol@example.com
-">`)
-	b.WriteString(htmlEscape(vm.StepsText))
-	b.WriteString("</textarea>\n")
-	b.WriteString("<div class=\"muted\" style=\"margin-top:6px\">※ 先頭の <code>#</code> 行はコメントとして無視します。</div>\n")
-	b.WriteString("</div>")
-
-	b.WriteString("<div class=\"card\">")
-	b.WriteString("<div style=\"font-weight:700\">Raw JSON</div>")
-	b.WriteString("<div class=\"muted\" style=\"margin-top:4px\">json選択時はこの内容をそのまま保存します。</div>")
-	b.WriteString("<label for=\"definition\">Definition (JSON)</label>")
-	b.WriteString("<textarea id=\"definition\" name=\"definition\" spellcheck=\"false\">" + htmlEscape(vm.Definition) + "</textarea>")
-	b.WriteString("</div>")
-
-	b.WriteString("<div class=\"row\">")
-	b.WriteString("<button class=\"btn primary\" type=\"submit\">Create</button>")
-	b.WriteString("<a class=\"btn\" href=\"/org/" + htmlEscape(orgID) + "/admin/templates\">Back to list</a>")
-	b.WriteString("<a class=\"btn\" href=\"/\">Home</a>")
-	b.WriteString("</div>")
-	b.WriteString("</form>")
-	b.WriteString("</body></html>")
-
-	_, _ = w.Write([]byte(b.String()))
+	renderHTML(w, "admin_templates_new", pageData{OrgID: orgID, Sess: sess, VM: vm}, http.StatusOK)
 }
 
 // HandleAdminTemplatesCreate はテンプレを作成して一覧へリダイレクトする。
@@ -1003,49 +825,9 @@ func (a *AdminTemplatesHandler) HandleAdminTemplatesIndex(w http.ResponseWriter,
 
 	createdID := strings.TrimSpace(r.URL.Query().Get("created"))
 
-	w.Header().Set("content-type", "text/html; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-
-	var b strings.Builder
-	b.WriteString("<!doctype html><html><head><meta charset=\"utf-8\"><title>PonSu</title>")
-	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">")
-	b.WriteString("<style>body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:24px;max-width:1100px}table{width:100%;border-collapse:collapse;margin-top:12px}th,td{border-bottom:1px solid rgba(127,127,127,.25);padding:8px;text-align:left;vertical-align:top}th{font-weight:700} .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px} .btn{padding:8px 12px;border:1px solid rgba(127,127,127,.35);border-radius:6px;background:#fff;color:#111;text-decoration:none;display:inline-block} .note{background:#f3f7ff;border:1px solid #b7d2ff;padding:10px;border-radius:8px;margin:12px 0} .muted{opacity:.8}</style>")
-	b.WriteString("</head><body>")
-	b.WriteString("<h1>Workflow Templates (admin)</h1>")
-	b.WriteString("<p class=\"muted\">org_id: " + htmlEscape(orgIDStr) + "</p>")
-
-	if createdID != "" {
-		b.WriteString("<div class=\"note\">Created: " + htmlEscape(createdID) + "</div>")
-	}
-
-	b.WriteString("<div class=\"row\">")
-	b.WriteString("<a class=\"btn\" href=\"/org/" + htmlEscape(orgIDStr) + "/admin/templates/new\">New</a>")
-	b.WriteString("<a class=\"btn\" href=\"/\">Home</a>")
-	b.WriteString("</div>")
-
-	if len(items) == 0 {
-		b.WriteString("<p>No templates yet.</p>")
-		b.WriteString("</body></html>")
-		_, _ = w.Write([]byte(b.String()))
-		return
-	}
-
-	b.WriteString("<table><thead><tr><th>Name</th><th>Description</th><th>Created</th><th>ID</th></tr></thead><tbody>")
-	for _, it := range items {
-		createdAt := it.CreatedAt
-		// MVP用：見た目を分かりやすくするためローカル表示。
-		createdAtStr := createdAt.Local().Format("2006-01-02 15:04:05")
-		if createdAt.IsZero() {
-			createdAtStr = "-"
-		}
-		b.WriteString("<tr>")
-		b.WriteString("<td>" + htmlEscape(it.Name) + "</td>")
-		b.WriteString("<td>" + htmlEscape(it.Description) + "</td>")
-		b.WriteString("<td>" + htmlEscape(createdAtStr) + "</td>")
-		b.WriteString("<td><code>" + htmlEscape(it.ID.String()) + "</code></td>")
-		b.WriteString("</tr>")
-	}
-	b.WriteString("</tbody></table>")
-	b.WriteString("</body></html>")
-	_, _ = w.Write([]byte(b.String()))
+	renderHTML(w, "admin_templates_index", struct {
+		OrgID     string
+		CreatedID string
+		Items     []dbgen.WorkflowTemplate
+	}{OrgID: orgIDStr, CreatedID: createdID, Items: items}, http.StatusOK)
 }

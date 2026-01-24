@@ -1,0 +1,103 @@
+{{define "requests_index"}}
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>PonSu</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body {
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        margin: 24px;
+        max-width: 1100px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 12px;
+      }
+      th,
+      td {
+        border-bottom: 1px solid rgba(127, 127, 127, 0.25);
+        padding: 8px;
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        font-weight: 700;
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 12px;
+      }
+      .btn {
+        padding: 8px 12px;
+        border: 1px solid rgba(127, 127, 127, 0.35);
+        border-radius: 6px;
+        background: #fff;
+        color: #111;
+        text-decoration: none;
+        display: inline-block;
+      }
+      .muted {
+        opacity: 0.8;
+      }
+      .err {
+        background: #fff1f1;
+        border: 1px solid #ffb4b4;
+        padding: 10px;
+        border-radius: 8px;
+        margin: 12px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Requests</h1>
+    <p class="muted">org_id: {{.OrgID}}</p>
+
+    {{if .VM.Error}}
+      <div class="err">{{.VM.Error}}</div>
+    {{end}}
+
+    <div class="row">
+      <a class="btn" href="/org/{{.OrgID}}/requests/new">New Request</a>
+      <a class="btn" href="/">Home</a>
+    </div>
+
+    {{if eq (len .VM.Items) 0}}
+      <p>No requests yet.</p>
+    {{else}}
+      <table>
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th>ID</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{range .VM.Items}}
+            <tr>
+              <td>
+                <a href="/org/{{$.OrgID}}/requests/{{.ID}}">{{.Title}}</a>
+              </td>
+              <td>{{.Status}}</td>
+              <td>
+                {{if .CreatedAt.IsZero}}
+                  -
+                {{else}}
+                  {{.CreatedAt.Local.Format "2006-01-02 15:04:05"}}
+                {{end}}
+              </td>
+              <td><code>{{.ID}}</code></td>
+            </tr>
+          {{end}}
+        </tbody>
+      </table>
+    {{end}}
+  </body>
+</html>
+{{end}}

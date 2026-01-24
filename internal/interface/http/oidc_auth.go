@@ -105,55 +105,17 @@ func (a *OIDCAuth) ensureInit(ctx context.Context) error {
 func (a *OIDCAuth) HandleHome(w http.ResponseWriter, r *http.Request) {
 	sess, ok := a.readSession(r)
 
-	w.Header().Set("content-type", "text/html; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
+	oidcConfigured := a.cfg.OIDCIssuerURL != "" && a.cfg.OIDCClientID != "" && a.cfg.OIDCClientSecret != ""
 
-	var b strings.Builder
-	b.WriteString("<!doctype html><html><head><meta charset=\"utf-8\"><title>PonSu</title></head><body>")
-	b.WriteString("<h1>PonSu</h1>")
-
-	if ok {
-		b.WriteString("<p>Logged in.</p>")
-		b.WriteString("<ul>")
-		b.WriteString("<li>sub: " + htmlEscape(sess.Sub) + "</li>")
-		if sess.UserID != "" {
-			b.WriteString("<li>user_id: " + htmlEscape(sess.UserID) + "</li>")
-		}
-		if sess.OrgID != "" {
-			b.WriteString("<li>org_id: " + htmlEscape(sess.OrgID) + "</li>")
-		}
-		if sess.Role != "" {
-			b.WriteString("<li>role: " + htmlEscape(sess.Role) + "</li>")
-		}
-		if sess.Email != "" {
-			b.WriteString("<li>email: " + htmlEscape(sess.Email) + "</li>")
-		}
-		if sess.Name != "" {
-			b.WriteString("<li>name: " + htmlEscape(sess.Name) + "</li>")
-		}
-		b.WriteString("</ul>")
-		if sess.OrgID != "" {
-			b.WriteString("<p><a href=\"/requests/new\">New Request</a></p>")
-			b.WriteString("<p><a href=\"/requests\">Requests</a></p>")
-		}
-		if sess.Role == "admin" {
-			b.WriteString("<p><a href=\"/admin/templates/new\">Admin: New Template</a></p>")
-			if sess.OrgID != "" {
-				b.WriteString("<p><a href=\"/org/" + htmlEscape(sess.OrgID) + "/admin/templates\">Admin: Templates</a></p>")
-			}
-		}
-		b.WriteString("<p><a href=\"/auth/logout\">Logout</a></p>")
-	} else {
-		b.WriteString("<p>Not logged in.</p>")
-		b.WriteString("<p><a href=\"/auth/login\">Login with OIDC</a></p>")
-
-		if a.cfg.OIDCIssuerURL == "" || a.cfg.OIDCClientID == "" {
-			b.WriteString("<p><small>OIDC not configured. Set PONSU_OIDC_ISSUER_URL / PONSU_OIDC_CLIENT_ID / PONSU_OIDC_CLIENT_SECRET.</small></p>")
-		}
-	}
-
-	b.WriteString("</body></html>")
-	_, _ = w.Write([]byte(b.String()))
+	renderHTML(w, "home", struct {
+		LoggedIn       bool
+		Sess           sessionData
+		OIDCConfigured bool
+	}{
+		LoggedIn:       ok,
+		Sess:           sess,
+		OIDCConfigured: oidcConfigured,
+	}, http.StatusOK)
 }
 
 // HandleLogin は OIDC の認可エンドポイントへリダイレクトしてログインを開始する。
@@ -650,13 +612,4 @@ func inferExternalURL(r *http.Request) string {
 		host = strings.TrimSpace(parts[0])
 	}
 	return scheme + "://" + host
-}
-
-// htmlEscape は最小限のHTMLエスケープを行う（MVP用）。
-func htmlEscape(s string) string {
-	s = strings.ReplaceAll(s, "&", "&amp;")
-	s = strings.ReplaceAll(s, "<", "&lt;")
-	s = strings.ReplaceAll(s, ">", "&gt;")
-	s = strings.ReplaceAll(s, "\"", "&quot;")
-	return s
 }

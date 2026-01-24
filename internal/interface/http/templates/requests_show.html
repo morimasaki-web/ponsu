@@ -1,0 +1,180 @@
+{{define "requests_show"}}
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>PonSu</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body {
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        margin: 24px;
+        max-width: 1000px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 12px;
+      }
+      th,
+      td {
+        border-bottom: 1px solid rgba(127, 127, 127, 0.25);
+        padding: 8px;
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        font-weight: 700;
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 12px;
+      }
+      .btn {
+        padding: 8px 12px;
+        border: 1px solid rgba(127, 127, 127, 0.35);
+        border-radius: 6px;
+        background: #fff;
+        color: #111;
+        text-decoration: none;
+        display: inline-block;
+      }
+      .btn.danger {
+        border-color: #b42318;
+        color: #b42318;
+      }
+      .btn.primary {
+        background: #111;
+        color: #fff;
+        border-color: #111;
+      }
+      .muted {
+        opacity: 0.8;
+      }
+      .err {
+        background: #fff1f1;
+        border: 1px solid #ffb4b4;
+        padding: 10px;
+        border-radius: 8px;
+        margin: 12px 0;
+      }
+      textarea {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid rgba(127, 127, 127, 0.35);
+        border-radius: 6px;
+        font: inherit;
+        min-height: 90px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Request</h1>
+    <p class="muted">org_id: {{.OrgID}}</p>
+
+    {{if .FlashErr}}
+      <div class="err">{{.FlashErr}}</div>
+    {{end}}
+
+    <p><strong>Title</strong>: {{.Req.Title}}</p>
+    <p><strong>Status</strong>: {{.Req.Status}}</p>
+    <p><strong>ID</strong>: <code>{{.Req.ID}}</code></p>
+
+    <h2>Actions</h2>
+    <div class="row">
+      <a class="btn" href="/org/{{.OrgID}}/requests">Back to list</a>
+      <a class="btn" href="/org/{{.OrgID}}/requests/new">New Request</a>
+    </div>
+
+    {{if .CanSubmit}}
+      <form method="post" action="/org/{{.OrgID}}/requests/{{.Req.ID}}/submit" style="margin-top: 12px">
+        <button class="btn primary" type="submit">Submit</button>
+      </form>
+    {{end}}
+
+    {{if .CanApproveRejectReturn}}
+      <div class="row" style="margin-top: 12px">
+        <form method="post" action="/org/{{.OrgID}}/requests/{{.Req.ID}}/approve">
+          <button class="btn primary" type="submit">Approve</button>
+        </form>
+      </div>
+
+      <form method="post" action="/org/{{.OrgID}}/requests/{{.Req.ID}}/return" style="margin-top: 12px">
+        <label for="return_reason" style="display: block; font-weight: 600; margin: 12px 0 6px">Return reason</label>
+        <textarea id="return_reason" name="reason" placeholder="Why return?"></textarea>
+        <button class="btn" type="submit" style="margin-top: 8px">Return</button>
+      </form>
+
+      <form method="post" action="/org/{{.OrgID}}/requests/{{.Req.ID}}/reject" style="margin-top: 12px">
+        <label for="reason" style="display: block; font-weight: 600; margin: 12px 0 6px">Reject reason</label>
+        <textarea id="reason" name="reason" placeholder="Why reject?"></textarea>
+        <button class="btn danger" type="submit" style="margin-top: 8px">Reject</button>
+      </form>
+    {{end}}
+
+    {{if .CanResubmit}}
+      <form method="post" action="/org/{{.OrgID}}/requests/{{.Req.ID}}/resubmit" style="margin-top: 12px">
+        <button class="btn primary" type="submit">Resubmit</button>
+      </form>
+    {{end}}
+
+    <h2>Steps</h2>
+    {{if eq (len .Steps) 0}}
+      <p>No steps.</p>
+    {{else}}
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Label</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{range .Steps}}
+            <tr>
+              <td>{{.StepIndex}}</td>
+              <td>{{.Label}}</td>
+              <td>{{.Status}}</td>
+            </tr>
+          {{end}}
+        </tbody>
+      </table>
+    {{end}}
+
+    <h2>Audit</h2>
+    {{if eq (len .Audit) 0}}
+      <p>No audit entries.</p>
+    {{else}}
+      <table>
+        <thead>
+          <tr>
+            <th>When</th>
+            <th>Action</th>
+            <th>Actor</th>
+            <th>Data</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{range .Audit}}
+            <tr>
+              <td>{{.When}}</td>
+              <td>{{.Action}}</td>
+              <td><code>{{.Actor}}</code></td>
+              <td><code>{{.Data}}</code></td>
+            </tr>
+          {{end}}
+        </tbody>
+      </table>
+    {{end}}
+
+    <div class="row">
+      <a class="btn" href="/org/{{.OrgID}}/requests">Requests</a>
+      <a class="btn" href="/org/{{.OrgID}}/requests/new">New Request</a>
+      <a class="btn" href="/">Home</a>
+    </div>
+  </body>
+</html>
+{{end}}

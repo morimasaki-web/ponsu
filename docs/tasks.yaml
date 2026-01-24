@@ -596,12 +596,14 @@ tasks:
 
   - id: MVP-117
     title: "リファクタ: HTMLをhtml/templateへ置換（SSR保守性/XSS耐性）"
-    status: todo
+    status: done
     priority: medium
     branch: "feature/mvp-117-templates"
     depends_on: [MVP-116]
     needs_claude_review: false
     description: "strings.BuilderベースのHTML生成を、html/template（テンプレ/レイアウト）に置き換える。"
+    start_date: 2026-01-24
+    end_date: 2026-01-24
     acceptance_criteria:
       - "主要SSRページがtemplateで描画される"
       - "手動エスケープが不要になり、XSS耐性が改善される"
