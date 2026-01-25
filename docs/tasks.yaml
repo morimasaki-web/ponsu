@@ -746,7 +746,7 @@ tasks:
 
   - id: LEARN-003
     title: "小改善: 共通エラーバナーコンポーネント化（React）"
-    status: todo
+    status: done
     priority: low
     branch: "feature/learn-003-error-banner"
     depends_on: [MVP-112]
@@ -784,3 +784,82 @@ tasks:
     acceptance_criteria:
       - "デモ説明の文言が1箇所に集約されている"
       - "npm run build が成功する"
+
+  - id: LEARN-005
+    title: "小改善: HTTPエラーヘルパーのテスト追加（httptest）"
+    status: todo
+    priority: low
+    branch: "feature/learn-005-http-errors-test"
+    depends_on: [MVP-118]
+    needs_claude_review: false
+    description: |
+      目的: GoのHTTPハンドラ/レスポンス（httptest）と、PonSuのエラーポリシー（詳細はログ・ユーザーには汎用）に慣れる。
+
+      手順:
+      1) 探索: internal/interface/http/errors.go を開き、writeBadRequest/writeUnauthorized/... の役割を読む。
+      2) テスト作成: internal/interface/http/errors_test.go を新規作成する。
+         - httptest.NewRecorder() と httptest.NewRequest() を使う
+      3) テストケースを追加する（最低3つ）:
+         - writeBadRequest: 400 になり、本文に渡したmsgが含まれる
+         - writeUnauthorized: 401 になる
+         - writeInternalError: 500 になり、本文に "internal server error" が含まれる
+           ※ 渡した err.Error() が本文に含まれないことも確認する（情報漏えい防止）
+      4) 仕上げ: go test ./... を通す。
+      5) 反映: feature/learn-005-http-errors-test を切ってコミット→push→mainへ取り込み。
+    acceptance_criteria:
+      - "エラーヘルパーに対するテストが追加されている"
+      - "internal error で生エラー文字列がレスポンスに出ない"
+      - "go test ./... が通る"
+
+  - id: LEARN-006
+    title: "小改善: panicリカバリミドルウェア追加（500へ変換）"
+    status: todo
+    priority: low
+    branch: "feature/learn-006-recover-middleware"
+    depends_on: [MVP-118]
+    needs_claude_review: false
+    description: |
+      目的: middleware（http.Handlerのラップ）と、予期しない障害の扱い（recover + ログ + 500）を学ぶ。
+
+      手順:
+      1) 探索: internal/interface/http/auth_middleware.go を読んで「ミドルウェアの書き方」に慣れる。
+      2) 実装: internal/interface/http/recover_middleware.go を新規作成して recover ミドルウェアを作る。
+         - defer + recover() でpanicを捕捉
+         - runtime/debug.Stack() をログに出す（slogでOK）
+         - レスポンスは writeInternalError(...) を使って 500 にする（詳細は返さない）
+      3) 配線: internal/interface/http/mux.go で、全体のハンドラを recover ミドルウェアでラップする。
+      4) テスト: internal/interface/http/recover_middleware_test.go を作る。
+         - わざと panic("boom") するハンドラを用意
+         - ミドルウェアで包んでリクエスト
+         - 500 が返る（& テストがpanicで落ちない）ことを確認
+      5) 仕上げ: go test ./... を通す。
+      6) 反映: feature/learn-006-recover-middleware を切ってコミット→push→mainへ取り込み。
+    acceptance_criteria:
+      - "panicしてもサーバが落ちず、500が返る"
+      - "レスポンスにpanic内容が出ない"
+      - "go test ./... が通る"
+
+  - id: LEARN-007
+    title: "小改善: /buildinfo エンドポイント追加（Goのビルド情報をJSONで返す）"
+    status: todo
+    priority: low
+    branch: "feature/learn-007-buildinfo"
+    depends_on: [MVP-116]
+    needs_claude_review: false
+    description: |
+      目的: 標準ライブラリだけで「診断用エンドポイント」を作る練習（runtime/debug を触る）。
+
+      手順:
+      1) 探索: internal/interface/http/mux.go のルーティング追加箇所を確認する。
+      2) 実装: GET /buildinfo を追加（認証不要）。
+         - runtime/debug.ReadBuildInfo() を使って、Go version と main module をJSONで返す。
+         - 情報が取れない場合も 200 で "unknown" などにしてOK（デバッグ用途）
+      3) テスト: internal/interface/http/buildinfo_test.go を追加する。
+         - /buildinfo が 200 を返すこと
+         - content-type が application/json であること
+      4) 仕上げ: go test ./... を通す。
+      5) 反映: feature/learn-007-buildinfo を切ってコミット→push→mainへ取り込み。
+    acceptance_criteria:
+      - "GET /buildinfo が200を返す"
+      - "JSONで goVersion 等の情報が返る（unknownでも可）"
+      - "go test ./... が通る"
