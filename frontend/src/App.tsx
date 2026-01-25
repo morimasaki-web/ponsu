@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { HashRouter, Link, Route, Routes } from 'react-router-dom'
+import { HashRouter, Link, NavLink, Route, Routes } from 'react-router-dom'
 import { appMode, fetchMe, type Me } from './graphql'
 import { createGraphqlClient } from './gql/client'
 import { applyTheme, getStoredTheme, type ThemeMode } from './theme'
@@ -16,6 +16,9 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const [theme, setTheme] = useState<ThemeMode>(() => getStoredTheme())
   const [demoResetNonce, setDemoResetNonce] = useState(0)
+
+  const navLinkClassName = ({ isActive }: { isActive: boolean }) =>
+    isActive ? 'navLink navLink--active' : 'navLink'
 
   const resetDemo = () => {
     if (appMode !== 'demo') return
@@ -111,9 +114,15 @@ export default function App() {
 
             <div className="headerRight">
               <nav className="nav">
-                <Link to="/">Home</Link>
-                <Link to="/requests">Requests</Link>
-                <Link to="/about">Guide</Link>
+                <NavLink to="/" end className={navLinkClassName}>
+                  Home
+                </NavLink>
+                <NavLink to="/requests" className={navLinkClassName}>
+                  Requests
+                </NavLink>
+                <NavLink to="/about" className={navLinkClassName}>
+                  Guide
+                </NavLink>
               </nav>
 
               <label className="themeLabel">

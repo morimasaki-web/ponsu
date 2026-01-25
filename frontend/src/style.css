@@ -150,6 +150,26 @@ body {
   border-radius: 6px;
 }
 
+.navLink {
+  color: var(--link);
+  text-decoration: none;
+}
+
+.navLink:hover {
+  text-decoration: underline;
+}
+
+.navLink:focus {
+  outline: 2px solid color-mix(in srgb, var(--accent2) 60%, transparent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.navLink--active {
+  font-weight: 600;
+  text-decoration: underline;
+}
+
 .card {
   background: var(--card-bg);
   border: 1px solid var(--border);
