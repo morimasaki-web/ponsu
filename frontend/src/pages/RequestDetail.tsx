@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useMutation, useQuery } from 'urql'
+import { ErrorBanner } from '../components/ErrorBanner'
 import {
   demoRequestsSeed,
   formatStatus,
@@ -131,13 +132,17 @@ export default function RequestDetail() {
           <h2>申請詳細（GraphQL）</h2>
 
           {fetching && <p>読み込み中...</p>}
-          {error && (
-            <p className="error">
-              {error.message}
-              <br />
-              未ログインの場合は <a href="/auth/login">ログイン</a> してください。
-            </p>
-          )}
+          {error && 
+            <ErrorBanner 
+              message={error.message}
+              action={
+                <>
+                  未ログインの場合は <a href="/auth/login">ログイン</a>{' '}
+                  してください。
+                </>
+              }
+            />
+          }
 
           {meError && <p className="error">{meError.message}</p>}
           {actionError && <p className="error">{actionError}</p>}

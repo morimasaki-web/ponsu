@@ -3,6 +3,7 @@ import { demoRequestsSeed, formatStatus } from '../demoData'
 import { appMode } from '../graphql'
 import { useQuery } from 'urql'
 import { RequestsDocument } from '../gql/graphql'
+import { ErrorBanner } from '../components/ErrorBanner'
 
 export default function RequestsList() {
   const [{ data, fetching, error }] = useQuery({
@@ -21,14 +22,17 @@ export default function RequestsList() {
           </Link>
         </div>
         {fetching && <p>読み込み中...</p>}
-        {error && (
-          <p className="error">
-            {error.message}
-            <br />
-            未ログインの場合は <a href="/auth/login">ログイン</a> してください。
-          </p>
-        )}
-
+        {error && 
+          <ErrorBanner 
+            message={error.message}
+            action={
+              <>
+                未ログインの場合は <a href="/auth/login">ログイン</a>{' '}
+                してください。
+              </>
+            }
+          />
+        }
         {data && (
           <div className="tableWrap">
             <table className="table">

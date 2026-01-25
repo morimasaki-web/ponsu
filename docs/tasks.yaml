@@ -724,7 +724,7 @@ tasks:
 
   - id: LEARN-002
     title: "小改善: ナビのアクティブ表示（React Router / CSS）"
-    status: todo
+    status: done
     priority: low
     branch: "feature/learn-002-active-nav"
     depends_on: [MVP-122]
