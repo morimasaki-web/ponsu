@@ -694,3 +694,93 @@ tasks:
     acceptance_criteria:
       - "エラー時に『何が起きたか/次にどうするか』が表示される"
       - "主要画面でローディング状態が統一され、操作不能が分かる"
+
+  # -------------------------
+  # 13. 学習用エンハンス（自分で実装）
+  # -------------------------
+  - id: LEARN-001
+    title: "小改善: /healthz ヘルスチェックエンドポイント追加（Go/http）"
+    status: todo
+    priority: low
+    branch: "feature/learn-001-healthz"
+    depends_on: [MVP-116]
+    needs_claude_review: false
+    description: |
+      目的: PonSu のHTTP配線（mux/handler）とテスト（httptest）に慣れる。
+
+      手順:
+      1) 探索: internal/interface/http/mux.go を開き、ルーティング（ServeMux等）の作り方を確認する。
+      2) 実装: GET /healthz を追加する（認証不要）。レスポンスはJSONでOK。
+         - 例: status=200, body={"ok":true}
+         - content-type は application/json を付ける
+      3) テスト: httptest を使って /healthz が 200 を返すことをテストする。
+         - テスト対象は「mux生成関数」または handler を直接呼ぶ形がよい
+      4) 仕上げ: go test ./... を通す。
+      5) 反映: feature/learn-001-healthz を切ってコミット→push→mainへ取り込み。
+    acceptance_criteria:
+      - "GET /healthz が常に200を返す（未ログインでもOK）"
+      - "レスポンスがJSONである（Content-Type含む）"
+      - "テストが1本以上追加され、go test ./... が通る"
+
+  - id: LEARN-002
+    title: "小改善: ナビのアクティブ表示（React Router / CSS）"
+    status: todo
+    priority: low
+    branch: "feature/learn-002-active-nav"
+    depends_on: [MVP-122]
+    needs_claude_review: false
+    description: |
+      目的: フロントのルーティング（HashRouter）とコンポーネント構造を把握する。
+
+      手順:
+      1) 探索: frontend/src/App.tsx を開き、ヘッダのナビ（Home/Requests/Guide）を確認する。
+      2) 実装: Link を NavLink に置き換えて、現在のページをアクティブ表示する。
+         - className を関数で出し分け（例: navLink / navLink--active）
+      3) CSS: frontend/src/style.css に navLink のスタイルを追加する。
+         - 例: active は下線/太字/色変更など
+      4) 確認: frontend で npm run build を通す。
+      5) 反映: feature/learn-002-active-nav を切ってコミット→push→mainへ取り込み。
+    acceptance_criteria:
+      - "現在表示中のページに対応するナビが一目で分かる"
+      - "npm run build が成功する"
+
+  - id: LEARN-003
+    title: "小改善: 共通エラーバナーコンポーネント化（React）"
+    status: todo
+    priority: low
+    branch: "feature/learn-003-error-banner"
+    depends_on: [MVP-112]
+    needs_claude_review: false
+    description: |
+      目的: 「状態（loading/error）」の扱いを整理して、UIの重複を減らす練習。
+
+      手順:
+      1) 探索: frontend/src/pages/RequestsList.tsx と RequestDetail.tsx を開き、error表示の重複を探す。
+      2) 実装: frontend/src/components/ErrorBanner.tsx を新規作成する。
+         - props: message: string, action?: ReactNode（例: ログイン導線）
+      3) 置換: 既存の <p className="error">...</p> を ErrorBanner に置き換える（2〜3箇所でOK）。
+      4) 確認: npm run build を通す。
+      5) 反映: feature/learn-003-error-banner を切ってコミット→push→mainへ取り込み。
+    acceptance_criteria:
+      - "error表示の重複が減っている（2箇所以上で共通化）"
+      - "npm run build が成功する"
+
+  - id: LEARN-004
+    title: "小改善: demoモードの説明文を集約（文言の一貫性）"
+    status: todo
+    priority: low
+    branch: "feature/learn-004-demo-copy"
+    depends_on: [MVP-122]
+    needs_claude_review: false
+    description: |
+      目的: アプリ全体の“文章（コピー）”を揃えて、読み手に優しいデモにする。
+
+      手順:
+      1) 探索: frontend/src で「静的デモ」「認証/DBなし」などの文言がどこに出ているか探す。
+      2) 実装: frontend/src/copy.ts のようなファイルを作り、デモ説明の文言を定数としてまとめる。
+      3) 置換: App.tsx / RequestsList.tsx / RequestDetail.tsx のデモ説明を定数参照に置き換える。
+      4) 確認: npm run build を通す。
+      5) 反映: feature/learn-004-demo-copy を切ってコミット→push→mainへ取り込み。
+    acceptance_criteria:
+      - "デモ説明の文言が1箇所に集約されている"
+      - "npm run build が成功する"
