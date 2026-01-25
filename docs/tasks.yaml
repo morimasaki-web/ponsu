@@ -811,9 +811,9 @@ tasks:
       - "internal error で生エラー文字列がレスポンスに出ない"
       - "go test ./... が通る"
 
-  - id: enhance-006
+  - id: LEARN-006
     title: "小改善: panicリカバリミドルウェア追加（500へ変換）"
-    status: todo
+    status: done
     priority: low
     branch: "feature/enhance-006-recover-middleware"
     depends_on: [MVP-118]

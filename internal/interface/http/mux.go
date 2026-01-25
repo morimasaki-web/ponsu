@@ -18,7 +18,7 @@ import (
 )
 
 // NewMux はアプリケーションのHTTPルートを登録した ServeMux を返す。
-func NewMux(cfg config.Config, logger *slog.Logger, db *sql.DB) *http.ServeMux {
+func NewMux(cfg config.Config, logger *slog.Logger, db *sql.DB) http.Handler {
 	if logger == nil {
 		logger = slog.Default()
 	}
@@ -109,5 +109,5 @@ func NewMux(cfg config.Config, logger *slog.Logger, db *sql.DB) *http.ServeMux {
 	mux.HandleFunc("POST /org/{orgID}/requests/{requestID}/attachments", auth.RequireLogin(handleAttachmentsUpload(attachmentsService, cfg.AttachmentsMaxBytes)))
 	mux.HandleFunc("GET /org/{orgID}/requests/{requestID}/attachments/{attachmentID}", auth.RequireLogin(handleAttachmentsDownload(attachmentsService)))
 
-	return mux
+	return RecoverMiddleware(logger, mux)
 }
