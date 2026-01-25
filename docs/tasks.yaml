@@ -702,7 +702,7 @@ tasks:
     title: "小改善: /healthz ヘルスチェックエンドポイント追加（Go/http）"
     status: todo
     priority: low
-    branch: "feature/learn-001-healthz"
+    branch: "feature/enhance-001-healthz"
     depends_on: [MVP-116]
     needs_claude_review: false
     description: |
@@ -716,7 +716,7 @@ tasks:
       3) テスト: httptest を使って /healthz が 200 を返すことをテストする。
          - テスト対象は「mux生成関数」または handler を直接呼ぶ形がよい
       4) 仕上げ: go test ./... を通す。
-      5) 反映: feature/learn-001-healthz を切ってコミット→push→mainへ取り込み。
+      5) 反映: feature/enhance-001-healthz を切ってコミット→push→mainへ取り込み。
     acceptance_criteria:
       - "GET /healthz が常に200を返す（未ログインでもOK）"
       - "レスポンスがJSONである（Content-Type含む）"
@@ -726,7 +726,7 @@ tasks:
     title: "小改善: ナビのアクティブ表示（React Router / CSS）"
     status: done
     priority: low
-    branch: "feature/learn-002-active-nav"
+    branch: "feature/enhance-002-active-nav"
     depends_on: [MVP-122]
     needs_claude_review: false
     description: |
@@ -739,7 +739,7 @@ tasks:
       3) CSS: frontend/src/style.css に navLink のスタイルを追加する。
          - 例: active は下線/太字/色変更など
       4) 確認: frontend で npm run build を通す。
-      5) 反映: feature/learn-002-active-nav を切ってコミット→push→mainへ取り込み。
+      5) 反映: feature/enhance-002-active-nav を切ってコミット→push→mainへ取り込み。
     acceptance_criteria:
       - "現在表示中のページに対応するナビが一目で分かる"
       - "npm run build が成功する"
@@ -748,7 +748,7 @@ tasks:
     title: "小改善: 共通エラーバナーコンポーネント化（React）"
     status: done
     priority: low
-    branch: "feature/learn-003-error-banner"
+    branch: "feature/enhance-003-error-banner"
     depends_on: [MVP-112]
     needs_claude_review: false
     description: |
@@ -760,7 +760,7 @@ tasks:
          - props: message: string, action?: ReactNode（例: ログイン導線）
       3) 置換: 既存の <p className="error">...</p> を ErrorBanner に置き換える（2〜3箇所でOK）。
       4) 確認: npm run build を通す。
-      5) 反映: feature/learn-003-error-banner を切ってコミット→push→mainへ取り込み。
+      5) 反映: feature/enhance-003-error-banner を切ってコミット→push→mainへ取り込み。
     acceptance_criteria:
       - "error表示の重複が減っている（2箇所以上で共通化）"
       - "npm run build が成功する"
@@ -769,7 +769,7 @@ tasks:
     title: "小改善: demoモードの説明文を集約（文言の一貫性）"
     status: todo
     priority: low
-    branch: "feature/learn-004-demo-copy"
+    branch: "feature/enhance-004-demo-copy"
     depends_on: [MVP-122]
     needs_claude_review: false
     description: |
@@ -780,16 +780,16 @@ tasks:
       2) 実装: frontend/src/copy.ts のようなファイルを作り、デモ説明の文言を定数としてまとめる。
       3) 置換: App.tsx / RequestsList.tsx / RequestDetail.tsx のデモ説明を定数参照に置き換える。
       4) 確認: npm run build を通す。
-      5) 反映: feature/learn-004-demo-copy を切ってコミット→push→mainへ取り込み。
+      5) 反映: feature/enhance-004-demo-copy を切ってコミット→push→mainへ取り込み。
     acceptance_criteria:
       - "デモ説明の文言が1箇所に集約されている"
       - "npm run build が成功する"
 
   - id: LEARN-005
     title: "小改善: HTTPエラーヘルパーのテスト追加（httptest）"
-    status: todo
+    status: done
     priority: low
-    branch: "feature/learn-005-http-errors-test"
+    branch: "feature/enhance-005-http-errors-test"
     depends_on: [MVP-118]
     needs_claude_review: false
     description: |
@@ -805,17 +805,17 @@ tasks:
          - writeInternalError: 500 になり、本文に "internal server error" が含まれる
            ※ 渡した err.Error() が本文に含まれないことも確認する（情報漏えい防止）
       4) 仕上げ: go test ./... を通す。
-      5) 反映: feature/learn-005-http-errors-test を切ってコミット→push→mainへ取り込み。
+      5) 反映: feature/enhance-005-http-errors-test を切ってコミット→push→mainへ取り込み。
     acceptance_criteria:
       - "エラーヘルパーに対するテストが追加されている"
       - "internal error で生エラー文字列がレスポンスに出ない"
       - "go test ./... が通る"
 
-  - id: LEARN-006
+  - id: enhance-006
     title: "小改善: panicリカバリミドルウェア追加（500へ変換）"
     status: todo
     priority: low
-    branch: "feature/learn-006-recover-middleware"
+    branch: "feature/enhance-006-recover-middleware"
     depends_on: [MVP-118]
     needs_claude_review: false
     description: |
@@ -833,7 +833,7 @@ tasks:
          - ミドルウェアで包んでリクエスト
          - 500 が返る（& テストがpanicで落ちない）ことを確認
       5) 仕上げ: go test ./... を通す。
-      6) 反映: feature/learn-006-recover-middleware を切ってコミット→push→mainへ取り込み。
+      6) 反映: feature/enhance-006-recover-middleware を切ってコミット→push→mainへ取り込み。
     acceptance_criteria:
       - "panicしてもサーバが落ちず、500が返る"
       - "レスポンスにpanic内容が出ない"
@@ -843,7 +843,7 @@ tasks:
     title: "小改善: /buildinfo エンドポイント追加（Goのビルド情報をJSONで返す）"
     status: todo
     priority: low
-    branch: "feature/learn-007-buildinfo"
+    branch: "feature/enhance-007-buildinfo"
     depends_on: [MVP-116]
     needs_claude_review: false
     description: |
@@ -858,7 +858,7 @@ tasks:
          - /buildinfo が 200 を返すこと
          - content-type が application/json であること
       4) 仕上げ: go test ./... を通す。
-      5) 反映: feature/learn-007-buildinfo を切ってコミット→push→mainへ取り込み。
+      5) 反映: feature/enhance-007-buildinfo を切ってコミット→push→mainへ取り込み。
     acceptance_criteria:
       - "GET /buildinfo が200を返す"
       - "JSONで goVersion 等の情報が返る（unknownでも可）"
