@@ -841,7 +841,7 @@ tasks:
 
   - id: LEARN-007
     title: "小改善: /buildinfo エンドポイント追加（Goのビルド情報をJSONで返す）"
-    status: todo
+    status: done
     priority: low
     branch: "feature/enhance-007-buildinfo"
     depends_on: [MVP-116]
@@ -863,3 +863,222 @@ tasks:
       - "GET /buildinfo が200を返す"
       - "JSONで goVersion 等の情報が返る（unknownでも可）"
       - "go test ./... が通る"
+
+  - id: LEARN-008
+    title: "小改善: /buildinfo のレスポンス形式を固定（JSONスキーマ安定化）"
+    status: todo
+    priority: low
+    branch: "enhance/008-buildinfo-schema"
+    depends_on: [LEARN-007]
+    needs_claude_review: false
+    description: |
+      目的: 仕様のブレ（string or object）を無くし、クライアントから扱いやすいAPIにする練習。
+
+      手順:
+      1) 探索: internal/interface/http/mux.go の /buildinfo 実装を確認する。
+      2) 仕様決定: 常に object を返す形式にする。
+         - 例: {"goVersion":"1.22.x","mainModule":"github.com/..."}
+         - 取得できない場合も {"goVersion":"unknown","mainModule":"unknown"} のように固定する。
+      3) 実装: /buildinfo の実装を更新する（JSONキー名は lowerCamelCase を推奨）。
+      4) テスト: internal/interface/http/buildinfo_test.go を更新し、json.Decoder でデコードしてキーが存在することを確認する。
+      5) 仕上げ: go test ./... を通す。
+    acceptance_criteria:
+      - "/buildinfo は常にJSON objectを返す（型が揺れない）"
+      - "unknown時も同じスキーマで返る"
+      - "go test ./... が通る"
+
+  - id: LEARN-009
+    title: "小改善: /readyz エンドポイント追加（JSONでOKを返す）"
+    status: todo
+    priority: low
+    branch: "enhance/009-readyz"
+    depends_on: [MVP-116]
+    needs_claude_review: false
+    description: |
+      目的: mux へのルート追加と httptest によるエンドツーエンド（handler単位）のテストに慣れる。
+
+      手順:
+      1) 実装: internal/interface/http/mux.go に GET /readyz を追加（認証不要）。
+         - レスポンス: status=200, body={"ok":true}
+         - content-type は application/json を付ける
+      2) テスト: internal/interface/http/readyz_test.go を追加する。
+         - /readyz が 200 を返す
+         - content-type が application/json を含む
+         - JSONがデコード可能（{"ok":true}）
+      3) 仕上げ: go test ./... を通す。
+    acceptance_criteria:
+      - "GET /readyz が200とJSONを返す"
+      - "テストが追加されている"
+      - "go test ./... が通る"
+
+  - id: LEARN-010
+    title: "小改善: JSONレスポンスヘルパー writeJSON を追加（Go/http）"
+    status: todo
+    priority: low
+    branch: "enhance/010-writejson-helper"
+    depends_on: [MVP-116]
+    needs_claude_review: false
+    description: |
+      目的: ルール（Content-Type/ステータス/エンコード）を1箇所に集約し、実装を簡潔にする練習。
+
+      手順:
+      1) 実装: internal/interface/http/json.go を新規作成し、writeJSON(w, status, v) を用意する。
+         - content-type: application/json; charset=utf-8
+         - status を設定してから json.NewEncoder(w).Encode(v)
+      2) 置換: /buildinfo や /readyz があれば、それらで writeJSON を使う。
+      3) テスト: internal/interface/http/json_test.go を追加し、
+         - writeJSON が content-type をセットする
+         - status が反映される
+         - JSONとしてデコード可能
+      4) 仕上げ: go test ./... を通す。
+    acceptance_criteria:
+      - "writeJSON が追加され、複数箇所で利用されている（最低1箇所でOK）"
+      - "go test ./... が通る"
+
+  - id: LEARN-011
+    title: "小改善: Request ID ミドルウェア追加（X-Request-ID）"
+    status: todo
+    priority: low
+    branch: "enhance/011-request-id"
+    depends_on: [MVP-116]
+    needs_claude_review: false
+    description: |
+      目的: ミドルウェアで「横断的な処理」を付与する練習（トレーシングの第一歩）。
+
+      手順:
+      1) 実装: internal/interface/http/request_id_middleware.go を追加する。
+         - 受信ヘッダに X-Request-ID があればそれを採用
+         - 無ければ新規に生成（短いランダム文字列でOK。crypto/rand を推奨）
+         - レスポンスヘッダに X-Request-ID を必ず付与
+      2) 配線: internal/interface/http/mux.go で全体をラップ（Recover と順序を考える）。
+         - 例: Recover(RequestID(mux)) など
+      3) テスト: internal/interface/http/request_id_middleware_test.go
+         - リクエストにX-Request-IDを付けたらレスポンスにも同じ値が入る
+         - 無い場合でもレスポンスに値が入る（空でない）
+      4) 仕上げ: go test ./... を通す。
+    acceptance_criteria:
+      - "すべてのレスポンスに X-Request-ID が付く"
+      - "go test ./... が通る"
+
+  - id: LEARN-012
+    title: "小改善: アクセスログミドルウェア追加（status/durationを出す）"
+    status: todo
+    priority: low
+    branch: "enhance/012-access-log"
+    depends_on: [MVP-116]
+    needs_claude_review: false
+    description: |
+      目的: ResponseWriter をラップして status を観測する練習（実務で頻出）。
+
+      手順:
+      1) 実装: internal/interface/http/access_log_middleware.go を追加。
+         - 開始時刻を取る
+         - next を呼ぶ
+         - method/path/status/duration を logger.Info で出す
+         - status は ResponseWriter をラップして取得する（WriteHeaderの記録）
+      2) 配線: internal/interface/http/mux.go で全体をラップ。
+      3) テスト: internal/interface/http/access_log_middleware_test.go
+         - ステータス200/500などのケースで、レスポンスのstatusが壊れていないこと
+         - （ログ内容まで厳密に見る必要はなく、panicしない/レスポンスが正常でOK）
+      4) 仕上げ: go test ./... を通す。
+    acceptance_criteria:
+      - "リクエストごとに status と duration をログに出す"
+      - "go test ./... が通る"
+
+  - id: LEARN-013
+    title: "小改善: 共通ローディング表示コンポーネント追加（React）"
+    status: todo
+    priority: low
+    branch: "enhance/013-loading-spinner"
+    depends_on: [MVP-112]
+    needs_claude_review: false
+    description: |
+      目的: 画面ごとのローディング表示の重複を減らし、UXを揃える。
+
+      手順:
+      1) 実装: frontend/src/components/LoadingSpinner.tsx を追加する。
+         - props: label?: string（任意）
+      2) 適用: RequestsList / RequestDetail などの loading 表示を置き換える（1〜2箇所でOK）。
+      3) CSS: frontend/src/style.css に最低限のスタイルを追加する。
+      4) 確認: frontend で npm run build を通す。
+    acceptance_criteria:
+      - "主要画面のローディング表示が共通化されている"
+      - "npm run build が成功する"
+
+  - id: LEARN-014
+    title: "小改善: useDocumentTitle フック追加（ページタイトルを統一）"
+    status: todo
+    priority: low
+    branch: "enhance/014-document-title"
+    depends_on: [MVP-110]
+    needs_claude_review: false
+    description: |
+      目的: Reactの副作用（useEffect）とページ単位の責務分離に慣れる。
+
+      手順:
+      1) 実装: frontend/src/hooks/useDocumentTitle.ts を追加。
+         - 引数: title: string
+         - document.title を更新する
+      2) 適用: About / RequestsList / RequestDetail などのページで呼ぶ（2ページ以上）。
+      3) 確認: npm run build を通す。
+    acceptance_criteria:
+      - "ページ遷移で document.title が変わる"
+      - "npm run build が成功する"
+
+  - id: LEARN-015
+    title: "小改善: Request ID をコピーできるボタン追加（Clipboard API）"
+    status: todo
+    priority: low
+    branch: "enhance/015-copy-request-id"
+    depends_on: [MVP-113]
+    needs_claude_review: false
+    description: |
+      目的: 小さいUI改善を安全に入れる練習（成功/失敗のフィードバック）。
+
+      手順:
+      1) 探索: RequestDetail に表示されている requestID（または同等の識別子）を探す。
+      2) 実装: 「コピー」ボタンを追加し、クリックで clipboard に書き込む。
+         - navigator.clipboard.writeText を使う
+         - 失敗時は ErrorBanner か簡単なメッセージで通知
+      3) 確認: npm run build を通す。
+    acceptance_criteria:
+      - "Request ID をワンクリックでコピーできる"
+      - "npm run build が成功する"
+
+  - id: LEARN-016
+    title: "小改善: demo/prod 切替状態を画面上で分かるようにする（バッジ表示）"
+    status: todo
+    priority: low
+    branch: "enhance/016-env-badge"
+    depends_on: [MVP-111]
+    needs_claude_review: false
+    description: |
+      目的: 環境差分（demo/prod）をユーザーが誤解しないようにする。
+
+      手順:
+      1) 探索: フロントで demo/prod を判定している箇所（環境変数）を探す。
+      2) 実装: demo のときだけヘッダ等に "DEMO" バッジを表示する。
+      3) CSS: 目立つが邪魔にならないスタイルを付ける。
+      4) 確認: npm run build を通す。
+    acceptance_criteria:
+      - "demo/prod の状態が一目で分かる"
+      - "npm run build が成功する"
+
+  - id: LEARN-017
+    title: "小改善: tasks.yaml の branch 命名を enhance/ に寄せる（ドキュメント整備）"
+    status: todo
+    priority: low
+    branch: "enhance/017-branch-naming-doc"
+    depends_on: []
+    needs_claude_review: false
+    description: |
+      目的: 運用ルールをドキュメントで固定し、後から見ても迷わない状態にする。
+
+      手順:
+      1) docs/tasks.yaml の学習用タスクを見て、branch名が feature/enhance-xxx 形式と enhance/xxx 形式で混在していることを確認する。
+      2) 方針を決める: 今後は enhance/xxx-... に統一する。
+      3) docs/instruction.md か docs/tasks.yaml 冒頭コメントに「学習用タスクのブランチ命名」ルールを追記する。
+         - 例: enhance/NNN-short-slug
+      4) （任意）既存LEARNの branch 値も統一する。
+    acceptance_criteria:
+      - "学習用ブランチ命名ルールがドキュメント化されている"
