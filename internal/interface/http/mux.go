@@ -5,8 +5,10 @@ package http
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"log/slog"
 	"net/http"
+	"runtime/debug"
 	"strings"
 
 	"github.com/morimasaki-web/ponsu/internal/infrastructure/config"
@@ -62,6 +64,28 @@ func NewMux(cfg config.Config, logger *slog.Logger, db *sql.DB) http.Handler {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))
 	})
+
+	buildinfoHandler := func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("content-type", "application/json; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+
+		info, ok := debug.ReadBuildInfo()
+		resp := map[string]string{
+			"goVersion":  "unknown",
+			"mainModule": "unknown",
+		}
+		if ok {
+			if info.GoVersion != "" {
+				resp["goVersion"] = info.GoVersion
+			}
+			if info.Main.Path != "" {
+				resp["mainModule"] = info.Main.Path
+			}
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	}
+
+	mux.HandleFunc("GET /buildinfo", buildinfoHandler)
 
 	mux.HandleFunc("GET /", auth.HandleHome)
 	mux.HandleFunc("GET /auth/login", auth.HandleLogin)
