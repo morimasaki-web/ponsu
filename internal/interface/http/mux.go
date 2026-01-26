@@ -87,6 +87,16 @@ func NewMux(cfg config.Config, logger *slog.Logger, db *sql.DB) http.Handler {
 
 	mux.HandleFunc("GET /buildinfo", buildinfoHandler)
 
+	mux.HandleFunc("GET /readyz", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+
+		resp := map[string]bool{
+			"ok": true,
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+
 	mux.HandleFunc("GET /", auth.HandleHome)
 	mux.HandleFunc("GET /auth/login", auth.HandleLogin)
 	mux.HandleFunc("GET /auth/callback", auth.HandleCallback)
