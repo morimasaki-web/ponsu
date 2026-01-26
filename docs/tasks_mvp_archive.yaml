@@ -1,0 +1,653 @@
+﻿# Archived MVP tasks (moved from docs/tasks.yaml)
+archived_at: 2026-01-26
+tasks:
+  - id: MVP-000
+    title: "開発環境前提の整備（Go/Docker/実行ポリシー手順）"
+    status: done
+    priority: high
+    branch: "feature/mvp-000-dev-prereqs"
+    depends_on: []
+    needs_claude_review: false
+    description: "Windows環境で `go` が使えること、Dockerが使えること、verifyスクリプトが実行できることの手順をドキュメント化する。"
+    start_date: 2026-01-12
+    end_date: 2026-01-12
+    deliverables:
+      - "docs/instruction.md（Go/Docker導入、PATH確認、verify.cmdの使い方）"
+    acceptance_criteria:
+      - "新規環境で `go version` が確認できる手順が書かれている"
+      - "`ponsu\\scripts\\verify.cmd` が実行できる手順が書かれている"
+
+
+  - id: MVP-001
+    title: "Goプロジェクト初期化（Clean Architecture雛形）"
+    status: done
+    priority: high
+    branch: "feature/mvp-001-bootstrap"
+    depends_on: [MVP-000]
+    needs_claude_review: true
+    description: "Go module初期化、基本ディレクトリ、最小のmain起動、設定読み込みの足場を作る。"
+    start_date: 2026-01-12
+    end_date: 2026-01-12
+    deliverables:
+      - "go.mod / go.sum"
+      - "cmd/ponsu/（エントリポイント）"
+      - "internal/{domain,usecase,interface,infrastructure}/（雛形）"
+      - "Makefile または Taskfile（任意）"
+    acceptance_criteria:
+      - "`go test ./...` が通る"
+      - "`go run ./cmd/ponsu` が起動してログを出す"
+
+
+  - id: MVP-002
+    title: "ローカル開発環境（Postgres/MinIO）をdocker-composeで用意"
+    status: done
+    priority: high
+    branch: "feature/mvp-002-dev-env"
+    depends_on: [MVP-001]
+    needs_claude_review: false
+    description: "イベントストア/Read Modelを動かすための依存サービスをローカルで立ち上げられるようにする。"
+    start_date: 2026-01-12
+    end_date: 2026-01-12
+    deliverables:
+      - "compose.yaml（Postgres, MinIO, 必要ならAdminer等）"
+      - "環境変数例（.env.example）"
+    acceptance_criteria:
+      - "`docker compose up -d` で Postgres と MinIO が起動する"
+      - "アプリから接続できる（疎通確認コード or ヘルスチェック）"
+
+
+  - id: MVP-003
+    title: "DBマイグレーション導入（golang-migrate/migrate）"
+    status: done
+    priority: high
+    branch: "feature/mvp-003-migrations"
+    depends_on: [MVP-002]
+    needs_claude_review: true
+    description: "SQLマイグレーションの運用を確立し、CI/開発で確実に同じ状態を作れるようにする。"
+    start_date: 2026-01-12
+    end_date: 2026-01-12
+    deliverables:
+      - "migrations/（up/down SQL）"
+      - "migrate実行手段（Makefile/Taskfile/README）"
+    acceptance_criteria:
+      - "ローカルで up/down が実行できる"
+      - "新規DBから最新スキーマを再現できる"
+
+
+  - id: MVP-004
+    title: "sqlc 導入（クエリ・生成・レイヤ境界の定義）"
+    status: done
+    priority: high
+    branch: "feature/mvp-004-sqlc"
+    depends_on: [MVP-003]
+    needs_claude_review: true
+    description: "sqlc設定、クエリ配置、生成コードの置き場所、Repository境界を確定する。"
+    deliverables:
+      - "sqlc.yaml（または sqlc.json）"
+      - "db/query/*.sql"
+      - "生成コード配置（例: internal/infrastructure/dbgen）"
+    acceptance_criteria:
+      - "`sqlc generate` が成功する"
+      - "最小クエリでDB疎通ができる"
+
+
+  - id: MVP-005
+    title: "検証スクリプトをCIで実行（GitHub Actions）"
+    status: done
+    priority: medium
+    branch: "feature/mvp-005-ci-verify"
+    depends_on: [MVP-000]
+    needs_claude_review: false
+    description: "無料検証（go test/vet/golangci-lint/govulncheck）をPR/Pushで自動実行し、漏れを防ぐ。"
+    start_date: 2026-01-12
+    end_date: 2026-01-12
+    deliverables:
+      - ".github/workflows/verify.yml（新規）"
+    acceptance_criteria:
+      - "PRで `go test ./...` が必ず走る"
+      - "golangci-lint と govulncheck も実行される（失敗で落ちる）"
+
+  # -------------------------
+  # 1. 認証・セッション・認可（RBAC）
+  # -------------------------
+
+  - id: MVP-010
+    title: "OIDCログイン（Google or Microsoft）とセッション管理"
+    status: done
+    priority: high
+    branch: "feature/mvp-010-oidc"
+    depends_on: [MVP-001]
+    needs_claude_review: true
+    description: "HTTPルートで /auth/login, /auth/callback, /auth/logout を実装し、ログイン状態を保持できるようにする。"
+    start_date: 2026-01-12
+    end_date: 2026-01-12
+    acceptance_criteria:
+      - "ログイン→コールバック→ログイン済みとしてSSR画面を表示できる"
+      - "ログアウトでセッションが破棄される"
+
+
+  - id: MVP-011
+    title: "組織・メンバーシップ・RBAC（admin/member）"
+    status: done
+    priority: high
+    branch: "feature/mvp-011-rbac"
+    depends_on: [MVP-003, MVP-010]
+    needs_claude_review: true
+    description: "organizations/users/membershipsのRead Modelを用意し、org単位のアクセス制御を実装する。"
+    start_date: 2026-01-12
+    end_date: 2026-01-12
+    acceptance_criteria:
+      - "org外データへアクセスできない"
+      - "admin だけがテンプレ作成UIへ入れる"
+
+  # -------------------------
+  # 2. イベントストア + 同期プロジェクション
+  # -------------------------
+
+  - id: MVP-020
+    title: "event_store スキーマ確定とマイグレーション作成"
+    status: done
+    priority: high
+    branch: "feature/mvp-020-event-store"
+    depends_on: [MVP-003]
+    needs_claude_review: true
+    description: "event_store（aggregate_id, version, payload, metadataなど）を導入し、制約/インデックスまで入れる。"
+    acceptance_criteria:
+      - "(org_id, aggregate_type, aggregate_id, version) の一意制約がある"
+      - "append時にversion競合が検知できる"
+
+
+  - id: MVP-021
+    title: "イベント追記（append）+ 楽観ロック + トランザクション境界"
+    status: done
+    priority: high
+    branch: "feature/mvp-021-event-append"
+    depends_on: [MVP-020, MVP-004]
+    needs_claude_review: true
+    description: "Aggregate単位でイベントを追記し、同一TX内でRead Model更新もできる基盤を作る。"
+    start_date: 2026-01-12
+    end_date: 2026-01-12
+    acceptance_criteria:
+      - "同一aggregateに対してversion競合時に失敗する"
+      - "append成功時にイベントが永続化される"
+
+
+  - id: MVP-022
+    title: "プロジェクター（同期プロジェクション）基盤"
+    status: done
+    priority: high
+    branch: "feature/mvp-022-projector"
+    depends_on: [MVP-021]
+    needs_claude_review: true
+    description: "イベントを元にRead Model（requests等）へ投影する処理を用意する。"
+    start_date: 2026-01-12
+    end_date: 2026-01-12
+    acceptance_criteria:
+      - "イベントを与えるとRead Modelが更新される"
+      - "イベント型が増えても拡張できる構造"
+
+  # -------------------------
+  # 3. 申請（Request）: 作成→提出→承認/却下
+  # -------------------------
+
+  - id: MVP-030
+    title: "Read Model: requests / request_steps / request_audit_trail 作成"
+    status: done
+    priority: high
+    branch: "feature/mvp-030-read-model-requests"
+    depends_on: [MVP-003]
+    needs_claude_review: true
+    description: "一覧・詳細・監査表示に必要なRead Modelテーブルを定義する。"
+    start_date: 2026-01-12
+    end_date: 2026-01-12
+    acceptance_criteria:
+      - "requests一覧をorg単位で取得できる"
+      - "audit表示に必要な最小情報が取れる"
+
+
+  - id: MVP-031
+    title: "Request Aggregate（replay）とイベント定義"
+    status: done
+    priority: high
+    branch: "feature/mvp-031-request-aggregate"
+    depends_on: [MVP-021]
+    needs_claude_review: true
+    description: "request.created/submitted/approved/rejected などのイベントと、replayして状態導出するAggregateを実装。"
+    start_date: 2026-01-12
+    end_date: 2026-01-12
+    acceptance_criteria:
+      - "イベント列からRequest状態が再構成できる"
+      - "不正遷移が拒否される（例: approved後にsubmit不可）"
+
+
+  - id: MVP-032
+    title: "Usecase: createRequest / submitRequest / approveRequest / rejectRequest"
+    status: done
+    priority: high
+    branch: "feature/mvp-032-usecases"
+    depends_on: [MVP-031, MVP-022, MVP-030, MVP-011]
+    needs_claude_review: true
+    description: "RBACとorg境界を守りつつ、イベント追記→同期投影までを1操作で完了する。"
+    start_date: 2026-01-12
+    end_date: 2026-01-12
+    acceptance_criteria:
+      - "作成→提出→承認/却下が通る"
+      - "すべての操作がイベントとして残る"
+
+  # -------------------------
+  # 4. テンプレ（WorkflowTemplate） + 作成UI
+  # -------------------------
+
+  - id: MVP-040
+    title: "WorkflowTemplate のデータモデル（Read Model）導入"
+    status: done
+    priority: high
+    branch: "feature/mvp-040-templates-model"
+    depends_on: [MVP-003, MVP-011]
+    needs_claude_review: true
+    description: "テンプレ（直列ステップ）を最小仕様で保存できるようにする（JSONBで可）。"
+    start_date: 2026-01-13
+    end_date: 2026-01-13
+    acceptance_criteria:
+      - "テンプレを作成・一覧取得できる"
+      - "テンプレからrequest_stepsを展開できる"
+
+
+  - id: MVP-041
+    title: "SSR: テンプレ作成UI（adminのみ）"
+    status: done
+    priority: high
+    branch: "feature/mvp-041-templates-ui"
+    depends_on: [MVP-040, MVP-011]
+    needs_claude_review: false
+    description: "管理者が承認ステップ（承認者）を登録できるUIをSSRで提供する。"
+    start_date: 2026-01-13
+    end_date: 2026-01-13
+    acceptance_criteria:
+      - "adminのみアクセス可能"
+      - "作成したテンプレが申請作成時に選択できる"
+
+  # -------------------------
+  # 5. GraphQL（gqlgen）
+  # -------------------------
+
+  - id: MVP-050
+    title: "gqlgen セットアップ（schema/生成/サーバ統合）"
+    status: done
+    priority: high
+    branch: "feature/mvp-050-gqlgen"
+    depends_on: [MVP-001]
+    needs_claude_review: true
+    description: "GraphQLサーバを起動し、認証/認可情報をコンテキストに載せる。"
+    start_date: 2026-01-15
+    end_date: 2026-01-15
+    acceptance_criteria:
+      - "GraphQL Playground（または同等）で疎通できる"
+      - "未ログイン時はQueryが拒否される"
+
+
+  - id: MVP-051
+    title: "GraphQLリゾルバ実装（MVP最小Query/Mutation）"
+    status: done
+    priority: high
+    branch: "feature/mvp-051-graphql-resolvers"
+    depends_on: [MVP-050, MVP-032, MVP-040]
+    needs_claude_review: true
+    description: "me/requests/request/workflowTemplates と create/submit/approve/reject/createWorkflowTemplate を実装。"
+    start_date: 2026-01-15
+    end_date: 2026-01-15
+    acceptance_criteria:
+      - "主要フローがGraphQL経由でも実行できる"
+      - "リゾルバでRBAC/ORG境界が担保される"
+
+  # -------------------------
+  # 6. SSR画面（運用投入用）
+  # -------------------------
+
+  - id: MVP-060
+    title: "SSR: 申請一覧/詳細/新規作成画面"
+    status: done
+    priority: high
+    branch: "feature/mvp-060-ssr-pages"
+    depends_on: [MVP-010, MVP-032, MVP-041]
+    needs_claude_review: false
+    description: "MVP運用に必要な最小画面（一覧/詳細/作成/提出/承認）をSSRで実装。"
+    start_date: 2026-01-13
+    end_date: 2026-01-13
+    acceptance_criteria:
+      - "画面から作成→提出→承認/却下が完結する"
+      - "監査（履歴）表示が見える"
+
+  # -------------------------
+  # 7. 添付（Storage抽象 + MinIO）
+  # -------------------------
+
+  - id: MVP-070
+    title: "添付: Storageインターフェース + ローカル実装"
+    status: done
+    priority: medium
+    branch: "feature/mvp-070-storage-local"
+    depends_on: [MVP-001]
+    needs_claude_review: false
+    description: "添付保存の抽象を作り、ローカル保存でまず動かす（開発効率優先）。"
+    start_date: 2026-01-17
+    end_date: 2026-01-17
+    acceptance_criteria:
+      - "アップロード→参照ができる"
+      - "添付メタ情報がDBに保存される"
+
+
+  - id: MVP-071
+    title: "添付: MinIO（S3互換）実装 + デモ向け設定"
+    status: done
+    priority: high
+    branch: "feature/mvp-071-storage-minio"
+    depends_on: [MVP-070, MVP-002]
+    needs_claude_review: true
+    description: "MinIOに保存できるようにし、デモ運用の“それっぽさ”を担保する。"
+    start_date: 2026-01-17
+    end_date: 2026-01-17
+    acceptance_criteria:
+      - "MinIOへ保存される"
+      - "署名URL or プロキシ配信のどちらかで閲覧できる"
+
+  # -------------------------
+  # 8. 通知（Slack）
+  # -------------------------
+
+  - id: MVP-080
+    title: "Slack通知（Incoming Webhook）"
+    status: done
+    priority: medium
+    branch: "feature/mvp-080-slack"
+    depends_on: [MVP-032]
+    needs_claude_review: false
+    description: "提出/承認/却下/差し戻し（後半）などのイベントに応じてSlackへ通知する。"
+    start_date: 2026-01-18
+    end_date: 2026-01-18
+    acceptance_criteria:
+      - "提出時にSlackへ通知が飛ぶ"
+      - "通知内容に申請タイトル/URL/実行者が含まれる"
+
+
+  - id: MVP-081
+    title: "Slack通知: 実行者表示を name/email 優先に改善"
+    status: done
+    priority: low
+    branch: "feature/mvp-081-slack-actor-display"
+    depends_on: [MVP-080]
+    needs_claude_review: false
+    description: "Slack通知の実行者（Actor）を user_id ではなく、可能なら name/email（OIDCセッション/GraphQL Viewer）で表示する。"
+    start_date: 2026-01-18
+    end_date: 2026-01-18
+    acceptance_criteria:
+      - "SSR経路の提出/承認/却下で、Slack通知の実行者が name/email で表示される"
+      - "GraphQL経路の提出/承認/却下でも同様に表示される"
+
+  # -------------------------
+  # 9. MVP後半: 差し戻し/再提出
+  # -------------------------
+
+  - id: MVP-090
+    title: "差し戻し（returned）/再提出（resubmitted）イベントと状態遷移"
+    status: done
+    priority: high
+    branch: "feature/mvp-090-return-resubmit"
+    depends_on: [MVP-031, MVP-022, MVP-030]
+    needs_claude_review: true
+    description: "return/resubmitのイベント追加、Read Model投影、監査表示を整合させる。"
+    start_date: 2026-01-18
+    end_date: 2026-01-18
+    acceptance_criteria:
+      - "差し戻し→修正→再提出が可能"
+      - "監査（イベント）が正しく残る"
+
+
+  - id: MVP-091
+    title: "SSR/GraphQL: 差し戻し・再提出UIとMutation追加"
+    status: done
+    priority: high
+    branch: "feature/mvp-091-return-resubmit-ui"
+    depends_on: [MVP-090, MVP-060, MVP-051]
+    needs_claude_review: false
+    description: "差し戻し理由の入力、再提出の導線、GraphQL mutation を追加する。"
+    start_date: 2026-01-18
+    end_date: 2026-01-18
+    acceptance_criteria:
+      - "画面から差し戻し・再提出ができる"
+      - "RBAC/担当者以外が操作できない"
+
+  # -------------------------
+  # 10. 品質: テスト/リント/最終受け入れ
+  # -------------------------
+
+  - id: MVP-100
+    title: "テスト整備（Aggregate replay / 競合 / 主要ユースケース）"
+    status: done
+    priority: high
+    branch: "feature/mvp-100-tests"
+    depends_on: [MVP-032, MVP-090]
+    needs_claude_review: true
+    description: "イベントソーシングの要所（replay/楽観ロック/投影）と主要フローの自動テストを追加する。"
+    start_date: 2026-01-18
+    end_date: 2026-01-18
+    acceptance_criteria:
+      - "主要フローのテストが通る"
+      - "version競合時の挙動がテストで保証される"
+
+
+  - id: MVP-101
+    title: "MVP受け入れチェック（E2E手順/デモ手順のドキュメント化）"
+    status: done
+    priority: medium
+    branch: "feature/mvp-101-mvp-check"
+    depends_on: [MVP-060, MVP-071, MVP-080, MVP-091]
+    needs_claude_review: false
+    description: "手動検証の手順とデモシナリオをドキュメント化し、MVP完了条件を満たすか確認できる状態にする。"
+    start_date: 2026-01-18
+    end_date: 2026-01-18
+    deliverables:
+      - "docs/mvp-checklist.md（新規）または同等の文書"
+    acceptance_criteria:
+      - "作成→提出→承認/却下→監査参照が手順通りに再現できる"
+      - "差し戻し→再提出が再現できる"
+
+  # -------------------------
+  # 11. SPA化 & デモ公開（ポートフォリオ）
+  # -------------------------
+
+  - id: MVP-110
+    title: "SPA基盤: フロントエンド雛形（Vite+React+TS）"
+    status: done
+    priority: high
+    branch: "feature/mvp-110-spa-scaffold"
+    depends_on: [MVP-101]
+    needs_claude_review: false
+    description: "SPAの土台（ビルド/ルーティング/環境変数/開発プロキシ）を用意する。デモは静的ホスティング前提（バックエンド不要）としつつ、将来の正規版向けにバックエンド疎通も可能な形にしておく。"
+    start_date: 2026-01-18
+    end_date: 2026-01-18
+    deliverables:
+      - "frontend/（または同等の配置）"
+      - "開発手順（README追記 or docs）"
+    acceptance_criteria:
+      - "ローカルで SPA が起動できる"
+      - "デモ（静的）としてバックエンド無しでも画面が成立する"
+
+
+  - id: MVP-111
+    title: "SPAデモモード: 認証/DBなしで動作確認（mockデータ）"
+    status: done
+    priority: high
+    branch: "feature/mvp-111-spa-demo-mode"
+    depends_on: [MVP-110]
+    needs_claude_review: false
+    description: "ポートフォリオ用デモは静的ホスティング前提とし、外部認証/DB/課金要素を排除する。demo/prod を切替可能にし、demoではモックデータで画面の動きだけ確認できるようにする。"
+    start_date: 2026-01-18
+    end_date: 2026-01-18
+    deliverables:
+      - "frontend/.env.example（demo/prod 切替）"
+      - "frontend のライト/ダーク/システム切替"
+    acceptance_criteria:
+      - "demo モードではバックエンドへ一切アクセスしない（/graphql や /auth を呼ばない）"
+      - "demo モードで current user 等が表示できる（モックでOK）"
+      - "prod モードに切り替えるとバックエンド接続できる導線が残っている"
+
+
+  - id: MVP-121
+    title: "SPAデモ画面: 申請一覧/詳細/監査をモックで表示"
+    status: done
+    priority: high
+    branch: "feature/mvp-121-spa-demo-pages"
+    depends_on: [MVP-111]
+    needs_claude_review: false
+    description: "静的デモとして、申請の一覧・詳細・監査ログをモックデータで表示し、操作フロー（提出/承認/却下/差し戻し/再提出）を疑似的に体験できるようにする。"
+    start_date: 2026-01-18
+    end_date: 2026-01-18
+    deliverables:
+      - "frontend の /#/requests（一覧）と /#/requests/:id（詳細）"
+    acceptance_criteria:
+      - "一覧→詳細へ遷移できる（静的ホスティングで動く構成）"
+      - "詳細に監査ログが表示される"
+      - "操作ボタンで状態が変化し、監査ログが追記される（DB保存はしない）"
+
+
+  - id: MVP-112
+    title: "SPAデータ取得: GraphQLクライアント導入と型付け"
+    status: done
+    priority: high
+    branch: "feature/mvp-112-spa-graphql-client"
+    depends_on: [MVP-110]
+    needs_claude_review: false
+    description: "GraphQLクライアント（例: urql/apollo）と、クエリ/ミューテーションの型安全な呼び出し基盤を整備する。"
+    start_date: 2026-01-24
+    end_date: 2026-01-24
+    deliverables:
+      - "frontend/codegen.yml（GraphQL Codegen設定）"
+      - "frontend/src/gql/graphql.ts（生成コード）"
+    acceptance_criteria:
+      - "Requests一覧をGraphQL経由で取得して表示できる"
+      - "GraphQLエラーが画面で分かる形で表示される（最低限）"
+
+
+  - id: MVP-113
+    title: "SPA画面: Requests一覧/詳細/監査の表示"
+    status: done
+    priority: high
+    branch: "feature/mvp-113-spa-requests-pages"
+    depends_on: [MVP-112, MVP-080]
+    needs_claude_review: false
+    description: "SPAで主要画面（一覧/詳細/監査）を提供し、SSR無しでも操作対象へ到達できるようにする。"
+    start_date: 2026-01-24
+    end_date: 2026-01-24
+    deliverables:
+      - "frontend/src/gql/request.graphql（Request詳細クエリ）"
+      - "frontend/src/pages/RequestDetail.tsx（prodで詳細/監査表示）"
+    acceptance_criteria:
+      - "一覧→詳細へ遷移できる"
+      - "監査（audit trail）が時系列で表示される"
+
+
+  - id: MVP-114
+    title: "SPA操作: 作成/提出/承認/却下/差し戻し/再提出"
+    status: done
+    priority: high
+    branch: "feature/mvp-114-spa-actions"
+    depends_on: [MVP-113, MVP-091]
+    needs_claude_review: false
+    description: "MVPで実装済みの操作をSPAから実行できるようにし、RBACに応じてUIを出し分ける。"
+    start_date: 2026-01-24
+    end_date: 2026-01-24
+    deliverables:
+      - "frontend/src/gql/actions.graphql（操作Mutation定義）"
+      - "frontend/src/pages/RequestNew.tsx（作成画面）"
+      - "frontend/src/pages/RequestDetail.tsx（prodの操作UI+RBAC）"
+      - "frontend/src/pages/RequestsList.tsx（作成導線）"
+    acceptance_criteria:
+      - "作成→提出→承認/却下がSPAだけで完結する"
+      - "差し戻し→再提出がSPAだけで完結する"
+      - "権限がない操作は表示されない、または実行時に403相当となる"
+
+
+  - id: MVP-115
+    title: "SPA運用: 静的ホスティング用セキュリティ方針（秘密情報なし/CSP等）"
+    status: done
+    priority: high
+    branch: "feature/mvp-115-spa-security"
+    depends_on: [MVP-111]
+    needs_claude_review: false
+    description: "デモは静的ホスティング（フロントのみ）として運用し、秘密情報を含めない設計・CSP/セキュリティヘッダ・依存脆弱性対応方針を整理する。"
+    start_date: 2026-01-18
+    end_date: 2026-01-18
+    deliverables:
+      - "docs/demo-security.md（新規）"
+    acceptance_criteria:
+      - "デモ版に秘密情報（Client Secret等）が含まれない"
+      - "静的ホスティング向けの基本方針（CSP/依存脆弱性/運用）がドキュメント化されている"
+
+
+  - id: MVP-116
+    title: "リファクタ: HTTPハンドラの責務分離（OIDCAuthをミドルウェア化）"
+    status: done
+    priority: medium
+    branch: "feature/mvp-116-http-handlers-refactor"
+    depends_on: [MVP-110]
+    needs_claude_review: false
+    description: "OIDCAuthに集中しているハンドラ群をドメイン別（RequestsHandler等）へ分離し、認証はミドルウェア責務へ寄せる。"
+    start_date: 2026-01-24
+    end_date: 2026-01-24
+    deliverables:
+      - "internal/interface/http/auth_middleware.go（RequireLogin/RequireRole）"
+      - "internal/interface/http/rbac_handlers.go（Requests/AdminTemplatesへ分離）"
+      - "internal/interface/http/mux.go（配線の更新）"
+    acceptance_criteria:
+      - "OIDCAuthは認証/セッションに専念し、画面/操作ハンドラが別構造体に移る"
+      - "既存ルートの挙動が変わらない（verifyが通る）"
+
+
+  - id: MVP-117
+    title: "リファクタ: HTMLをhtml/templateへ置換（SSR保守性/XSS耐性）"
+    status: done
+    priority: medium
+    branch: "feature/mvp-117-templates"
+    depends_on: [MVP-116]
+    needs_claude_review: false
+    description: "strings.BuilderベースのHTML生成を、html/template（テンプレ/レイアウト）に置き換える。"
+    start_date: 2026-01-24
+    end_date: 2026-01-24
+    acceptance_criteria:
+      - "主要SSRページがtemplateで描画される"
+      - "手動エスケープが不要になり、XSS耐性が改善される"
+
+
+  - id: MVP-118
+    title: "改善: エラーハンドリング統一（ユーザー向け表示とログ分離）"
+    status: done
+    priority: medium
+    branch: "feature/mvp-118-error-handling"
+    depends_on: [MVP-116]
+    needs_claude_review: false
+    description: "http.Errorで生エラーを返す箇所を減らし、ユーザー向けメッセージと内部ログを分離する（SSR/GraphQL共通方針）。"
+    start_date: 2026-01-24
+    end_date: 2026-01-24
+    acceptance_criteria:
+      - "ユーザーには汎用メッセージ、詳細はログに出る"
+      - "想定されるNotFound/Forbidden等が統一的に扱える"
+
+
+  - id: MVP-119
+    title: "デモ: 静的ホスティング手順（GitHub Pages/Vercel等）"
+    status: done
+    priority: high
+    branch: "feature/mvp-119-demo-deploy"
+    depends_on: [MVP-115, MVP-121]
+    needs_claude_review: false
+    description: "フロントのみをビルドして静的に公開する手順を整備する（例: GitHub Pages / Vercel / Cloudflare Pages）。"
+    start_date: 2026-01-18
+    end_date: 2026-01-18
+    deliverables:
+      - "docs/demo-deploy.md（新規）または同等の手順書"
+    acceptance_criteria:
+      - "手順通りに `npm run build` の成果物をデプロイできる"
+      - "公開URLで主要なデモ画面が閲覧できる（demo モード）"
+
+
