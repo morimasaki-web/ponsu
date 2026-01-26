@@ -88,7 +88,7 @@ func NewMux(cfg config.Config, logger *slog.Logger, db *sql.DB) http.Handler {
 	mux.HandleFunc("GET /buildinfo", buildinfoHandler)
 
 	mux.HandleFunc("GET /readyz", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.Header().Set("content-type", "application/json; charset=utf-8")
 		w.WriteHeader(http.StatusOK)
 
 		resp := map[string]bool{

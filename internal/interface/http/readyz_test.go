@@ -29,7 +29,7 @@ func TestReadyz(t *testing.T) {
 	if res.StatusCode != http.StatusOK {
 		t.Errorf("want 200, got %d", res.StatusCode)
 	}
-	if ct := res.Header.Get("Content-Type"); !strings.Contains(ct, "application/json") {
+	if ct := res.Header.Get("content-type"); !strings.Contains(ct, "application/json") {
 		t.Errorf("content-type = %s, want application/json", ct)
 	}
 
