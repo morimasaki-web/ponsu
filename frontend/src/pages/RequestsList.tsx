@@ -4,8 +4,11 @@ import { appMode } from '../graphql'
 import { useQuery } from 'urql'
 import { RequestsDocument } from '../gql/graphql'
 import { ErrorBanner } from '../components/ErrorBanner'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 
 export default function RequestsList() {
+  useDocumentTitle('Requests List | Ponsu')
+
   const [{ data, fetching, error }] = useQuery({
     query: RequestsDocument,
     variables: { limit: 50, offset: 0 },

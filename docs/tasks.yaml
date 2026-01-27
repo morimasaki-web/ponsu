@@ -135,7 +135,7 @@ tasks:
 
   - id: LEARN-008
     title: "小改善: /buildinfo のレスポンス形式を固定（JSONスキーマ安定化）"
-    status: todo
+    status: done
     priority: low
     branch: "enhance/008-buildinfo-schema"
     depends_on: [LEARN-007]
@@ -159,7 +159,7 @@ tasks:
 
   - id: LEARN-009
     title: "小改善: /readyz エンドポイント追加（JSONでOKを返す）"
-    status: todo
+    status: done
     priority: low
     branch: "enhance/009-readyz"
     depends_on: [MVP-116]

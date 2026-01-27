@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useMutation, useQuery } from 'urql'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { ErrorBanner } from '../components/ErrorBanner'
 import {
   demoRequestsSeed,
@@ -38,6 +39,8 @@ function canResubmit(status: RequestStatus) {
 }
 
 export default function RequestDetail() {
+  useDocumentTitle('Request Detail | Ponsu')
+
   const params = useParams()
   const id = decodeURIComponent(params.id ?? '')
 

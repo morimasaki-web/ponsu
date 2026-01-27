@@ -1,11 +1,14 @@
 import { Link } from 'react-router-dom'
 import { appMode } from '../graphql'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 
 type Props = {
   onResetDemo?: () => void
 }
 
 export default function About({ onResetDemo }: Props) {
+  useDocumentTitle('About | Ponsu')
+
   return (
     <section className="card">
       <h2>デモの見方（ガイド）</h2>

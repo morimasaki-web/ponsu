@@ -3,8 +3,11 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useMutation } from 'urql'
 import { appMode } from '../graphql'
 import { CreateRequestDocument } from '../gql/graphql'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 
 export default function RequestNew() {
+  useDocumentTitle('New Request | Ponsu')
+
   const navigate = useNavigate()
   const [title, setTitle] = useState('')
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
