@@ -282,7 +282,7 @@ tasks:
 
   - id: LEARN-014
     title: "小改善: useDocumentTitle フック追加（ページタイトルを統一）"
-    status: todo
+    status: done
     priority: low
     branch: "enhance/014-document-title"
     depends_on: [MVP-110]
