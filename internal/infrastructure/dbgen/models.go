@@ -40,6 +40,12 @@ type Organization struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+type Permission struct {
+	ID          string    `json:"id"`
+	Description string    `json:"description"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
 type PonsuMigrationsSmoketest struct {
 	ID        int32     `json:"id"`
 	CreatedAt time.Time `json:"created_at"`
@@ -104,6 +110,12 @@ type RequestStep struct {
 	Status           string        `json:"status"`
 	AssignedToUserID uuid.NullUUID `json:"assigned_to_user_id"`
 	UpdatedAt        time.Time     `json:"updated_at"`
+}
+
+type RolePermission struct {
+	Role         string    `json:"role"`
+	PermissionID string    `json:"permission_id"`
+	CreatedAt    time.Time `json:"created_at"`
 }
 
 type User struct {

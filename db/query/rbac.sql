@@ -38,3 +38,18 @@ ON CONFLICT (org_id, user_id) DO UPDATE
 SET role = EXCLUDED.role,
     updated_at = now()
 RETURNING org_id, user_id, role;
+
+-- name: HasPermission :one
+SELECT EXISTS(
+  SELECT 1
+  FROM public.role_permissions rp
+  WHERE rp.role = $1
+    AND rp.permission_id = $2
+) AS has_permission;
+
+-- name: ListPermissionsByRole :many
+SELECT p.id, p.description, p.created_at
+FROM public.permissions p
+INNER JOIN public.role_permissions rp ON rp.permission_id = p.id
+WHERE rp.role = $1
+ORDER BY p.id;

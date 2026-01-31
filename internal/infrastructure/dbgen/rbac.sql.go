@@ -95,6 +95,58 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
 	return i, err
 }
 
+const hasPermission = `-- name: HasPermission :one
+SELECT EXISTS(
+  SELECT 1
+  FROM public.role_permissions rp
+  WHERE rp.role = $1
+    AND rp.permission_id = $2
+) AS has_permission
+`
+
+type HasPermissionParams struct {
+	Role         string `json:"role"`
+	PermissionID string `json:"permission_id"`
+}
+
+func (q *Queries) HasPermission(ctx context.Context, arg HasPermissionParams) (bool, error) {
+	row := q.db.QueryRowContext(ctx, hasPermission, arg.Role, arg.PermissionID)
+	var has_permission bool
+	err := row.Scan(&has_permission)
+	return has_permission, err
+}
+
+const listPermissionsByRole = `-- name: ListPermissionsByRole :many
+SELECT p.id, p.description, p.created_at
+FROM public.permissions p
+INNER JOIN public.role_permissions rp ON rp.permission_id = p.id
+WHERE rp.role = $1
+ORDER BY p.id
+`
+
+func (q *Queries) ListPermissionsByRole(ctx context.Context, role string) ([]Permission, error) {
+	rows, err := q.db.QueryContext(ctx, listPermissionsByRole, role)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Permission{}
+	for rows.Next() {
+		var i Permission
+		if err := rows.Scan(&i.ID, &i.Description, &i.CreatedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const upsertMembership = `-- name: UpsertMembership :one
 INSERT INTO public.memberships (org_id, user_id, role)
 VALUES ($1, $2, $3)
