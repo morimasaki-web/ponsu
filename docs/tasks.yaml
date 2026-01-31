@@ -142,7 +142,7 @@ tasks:
 
   - id: LEARN-019
     title: "分析: ユーザー別申請統計の自動集計機能追加"
-    status: todo
+    status: done
     priority: high
     branch: "enhance/019-user-stats-projector"
     depends_on: [LEARN-018]

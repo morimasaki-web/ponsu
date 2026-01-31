@@ -19,7 +19,7 @@ import (
 func main() {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 
-	projectorName := flag.String("projector", "demo_aggregate_versions", "projector name")
+	projectorName := flag.String("projector", "demo_aggregate_versions", "projector name: demo_aggregate_versions, requests, user_stats")
 	orgIDStr := flag.String("org", "", "org id (uuid)")
 	batchSize := flag.Int("batch", 100, "batch size")
 	flag.Parse()
@@ -63,7 +63,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	r := projector.NewDemoAggregateVersionRunner(*projectorName)
+	var r projector.Runner
+	switch *projectorName {
+	case "user_stats":
+		r = projector.UserStatsProjector()
+	case "requests":
+		r = projector.NewRequestsProjector()
+	default:
+		r = projector.NewDemoAggregateVersionRunner(*projectorName)
+	}
 	r.BatchSize = int32(*batchSize)
 	r.Logger = logger
 
