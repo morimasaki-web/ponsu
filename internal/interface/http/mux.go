@@ -143,5 +143,5 @@ func NewMux(cfg config.Config, logger *slog.Logger, db *sql.DB) http.Handler {
 	mux.HandleFunc("POST /org/{orgID}/requests/{requestID}/attachments", auth.RequireLogin(handleAttachmentsUpload(attachmentsService, cfg.AttachmentsMaxBytes)))
 	mux.HandleFunc("GET /org/{orgID}/requests/{requestID}/attachments/{attachmentID}", auth.RequireLogin(handleAttachmentsDownload(attachmentsService)))
 
-	return RecoverMiddleware(logger, mux)
+	return RecoverMiddleware(logger, RequestIDMiddleware(mux))
 }

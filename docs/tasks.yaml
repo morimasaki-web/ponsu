@@ -209,7 +209,7 @@ tasks:
 
   - id: LEARN-011
     title: "小改善: Request ID ミドルウェア追加（X-Request-ID）"
-    status: todo
+    status: done
     priority: low
     branch: "enhance/011-request-id"
     depends_on: [MVP-116]
