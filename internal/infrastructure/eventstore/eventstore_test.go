@@ -83,3 +83,35 @@ func TestAppend_Success(t *testing.T) {
 		t.Fatalf("ExpectationsWereMet() error = %v", err)
 	}
 }
+
+func TestListByAggregateID(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("sqlmock.New() error = %v", err)
+	}
+	defer db.Close()
+
+	aggID := uuid.New()
+
+	eventRows := sqlmock.NewRows([]string{
+		"id", "org_id", "aggregate_type", "aggregate_id", "version", "event_type", "payload", "metadata", "occurred_at",
+	}).
+		AddRow(uuid.New(), uuid.New(), "request", aggID, 1, "request.created", json.RawMessage(`{"title":"A"}`), json.RawMessage(`{}`), time.Now()).
+		AddRow(uuid.New(), uuid.New(), "request", aggID, 2, "request.updated", json.RawMessage(`{"title":"B"}`), json.RawMessage(`{}`), time.Now())
+
+	mock.ExpectQuery("SELECT (.+) FROM public.event_store WHERE aggregate_id = (.+) ORDER BY (.+)").
+		WithArgs(aggID).
+		WillReturnRows(eventRows)
+
+	rows, err := ListByAggregateID(context.Background(), db, aggID)
+	if err != nil {
+		t.Fatalf("ListByAggregateID() error = %v", err)
+	}
+	if len(rows) != 2 {
+		t.Fatalf("len(rows) = %d, want 2", len(rows))
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("ExpectationsWereMet() error = %v", err)
+	}
+}

@@ -116,7 +116,7 @@ tasks:
 
   - id: LEARN-018
     title: "監査: 集約単位のイベント履歴取得API実装"
-    status: todo
+    status: done
     priority: high
     branch: "enhance/018-event-store-query"
     depends_on: [LEARN-001]
@@ -193,7 +193,7 @@ tasks:
 
   - id: LEARN-021
     title: "権限: 申請データエクスポート権限の追加"
-    status: todo
+    status: done
     priority: high
     branch: "enhance/021-rbac-permission"
     depends_on: []

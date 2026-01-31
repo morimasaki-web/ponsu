@@ -44,3 +44,9 @@ WHERE org_id = $1
   AND aggregate_id = $3
   AND version >= $4
 ORDER BY version ASC;
+
+-- name: GetEventsByAggregateID :many
+SELECT id, org_id, aggregate_type, aggregate_id, version, event_type, payload, metadata, occurred_at
+FROM public.event_store
+WHERE aggregate_id = $1
+ORDER BY version ASC;

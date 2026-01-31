@@ -83,3 +83,13 @@ func ListByAggregate(
 		Version:       fromVersion,
 	})
 }
+
+// ListByAggregateID は aggregateID に紐づく全てのイベントを version の昇順で返す。
+func ListByAggregateID(
+	ctx context.Context,
+	dbtx dbgen.DBTX,
+	aggregateID uuid.UUID,
+) ([]dbgen.GetEventsByAggregateIDRow, error) {
+	q := dbgen.New(dbtx)
+	return q.GetEventsByAggregateID(ctx, aggregateID)
+}
