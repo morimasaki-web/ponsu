@@ -41,6 +41,7 @@ type Config struct {
 type ResolverRoot interface {
 	Mutation() MutationResolver
 	Query() QueryResolver
+	Request() RequestResolver
 }
 
 type DirectiveRoot struct {
@@ -84,6 +85,7 @@ type ComplexityRoot struct {
 		Status          func(childComplexity int) int
 		Steps           func(childComplexity int) int
 		SubmittedAt     func(childComplexity int) int
+		Submitter       func(childComplexity int) int
 		Title           func(childComplexity int) int
 		UpdatedAt       func(childComplexity int) int
 	}
@@ -102,6 +104,13 @@ type ComplexityRoot struct {
 		Status           func(childComplexity int) int
 		StepIndex        func(childComplexity int) int
 		UpdatedAt        func(childComplexity int) int
+	}
+
+	User struct {
+		Email  func(childComplexity int) int
+		Name   func(childComplexity int) int
+		OrgID  func(childComplexity int) int
+		UserID func(childComplexity int) int
 	}
 
 	WorkflowTemplate struct {
@@ -131,6 +140,9 @@ type QueryResolver interface {
 	Requests(ctx context.Context, limit *int, offset *int) ([]*model.Request, error)
 	Request(ctx context.Context, id string) (*model.Request, error)
 	WorkflowTemplates(ctx context.Context, limit *int, offset *int) ([]*model.WorkflowTemplate, error)
+}
+type RequestResolver interface {
+	Submitter(ctx context.Context, obj *model.Request) (*model.User, error)
 }
 
 type executableSchema struct {
@@ -391,6 +403,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Request.SubmittedAt(childComplexity), true
 
+	case "Request.submitter":
+		if e.complexity.Request.Submitter == nil {
+			break
+		}
+
+		return e.complexity.Request.Submitter(childComplexity), true
+
 	case "Request.title":
 		if e.complexity.Request.Title == nil {
 			break
@@ -474,6 +493,34 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.RequestStep.UpdatedAt(childComplexity), true
+
+	case "User.email":
+		if e.complexity.User.Email == nil {
+			break
+		}
+
+		return e.complexity.User.Email(childComplexity), true
+
+	case "User.name":
+		if e.complexity.User.Name == nil {
+			break
+		}
+
+		return e.complexity.User.Name(childComplexity), true
+
+	case "User.orgID":
+		if e.complexity.User.OrgID == nil {
+			break
+		}
+
+		return e.complexity.User.OrgID(childComplexity), true
+
+	case "User.userID":
+		if e.complexity.User.UserID == nil {
+			break
+		}
+
+		return e.complexity.User.UserID(childComplexity), true
 
 	case "WorkflowTemplate.createdAt":
 		if e.complexity.WorkflowTemplate.CreatedAt == nil {
@@ -670,6 +717,13 @@ type Me {
   email: String
 }
 
+type User {
+  userID: ID!
+  orgID: ID!
+  name: String
+  email: String
+}
+
 type Mutation {
   createRequest(title: String!, workflowTemplateID: ID): Request!
   submitRequest(id: ID!): Request!
@@ -688,6 +742,7 @@ type Request {
   orgID: ID!
   title: String!
   status: String!
+  submitter: User
   createdByUserID: ID
   decidedByUserID: ID
   createdAt: Time!
@@ -1583,6 +1638,8 @@ func (ec *executionContext) fieldContext_Mutation_createRequest(ctx context.Cont
 				return ec.fieldContext_Request_title(ctx, field)
 			case "status":
 				return ec.fieldContext_Request_status(ctx, field)
+			case "submitter":
+				return ec.fieldContext_Request_submitter(ctx, field)
 			case "createdByUserID":
 				return ec.fieldContext_Request_createdByUserID(ctx, field)
 			case "decidedByUserID":
@@ -1664,6 +1721,8 @@ func (ec *executionContext) fieldContext_Mutation_submitRequest(ctx context.Cont
 				return ec.fieldContext_Request_title(ctx, field)
 			case "status":
 				return ec.fieldContext_Request_status(ctx, field)
+			case "submitter":
+				return ec.fieldContext_Request_submitter(ctx, field)
 			case "createdByUserID":
 				return ec.fieldContext_Request_createdByUserID(ctx, field)
 			case "decidedByUserID":
@@ -1745,6 +1804,8 @@ func (ec *executionContext) fieldContext_Mutation_approveRequest(ctx context.Con
 				return ec.fieldContext_Request_title(ctx, field)
 			case "status":
 				return ec.fieldContext_Request_status(ctx, field)
+			case "submitter":
+				return ec.fieldContext_Request_submitter(ctx, field)
 			case "createdByUserID":
 				return ec.fieldContext_Request_createdByUserID(ctx, field)
 			case "decidedByUserID":
@@ -1826,6 +1887,8 @@ func (ec *executionContext) fieldContext_Mutation_rejectRequest(ctx context.Cont
 				return ec.fieldContext_Request_title(ctx, field)
 			case "status":
 				return ec.fieldContext_Request_status(ctx, field)
+			case "submitter":
+				return ec.fieldContext_Request_submitter(ctx, field)
 			case "createdByUserID":
 				return ec.fieldContext_Request_createdByUserID(ctx, field)
 			case "decidedByUserID":
@@ -1907,6 +1970,8 @@ func (ec *executionContext) fieldContext_Mutation_returnRequest(ctx context.Cont
 				return ec.fieldContext_Request_title(ctx, field)
 			case "status":
 				return ec.fieldContext_Request_status(ctx, field)
+			case "submitter":
+				return ec.fieldContext_Request_submitter(ctx, field)
 			case "createdByUserID":
 				return ec.fieldContext_Request_createdByUserID(ctx, field)
 			case "decidedByUserID":
@@ -1988,6 +2053,8 @@ func (ec *executionContext) fieldContext_Mutation_resubmitRequest(ctx context.Co
 				return ec.fieldContext_Request_title(ctx, field)
 			case "status":
 				return ec.fieldContext_Request_status(ctx, field)
+			case "submitter":
+				return ec.fieldContext_Request_submitter(ctx, field)
 			case "createdByUserID":
 				return ec.fieldContext_Request_createdByUserID(ctx, field)
 			case "decidedByUserID":
@@ -2242,6 +2309,8 @@ func (ec *executionContext) fieldContext_Query_requests(ctx context.Context, fie
 				return ec.fieldContext_Request_title(ctx, field)
 			case "status":
 				return ec.fieldContext_Request_status(ctx, field)
+			case "submitter":
+				return ec.fieldContext_Request_submitter(ctx, field)
 			case "createdByUserID":
 				return ec.fieldContext_Request_createdByUserID(ctx, field)
 			case "decidedByUserID":
@@ -2320,6 +2389,8 @@ func (ec *executionContext) fieldContext_Query_request(ctx context.Context, fiel
 				return ec.fieldContext_Request_title(ctx, field)
 			case "status":
 				return ec.fieldContext_Request_status(ctx, field)
+			case "submitter":
+				return ec.fieldContext_Request_submitter(ctx, field)
 			case "createdByUserID":
 				return ec.fieldContext_Request_createdByUserID(ctx, field)
 			case "decidedByUserID":
@@ -2729,6 +2800,57 @@ func (ec *executionContext) fieldContext_Request_status(_ context.Context, field
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Request_submitter(ctx context.Context, field graphql.CollectedField, obj *model.Request) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Request_submitter(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Request().Submitter(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.User)
+	fc.Result = res
+	return ec.marshalOUser2ᚖgithubᚗcomᚋmorimasakiᚑwebᚋponsuᚋinternalᚋinterfaceᚋgraphqlᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Request_submitter(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Request",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "userID":
+				return ec.fieldContext_User_userID(ctx, field)
+			case "orgID":
+				return ec.fieldContext_User_orgID(ctx, field)
+			case "name":
+				return ec.fieldContext_User_name(ctx, field)
+			case "email":
+				return ec.fieldContext_User_email(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
 	}
 	return fc, nil
@@ -3527,6 +3649,176 @@ func (ec *executionContext) fieldContext_RequestStep_updatedAt(_ context.Context
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _User_userID(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_User_userID(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UserID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_User_userID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _User_orgID(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_User_orgID(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.OrgID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_User_orgID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _User_name(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_User_name(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_User_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _User_email(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_User_email(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Email, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_User_email(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -6155,23 +6447,56 @@ func (ec *executionContext) _Request(ctx context.Context, sel ast.SelectionSet, 
 		case "id":
 			out.Values[i] = ec._Request_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "orgID":
 			out.Values[i] = ec._Request_orgID(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "title":
 			out.Values[i] = ec._Request_title(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "status":
 			out.Values[i] = ec._Request_status(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "submitter":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Request_submitter(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "createdByUserID":
 			out.Values[i] = ec._Request_createdByUserID(ctx, field, obj)
 		case "decidedByUserID":
@@ -6179,12 +6504,12 @@ func (ec *executionContext) _Request(ctx context.Context, sel ast.SelectionSet, 
 		case "createdAt":
 			out.Values[i] = ec._Request_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "updatedAt":
 			out.Values[i] = ec._Request_updatedAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "submittedAt":
 			out.Values[i] = ec._Request_submittedAt(ctx, field, obj)
@@ -6193,12 +6518,12 @@ func (ec *executionContext) _Request(ctx context.Context, sel ast.SelectionSet, 
 		case "steps":
 			out.Values[i] = ec._Request_steps(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "auditTrail":
 			out.Values[i] = ec._Request_auditTrail(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -6312,6 +6637,54 @@ func (ec *executionContext) _RequestStep(ctx context.Context, sel ast.SelectionS
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var userImplementors = []string{"User"}
+
+func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj *model.User) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, userImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("User")
+		case "userID":
+			out.Values[i] = ec._User_userID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "orgID":
+			out.Values[i] = ec._User_orgID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "name":
+			out.Values[i] = ec._User_name(ctx, field, obj)
+		case "email":
+			out.Values[i] = ec._User_email(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -7441,6 +7814,13 @@ func (ec *executionContext) marshalOTime2ᚖtimeᚐTime(ctx context.Context, sel
 	_ = ctx
 	res := graphql.MarshalTime(*v)
 	return res
+}
+
+func (ec *executionContext) marshalOUser2ᚖgithubᚗcomᚋmorimasakiᚑwebᚋponsuᚋinternalᚋinterfaceᚋgraphqlᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v *model.User) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._User(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

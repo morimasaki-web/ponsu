@@ -33,6 +33,13 @@ type Me {
   email: String
 }
 
+type User {
+  userID: ID!
+  orgID: ID!
+  name: String
+  email: String
+}
+
 type Mutation {
   createRequest(title: String!, workflowTemplateID: ID): Request!
   submitRequest(id: ID!): Request!
@@ -51,6 +58,7 @@ type Request {
   orgID: ID!
   title: String!
   status: String!
+  submitter: User
   createdByUserID: ID
   decidedByUserID: ID
   createdAt: Time!

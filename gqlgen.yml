@@ -24,3 +24,7 @@ models:
   JSON:
     model:
       - github.com/99designs/gqlgen/graphql.Map
+  Request:
+    fields:
+      submitter:
+        resolver: true

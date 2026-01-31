@@ -85,279 +85,409 @@ tasks:
 
   # -------------------------
   # 13. 学習用エンハンス（自分で実装）
+  # ブランチ命名規則: enhance/NNN-short-slug
+  # 目的: PonSuの設計を深く理解し、自分で機能追加できる状態になる
   # -------------------------
 
   - id: LEARN-001
-    title: "小改善: /healthz ヘルスチェックエンドポイント追加（Go/http）"
+    title: "診断: ヘルスチェックエンドポイント実装"
     status: todo
-    priority: low
-    branch: "feature/enhance-001-healthz"
-    depends_on: [MVP-116]
-    needs_claude_review: false
-    description: |
-      目的: PonSu のHTTP配線（mux/handler）とテスト（httptest）に慣れる。
-
-      手順:
-      1) 探索: internal/interface/http/mux.go を開き、ルーティング（ServeMux等）の作り方を確認する。
-      2) 実装: GET /healthz を追加する（認証不要）。レスポンスはJSONでOK。
-         - 例: status=200, body={"ok":true}
-         - content-type は application/json を付ける
-      3) テスト: httptest を使って /healthz が 200 を返すことをテストする。
-         - テスト対象は「mux生成関数」または handler を直接呼ぶ形がよい
-      4) 仕上げ: go test ./... を通す。
-      5) 反映: feature/enhance-001-healthz を切ってコミット→push→mainへ取り込み。
-    acceptance_criteria:
-      - "GET /healthz が常に200を返す（未ログインでもOK）"
-      - "レスポンスがJSONである（Content-Type含む）"
-      - "テストが1本以上追加され、go test ./... が通る"
-
-
-  - id: LEARN-004
-    title: "小改善: demoモードの説明文を集約（文言の一貫性）"
-    status: todo
-    priority: low
-    branch: "feature/enhance-004-demo-copy"
-    depends_on: [MVP-122]
-    needs_claude_review: false
-    description: |
-      目的: アプリ全体の“文章（コピー）”を揃えて、読み手に優しいデモにする。
-
-      手順:
-      1) 探索: frontend/src で「静的デモ」「認証/DBなし」などの文言がどこに出ているか探す。
-      2) 実装: frontend/src/copy.ts のようなファイルを作り、デモ説明の文言を定数としてまとめる。
-      3) 置換: App.tsx / RequestsList.tsx / RequestDetail.tsx のデモ説明を定数参照に置き換える。
-      4) 確認: npm run build を通す。
-      5) 反映: feature/enhance-004-demo-copy を切ってコミット→push→mainへ取り込み。
-    acceptance_criteria:
-      - "デモ説明の文言が1箇所に集約されている"
-      - "npm run build が成功する"
-
-
-  - id: LEARN-008
-    title: "小改善: /buildinfo のレスポンス形式を固定（JSONスキーマ安定化）"
-    status: done
-    priority: low
-    branch: "enhance/008-buildinfo-schema"
-    depends_on: [LEARN-007]
-    needs_claude_review: false
-    description: |
-      目的: 仕様のブレ（string or object）を無くし、クライアントから扱いやすいAPIにする練習。
-
-      手順:
-      1) 探索: internal/interface/http/mux.go の /buildinfo 実装を確認する。
-      2) 仕様決定: 常に object を返す形式にする。
-         - 例: {"goVersion":"1.22.x","mainModule":"github.com/..."}
-         - 取得できない場合も {"goVersion":"unknown","mainModule":"unknown"} のように固定する。
-      3) 実装: /buildinfo の実装を更新する（JSONキー名は lowerCamelCase を推奨）。
-      4) テスト: internal/interface/http/buildinfo_test.go を更新し、json.Decoder でデコードしてキーが存在することを確認する。
-      5) 仕上げ: go test ./... を通す。
-    acceptance_criteria:
-      - "/buildinfo は常にJSON objectを返す（型が揺れない）"
-      - "unknown時も同じスキーマで返る"
-      - "go test ./... が通る"
-
-
-  - id: LEARN-009
-    title: "小改善: /readyz エンドポイント追加（JSONでOKを返す）"
-    status: done
-    priority: low
-    branch: "enhance/009-readyz"
-    depends_on: [MVP-116]
-    needs_claude_review: false
-    description: |
-      目的: mux へのルート追加と httptest によるエンドツーエンド（handler単位）のテストに慣れる。
-
-      手順:
-      1) 実装: internal/interface/http/mux.go に GET /readyz を追加（認証不要）。
-         - レスポンス: status=200, body={"ok":true}
-         - content-type は application/json を付ける
-      2) テスト: internal/interface/http/readyz_test.go を追加する。
-         - /readyz が 200 を返す
-         - content-type が application/json を含む
-         - JSONがデコード可能（{"ok":true}）
-      3) 仕上げ: go test ./... を通す。
-    acceptance_criteria:
-      - "GET /readyz が200とJSONを返す"
-      - "テストが追加されている"
-      - "go test ./... が通る"
-
-
-  - id: LEARN-010
-    title: "小改善: JSONレスポンスヘルパー writeJSON を追加（Go/http）"
-    status: todo
-    priority: low
-    branch: "enhance/010-writejson-helper"
-    depends_on: [MVP-116]
-    needs_claude_review: false
-    description: |
-      目的: ルール（Content-Type/ステータス/エンコード）を1箇所に集約し、実装を簡潔にする練習。
-
-      手順:
-      1) 実装: internal/interface/http/json.go を新規作成し、writeJSON(w, status, v) を用意する。
-         - content-type: application/json; charset=utf-8
-         - status を設定してから json.NewEncoder(w).Encode(v)
-      2) 置換: /buildinfo や /readyz があれば、それらで writeJSON を使う。
-      3) テスト: internal/interface/http/json_test.go を追加し、
-         - writeJSON が content-type をセットする
-         - status が反映される
-         - JSONとしてデコード可能
-      4) 仕上げ: go test ./... を通す。
-    acceptance_criteria:
-      - "writeJSON が追加され、複数箇所で利用されている（最低1箇所でOK）"
-      - "go test ./... が通る"
-
-
-  - id: LEARN-011
-    title: "小改善: Request ID ミドルウェア追加（X-Request-ID）"
-    status: done
-    priority: low
-    branch: "enhance/011-request-id"
-    depends_on: [MVP-116]
-    needs_claude_review: false
-    description: |
-      目的: ミドルウェアで「横断的な処理」を付与する練習（トレーシングの第一歩）。
-
-      手順:
-      1) 実装: internal/interface/http/request_id_middleware.go を追加する。
-         - 受信ヘッダに X-Request-ID があればそれを採用
-         - 無ければ新規に生成（短いランダム文字列でOK。crypto/rand を推奨）
-         - レスポンスヘッダに X-Request-ID を必ず付与
-      2) 配線: internal/interface/http/mux.go で全体をラップ（Recover と順序を考える）。
-         - 例: Recover(RequestID(mux)) など
-      3) テスト: internal/interface/http/request_id_middleware_test.go
-         - リクエストにX-Request-IDを付けたらレスポンスにも同じ値が入る
-         - 無い場合でもレスポンスに値が入る（空でない）
-      4) 仕上げ: go test ./... を通す。
-    acceptance_criteria:
-      - "すべてのレスポンスに X-Request-ID が付く"
-      - "go test ./... が通る"
-
-
-  - id: LEARN-012
-    title: "小改善: アクセスログミドルウェア追加（status/durationを出す）"
-    status: todo
-    priority: low
-    branch: "enhance/012-access-log"
-    depends_on: [MVP-116]
-    needs_claude_review: false
-    description: |
-      目的: ResponseWriter をラップして status を観測する練習（実務で頻出）。
-
-      手順:
-      1) 実装: internal/interface/http/access_log_middleware.go を追加。
-         - 開始時刻を取る
-         - next を呼ぶ
-         - method/path/status/duration を logger.Info で出す
-         - status は ResponseWriter をラップして取得する（WriteHeaderの記録）
-      2) 配線: internal/interface/http/mux.go で全体をラップ。
-      3) テスト: internal/interface/http/access_log_middleware_test.go
-         - ステータス200/500などのケースで、レスポンスのstatusが壊れていないこと
-         - （ログ内容まで厳密に見る必要はなく、panicしない/レスポンスが正常でOK）
-      4) 仕上げ: go test ./... を通す。
-    acceptance_criteria:
-      - "リクエストごとに status と duration をログに出す"
-      - "go test ./... が通る"
-
-
-  - id: LEARN-013
-    title: "小改善: 共通ローディング表示コンポーネント追加（React）"
-    status: todo
-    priority: low
-    branch: "enhance/013-loading-spinner"
-    depends_on: [MVP-112]
-    needs_claude_review: false
-    description: |
-      目的: 画面ごとのローディング表示の重複を減らし、UXを揃える。
-
-      手順:
-      1) 実装: frontend/src/components/LoadingSpinner.tsx を追加する。
-         - props: label?: string（任意）
-      2) 適用: RequestsList / RequestDetail などの loading 表示を置き換える（1〜2箇所でOK）。
-      3) CSS: frontend/src/style.css に最低限のスタイルを追加する。
-      4) 確認: frontend で npm run build を通す。
-    acceptance_criteria:
-      - "主要画面のローディング表示が共通化されている"
-      - "npm run build が成功する"
-
-
-  - id: LEARN-014
-    title: "小改善: useDocumentTitle フック追加（ページタイトルを統一）"
-    status: done
-    priority: low
-    branch: "enhance/014-document-title"
-    depends_on: [MVP-110]
-    needs_claude_review: false
-    description: |
-      目的: Reactの副作用（useEffect）とページ単位の責務分離に慣れる。
-
-      手順:
-      1) 実装: frontend/src/hooks/useDocumentTitle.ts を追加。
-         - 引数: title: string
-         - document.title を更新する
-      2) 適用: About / RequestsList / RequestDetail などのページで呼ぶ（2ページ以上）。
-      3) 確認: npm run build を通す。
-    acceptance_criteria:
-      - "ページ遷移で document.title が変わる"
-      - "npm run build が成功する"
-
-
-  - id: LEARN-015
-    title: "小改善: Request ID をコピーできるボタン追加（Clipboard API）"
-    status: todo
-    priority: low
-    branch: "enhance/015-copy-request-id"
-    depends_on: [MVP-113]
-    needs_claude_review: false
-    description: |
-      目的: 小さいUI改善を安全に入れる練習（成功/失敗のフィードバック）。
-
-      手順:
-      1) 探索: RequestDetail に表示されている requestID（または同等の識別子）を探す。
-      2) 実装: 「コピー」ボタンを追加し、クリックで clipboard に書き込む。
-         - navigator.clipboard.writeText を使う
-         - 失敗時は ErrorBanner か簡単なメッセージで通知
-      3) 確認: npm run build を通す。
-    acceptance_criteria:
-      - "Request ID をワンクリックでコピーできる"
-      - "npm run build が成功する"
-
-
-  - id: LEARN-016
-    title: "小改善: demo/prod 切替状態を画面上で分かるようにする（バッジ表示）"
-    status: todo
-    priority: low
-    branch: "enhance/016-env-badge"
-    depends_on: [MVP-111]
-    needs_claude_review: false
-    description: |
-      目的: 環境差分（demo/prod）をユーザーが誤解しないようにする。
-
-      手順:
-      1) 探索: フロントで demo/prod を判定している箇所（環境変数）を探す。
-      2) 実装: demo のときだけヘッダ等に "DEMO" バッジを表示する。
-      3) CSS: 目立つが邪魔にならないスタイルを付ける。
-      4) 確認: npm run build を通す。
-    acceptance_criteria:
-      - "demo/prod の状態が一目で分かる"
-      - "npm run build が成功する"
-
-
-  - id: LEARN-017
-    title: "小改善: tasks.yaml の branch 命名を enhance/ に寄せる（ドキュメント整備）"
-    status: todo
-    priority: low
-    branch: "enhance/017-branch-naming-doc"
+    priority: medium
+    branch: "enhance/001-healthz"
     depends_on: []
     needs_claude_review: false
     description: |
-      目的: 運用ルールをドキュメントで固定し、後から見ても迷わない状態にする。
+      目的: コンテナオーケストレーション環境でのヘルスチェックに対応し、Kubernetes等でのサービス可用性監視を可能にする。
+
+      学習ポイント:
+      - net/http の基本（ServeMux, Handler, HandlerFunc）
+      - httptest によるHTTPハンドラのテスト
+      - JSONレスポンスの返し方
 
       手順:
-      1) docs/tasks.yaml の学習用タスクを見て、branch名が feature/enhance-xxx 形式と enhance/xxx 形式で混在していることを確認する。
-      2) 方針を決める: 今後は enhance/xxx-... に統一する。
-      3) docs/instruction.md か docs/tasks.yaml 冒頭コメントに「学習用タスクのブランチ命名」ルールを追記する。
-         - 例: enhance/NNN-short-slug
-      4) （任意）既存LEARNの branch 値も統一する。
+      1) internal/interface/http/mux.go を読み、ルーティングの仕組みを理解する
+      2) GET /healthz を追加（認証不要、常に200とJSONを返す）
+      3) httptest を使ってテストを書く（status, content-type, body）
+      4) go test ./internal/interface/http/... を通す
     acceptance_criteria:
-      - "学習用ブランチ命名ルールがドキュメント化されている"
+      - "GET /healthz が 200 を返す"
+      - "レスポンスが JSON で {\"status\":\"ok\"} を含む"
+      - "テストが追加され、go test が通る"
 
+  - id: LEARN-018
+    title: "監査: 集約単位のイベント履歴取得API実装"
+    status: todo
+    priority: high
+    branch: "enhance/018-event-store-query"
+    depends_on: [LEARN-001]
+    needs_claude_review: false
+    description: |
+      目的: 特定の申請に対する全変更履歴を時系列で取得可能にし、監査証跡の追跡性を強化する。
+
+      学習ポイント:
+      - event_store テーブルの構造と役割
+      - aggregate_id によるイベント取得
+      - sqlc によるクエリ実装
+      - トランザクション境界の考え方
+
+      手順:
+      1) db/query/event_store.sql を読み、既存クエリを理解する
+      2) GetEventsByAggregateID クエリを追加（aggregate_id でフィルタ、sequence_number 昇順）
+      3) sqlc で生成し、internal/infrastructure/postgres/event_store.go に実装を追加
+      4) テストを書く（testdata でイベントを挿入して取得できることを確認）
+    acceptance_criteria:
+      - "指定した aggregate_id のイベントを時系列で取得できる"
+      - "空の場合も正常に動作する"
+      - "go test ./internal/infrastructure/postgres/... が通る"
+
+  - id: LEARN-019
+    title: "分析: ユーザー別申請統計の自動集計機能追加"
+    status: todo
+    priority: high
+    branch: "enhance/019-user-stats-projector"
+    depends_on: [LEARN-018]
+    needs_claude_review: false
+    description: |
+      目的: ユーザーごとの申請数・最終申請日を自動集計し、ダッシュボードでの利用状況分析を可能にする。
+
+      学習ポイント:
+      - イベントから読み取りモデルを構築する仕組み
+      - プロジェクタの実装パターン
+      - 冪等性の確保（同じイベントを複数回処理しても問題ない）
+
+      手順:
+      1) cmd/projector/main.go と既存プロジェクタを読む
+      2) マイグレーションで user_stats テーブルを追加（user_id, request_count, last_request_at）
+      3) UserStatsProjector を実装（RequestCreated イベントで統計を更新）
+      4) projector に組み込んで動作確認
+    acceptance_criteria:
+      - "RequestCreated イベント発生時に user_stats が更新される"
+      - "冪等性が保たれる（同じイベントを再処理しても壊れない）"
+      - "マイグレーション up/down が動作する"
+
+  - id: LEARN-020
+    title: "API: 申請者情報の入れ子取得対応"
+    status: done
+    priority: high
+    branch: "enhance/020-graphql-field-resolver"
+    depends_on: []
+    needs_claude_review: false
+    description: |
+      目的: 申請データから申請者情報をワンクエリで取得可能にし、フロントエンドの実装を簡素化する。
+
+      学習ポイント:
+      - gqlgen によるスキーマ駆動開発
+      - フィールドリゾルバの実装
+      - N+1問題の認識と対策の基礎
+
+      手順:
+      1) graph/schema.graphqls を読み、既存スキーマを理解する
+      2) Request type に submitter フィールドを追加（User型を返す）
+      3) gqlgen generate でコードを生成
+      4) internal/interface/graphql/resolver.go にフィールドリゾルバを実装
+      5) GraphQL クエリで動作確認
+    acceptance_criteria:
+      - "Request.submitter で User 情報を取得できる"
+      - "gqlgen generate が成功する"
+      - "クエリが正常に動作する"
+
+  - id: LEARN-021
+    title: "権限: 申請データエクスポート権限の追加"
+    status: todo
+    priority: high
+    branch: "enhance/021-rbac-permission"
+    depends_on: []
+    needs_claude_review: false
+    description: |
+      目的: データエクスポート機能に対するアクセス制御を実装し、管理者のみがデータ出力できるようにする。
+
+      学習ポイント:
+      - permissions テーブルの構造
+      - ミドルウェアでの認可チェック
+      - ロールとパーミッションの関係
+
+      手順:
+      1) internal/domain/rbac/ を読み、既存の認可ロジックを理解する
+      2) 新しいパーミッション "request.export" を定義
+      3) マイグレーションで permissions テーブルに追加
+      4) 認可チェック関数を実装（HasPermission など）
+      5) テストを書く（ロールごとの権限チェック）
+    acceptance_criteria:
+      - "新規パーミッションが DB に登録される"
+      - "認可チェック関数が正しく動作する"
+      - "go test ./internal/domain/rbac/... が通る"
+
+  - id: LEARN-022
+    title: "機能: 申請コメント機能の追加（イベント定義）"
+    status: todo
+    priority: high
+    branch: "enhance/022-new-event-type"
+    depends_on: [LEARN-018]
+    needs_claude_review: false
+    description: |
+      目的: 承認者・申請者間のコミュニケーション履歴を記録し、申請プロセスの透明性を向上させる。
+
+      学習ポイント:
+      - イベントの命名規則（過去形）
+      - イベントペイロードの設計
+      - イベントのバージョニング
+
+      手順:
+      1) internal/domain/request/events.go を読み、既存イベントを理解する
+      2) RequestCommented イベントを追加（comment_id, user_id, content, commented_at）
+      3) イベントの Validate メソッドを実装
+      4) テストを書く（イベント生成とバリデーション）
+    acceptance_criteria:
+      - "RequestCommented イベントが定義されている"
+      - "Validate でフィールドが検証される"
+      - "go test ./internal/domain/request/... が通る"
+
+  - id: LEARN-023
+    title: "品質: コマンド入力検証の集約"
+    status: todo
+    priority: medium
+    branch: "enhance/023-command-validation"
+    depends_on: [LEARN-022]
+    needs_claude_review: false
+    description: |
+      目的: 入力検証ロジックをコマンド層に集約し、不正データの早期検出とエラーハンドリングの一貫性を確保する。
+
+      学習ポイント:
+      - コマンドとクエリの分離（CQRS の基本）
+      - バリデーションロジックの配置
+      - エラーハンドリングのベストプラクティス
+
+      手順:
+      1) internal/usecase/ のコマンドハンドラを読む
+      2) SubmitRequestCommand に Validate() メソッドを追加
+      3) ハンドラで Validate を呼び、エラー時は早期リターン
+      4) テストを書く（バリデーションエラーのケース）
+    acceptance_criteria:
+      - "コマンドに Validate メソッドが実装されている"
+      - "バリデーションエラーが適切に返る"
+      - "go test ./internal/usecase/... が通る"
+
+  - id: LEARN-024
+    title: "テスト: ストレージのメモリ実装追加"
+    status: todo
+    priority: medium
+    branch: "enhance/024-storage-interface"
+    depends_on: []
+    needs_claude_review: false
+    description: |
+      目的: 外部ストレージに依存しないテスト実装を提供し、CI/CDパイプラインでの高速なテスト実行を実現する。
+
+      学習ポイント:
+      - internal/domain/ にインターフェースを定義する理由
+      - internal/infrastructure/ で実装する理由
+      - テスト時のモック実装
+
+      手順:
+      1) internal/domain/storage/ のインターフェースを読む
+      2) internal/infrastructure/minio/ の実装を読む
+      3) メモリ実装（テスト用）を追加: internal/infrastructure/memory/storage.go
+      4) テストで両方の実装が同じインターフェースを満たすことを確認
+    acceptance_criteria:
+      - "メモリ実装が Storage インターフェースを満たす"
+      - "テストでメモリ実装を使える"
+      - "go test ./internal/infrastructure/memory/... が通る"
+
+  - id: LEARN-025
+    title: "品質: ドメインエラー型の統一"
+    status: todo
+    priority: medium
+    branch: "enhance/025-custom-errors"
+    depends_on: []
+    needs_claude_review: false
+    description: |
+      目的: エラー種別を型安全に扱えるようにし、エラーハンドリングの一貫性と保守性を向上させる。
+
+      学習ポイント:
+      - errors.Is, errors.As の使い方
+      - エラーのラップとアンラップ
+      - ドメインエラーとインフラエラーの分離
+
+      手順:
+      1) internal/domain/errors.go を追加
+      2) DomainError 型を定義（Code, Message, Cause を持つ）
+      3) よくあるエラーを定数で定義（ErrNotFound, ErrUnauthorized など）
+      4) テストを書く（errors.Is で判定できることを確認）
+    acceptance_criteria:
+      - "カスタムエラー型が定義されている"
+      - "errors.Is で判定できる"
+      - "go test ./internal/domain/... が通る"
+
+  - id: LEARN-026
+    title: "品質: バリデーションロジックのテストカバレッジ向上"
+    status: todo
+    priority: medium
+    branch: "enhance/026-table-driven-test"
+    depends_on: [LEARN-025]
+    needs_claude_review: false
+    description: |
+      目的: 複数の境界値・異常系を網羅的にテストし、バリデーションの信頼性を確保する。
+
+      学習ポイント:
+      - テーブル駆動テストの書き方
+      - サブテスト（t.Run）の活用
+      - テストカバレッジの確認方法
+
+      手順:
+      1) 既存のテストでテーブル駆動テストを使っている箇所を探す
+      2) internal/domain/request/request_test.go を拡張
+      3) 複数のバリデーションケースをテーブル駆動で書く
+      4) go test -cover でカバレッジを確認
+    acceptance_criteria:
+      - "テーブル駆動テストが実装されている"
+      - "サブテストで各ケースが分離されている"
+      - "カバレッジが向上している"
+
+  - id: LEARN-027
+    title: "監査: 操作ログの検索・ページング機能実装"
+    status: todo
+    priority: medium
+    branch: "enhance/027-audit-query-api"
+    depends_on: [LEARN-018]
+    needs_claude_review: false
+    description: |
+      目的: ユーザー・アクション別の監査ログ検索を実装し、セキュリティ調査・コンプライアンス対応を効率化する。
+
+      学習ポイント:
+      - LIMIT/OFFSET によるページング
+      - WHERE句の動的構築
+      - sqlc でのオプショナルパラメータ
+
+      手順:
+      1) db/query/ に audit_log_queries.sql を追加
+      2) ListAuditLogs クエリを実装（user_id, action でフィルタ、ページング対応）
+      3) GraphQL スキーマに auditLogs クエリを追加
+      4) リゾルバを実装してテスト
+    acceptance_criteria:
+      - "フィルタとページングが動作する"
+      - "GraphQL で監査ログを取得できる"
+      - "go test が通る"
+
+  - id: LEARN-028
+    title: "信頼性: 重複リクエスト防止機能のテスト追加"
+    status: todo
+    priority: medium
+    branch: "enhance/028-idempotency-test"
+    depends_on: []
+    needs_claude_review: false
+    description: |
+      目的: ネットワーク再送時の二重処理を防止し、データ整合性を保証する。
+
+      学習ポイント:
+      - Idempotency-Key の役割
+      - 重複リクエストの検出
+      - トランザクション内での一意性制約
+
+      手順:
+      1) internal/usecase/ のべき等性チェックを読む
+      2) テストケースを追加（同じキーで2回リクエスト）
+      3) 1回目は成功、2回目は409 Conflict を返すことを確認
+      4) キャッシュやDBの状態を検証
+    acceptance_criteria:
+      - "同じ Idempotency-Key で2回リクエストすると409が返る"
+      - "1回目のレスポンスが返される"
+      - "go test が通る"
+
+  - id: LEARN-029
+    title: "通知: マルチチャネル通知対応（Email/Slack切替）"
+    status: todo
+    priority: low
+    branch: "enhance/029-notification-abstraction"
+    depends_on: []
+    needs_claude_review: false
+    description: |
+      目的: 組織の通知要件に応じてSlack/Email等を切り替え可能にし、導入柔軟性を向上させる。
+
+      学習ポイント:
+      - Notifier インターフェースの設計
+      - Slack 実装と Email 実装の共存
+      - 設定による実装の切り替え
+
+      手順:
+      1) internal/domain/notification/notifier.go を追加
+      2) Notifier インターフェースを定義（Send メソッド）
+      3) SlackNotifier と EmailNotifier（スタブ）を実装
+      4) 環境変数で切り替えられるようにする
+    acceptance_criteria:
+      - "Notifier インターフェースが定義されている"
+      - "複数の実装が存在する"
+      - "設定で切り替え可能"
+
+  - id: LEARN-030
+    title: "診断: 構造化ログへのリクエストID自動付与"
+    status: todo
+    priority: low
+    branch: "enhance/030-context-logging"
+    depends_on: [LEARN-001]
+    needs_claude_review: false
+    description: |
+      目的: リクエストIDをログに自動記録し、分散トレーシングとエラー調査の効率を向上させる。
+
+      学習ポイント:
+      - context に値を詰める/取り出す
+      - slog の With を使ったフィールド追加
+      - ミドルウェアの順序の重要性
+
+      手順:
+      1) internal/interface/http/context.go を追加
+      2) リクエストIDをcontextに詰めるミドルウェアを作成
+      3) ログ出力時にcontextからリクエストIDを取り出して記録
+      4) アクセスログで確認
+    acceptance_criteria:
+      - "ログにリクエストIDが含まれる"
+      - "context経由で値を渡せる"
+      - "go test が通る"
+
+  - id: LEARN-031
+    title: "復旧: 読み取りモデル再構築コマンド実装"
+    status: todo
+    priority: high
+    branch: "enhance/031-projector-replay"
+    depends_on: [LEARN-019]
+    needs_claude_review: false
+    description: |
+      目的: データ不整合発生時にイベントストアから読み取りモデルを再構築し、システムの自己修復能力を確保する。
+
+      学習ポイント:
+      - プロジェクションの再構築
+      - 大量イベントの処理（バッチ/ストリーム）
+      - プロジェクタの状態管理
+
+      手順:
+      1) cmd/projector/ にリプレイコマンドを追加
+      2) 読み取りモデルを削除して、イベントストアから再構築
+      3) プロジェクタの進捗を projector_state テーブルで管理
+      4) 実際にデータを壊して復旧してみる
+    acceptance_criteria:
+      - "リプレイコマンドでデータを再構築できる"
+      - "大量データでも動作する"
+      - "進捗がテーブルに記録される"
+
+  - id: LEARN-032
+    title: "信頼性: トランザクション境界の明確化と例外時ロールバック"
+    status: todo
+    priority: high
+    branch: "enhance/032-transaction-boundary"
+    depends_on: [LEARN-018]
+    needs_claude_review: false
+    description: |
+      目的: エラー発生時の部分更新を防止し、データ整合性を保証する。
+
+      学習ポイント:
+      - 1トランザクション = 1集約の原則
+      - サガパターンの基礎
+      - 結果整合性とイベント駆動
+
+      手順:
+      1) internal/usecase/ で複数テーブルを更新している箇所を探す
+      2) トランザクション境界を明確にする（Begin/Commit/Rollback）
+      3) エラー時のロールバック処理を実装
+      4) テストで部分的な更新が残らないことを確認
+    acceptance_criteria:
+      - "トランザクション境界が明確"
+      - "エラー時にロールバックされる"
+      - "go test が通る"

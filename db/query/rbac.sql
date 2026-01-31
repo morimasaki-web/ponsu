@@ -9,6 +9,11 @@ SET email = EXCLUDED.email,
     updated_at = now()
 RETURNING id, oidc_issuer, oidc_sub, email, name;
 
+-- name: GetUserByID :one
+SELECT id, oidc_issuer, oidc_sub, email, name, created_at, updated_at
+FROM public.users
+WHERE id = $1;
+
 -- name: GetAnyMembershipByUserID :one
 SELECT org_id, user_id, role
 FROM public.memberships

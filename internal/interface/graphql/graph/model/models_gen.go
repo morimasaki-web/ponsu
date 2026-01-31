@@ -25,6 +25,7 @@ type Request struct {
 	OrgID           string          `json:"orgID"`
 	Title           string          `json:"title"`
 	Status          string          `json:"status"`
+	Submitter       *User           `json:"submitter,omitempty"`
 	CreatedByUserID *string         `json:"createdByUserID,omitempty"`
 	DecidedByUserID *string         `json:"decidedByUserID,omitempty"`
 	CreatedAt       time.Time       `json:"createdAt"`
@@ -49,6 +50,13 @@ type RequestStep struct {
 	Status           string    `json:"status"`
 	AssignedToUserID *string   `json:"assignedToUserID,omitempty"`
 	UpdatedAt        time.Time `json:"updatedAt"`
+}
+
+type User struct {
+	UserID string  `json:"userID"`
+	OrgID  string  `json:"orgID"`
+	Name   *string `json:"name,omitempty"`
+	Email  *string `json:"email,omitempty"`
 }
 
 type WorkflowTemplate struct {

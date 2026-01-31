@@ -1,5 +1,5 @@
 ﻿# Archived LEARN tasks (moved from docs/tasks.yaml)
-archived_at: 2026-01-26
+archived_at: 2026-01-31
 tasks:
   - id: LEARN-002
     title: "小改善: ナビのアクティブ表示（React Router / CSS）"
@@ -126,5 +126,116 @@ tasks:
       - "GET /buildinfo が200を返す"
       - "JSONで goVersion 等の情報が返る（unknownでも可）"
       - "go test ./... が通る"
+
+  - id: LEARN-008
+    title: "小改善: /buildinfo のレスポンス形式を固定（JSONスキーマ安定化）"
+    status: done
+    priority: low
+    branch: "enhance/008-buildinfo-schema"
+    depends_on: [LEARN-007]
+    needs_claude_review: false
+    description: |
+      目的: 仕様のブレ（string or object）を無くし、クライアントから扱いやすいAPIにする練習。
+
+      手順:
+      1) 探索: internal/interface/http/mux.go の /buildinfo 実装を確認する。
+      2) 仕様決定: 常に object を返す形式にする。
+         - 例: {"goVersion":"1.22.x","mainModule":"github.com/..."}
+         - 取得できない場合も {"goVersion":"unknown","mainModule":"unknown"} のように固定する。
+      3) 実装: /buildinfo の実装を更新する（JSONキー名は lowerCamelCase を推奨）。
+      4) テスト: internal/interface/http/buildinfo_test.go を更新し、json.Decoder でデコードしてキーが存在することを確認する。
+      5) 仕上げ: go test ./... を通す。
+    acceptance_criteria:
+      - "/buildinfo は常にJSON objectを返す（型が揺れない）"
+      - "unknown時も同じスキーマで返る"
+      - "go test ./... が通る"
+
+  - id: LEARN-009
+    title: "小改善: /readyz エンドポイント追加（JSONでOKを返す）"
+    status: done
+    priority: low
+    branch: "enhance/009-readyz"
+    depends_on: [MVP-116]
+    needs_claude_review: false
+    description: |
+      目的: mux へのルート追加と httptest によるエンドツーエンド（handler単位）のテストに慣れる。
+
+      手順:
+      1) 実装: internal/interface/http/mux.go に GET /readyz を追加（認証不要）。
+         - レスポンス: status=200, body={"ok":true}
+         - content-type は application/json を付ける
+      2) テスト: internal/interface/http/readyz_test.go を追加する。
+         - /readyz が 200 を返す
+         - content-type が application/json を含む
+         - JSONがデコード可能（{"ok":true}）
+      3) 仕上げ: go test ./... を通す。
+    acceptance_criteria:
+      - "GET /readyz が200とJSONを返す"
+      - "テストが追加されている"
+      - "go test ./... が通る"
+
+  - id: LEARN-011
+    title: "小改善: Request ID ミドルウェア追加（X-Request-ID）"
+    status: done
+    priority: low
+    branch: "enhance/011-request-id"
+    depends_on: [MVP-116]
+    needs_claude_review: false
+    description: |
+      目的: ミドルウェアで「横断的な処理」を付与する練習（トレーシングの第一歩）。
+
+      手順:
+      1) 実装: internal/interface/http/request_id_middleware.go を追加する。
+         - 受信ヘッダに X-Request-ID があればそれを採用
+         - 無ければ新規に生成（短いランダム文字列でOK。crypto/rand を推奨）
+         - レスポンスヘッダに X-Request-ID を必ず付与
+      2) 配線: internal/interface/http/mux.go で全体をラップ（Recover と順序を考える）。
+         - 例: Recover(RequestID(mux)) など
+      3) テスト: internal/interface/http/request_id_middleware_test.go
+         - リクエストにX-Request-IDを付けたらレスポンスにも同じ値が入る
+         - 無い場合でもレスポンスに値が入る（空でない）
+      4) 仕上げ: go test ./... を通す。
+    acceptance_criteria:
+      - "すべてのレスポンスに X-Request-ID が付く"
+      - "go test ./... が通る"
+
+  - id: LEARN-014
+    title: "小改善: useDocumentTitle フック追加（ページタイトルを統一）"
+    status: done
+    priority: low
+    branch: "enhance/014-document-title"
+    depends_on: [MVP-110]
+    needs_claude_review: false
+    description: |
+      目的: Reactの副作用（useEffect）とページ単位の責務分離に慣れる。
+
+      手順:
+      1) 実装: frontend/src/hooks/useDocumentTitle.ts を追加。
+         - 引数: title: string
+         - document.title を更新する
+      2) 適用: About / RequestsList / RequestDetail などのページで呼ぶ（2ページ以上）。
+      3) 確認: npm run build を通す。
+    acceptance_criteria:
+      - "ページ遷移で document.title が変わる"
+      - "npm run build が成功する"
+
+  - id: LEARN-017
+    title: "小改善: tasks.yaml の branch 命名を enhance/ に寄せる（ドキュメント整備）"
+    status: done
+    priority: low
+    branch: "enhance/017-branch-naming-doc"
+    depends_on: []
+    needs_claude_review: false
+    description: |
+      目的: 運用ルールをドキュメントで固定し、後から見ても迷わない状態にする。
+
+      手順:
+      1) docs/tasks.yaml の学習用タスクを見て、branch名が feature/enhance-xxx 形式と enhance/xxx 形式で混在していることを確認する。
+      2) 方針を決める: 今後は enhance/xxx-... に統一する。
+      3) docs/instruction.md か docs/tasks.yaml 冒頭コメントに「学習用タスクのブランチ命名」ルールを追記する。
+         - 例: enhance/NNN-short-slug
+      4) （任意）既存LEARNの branch 値も統一する。
+    acceptance_criteria:
+      - "学習用ブランチ命名ルールがドキュメント化されている"
 
 

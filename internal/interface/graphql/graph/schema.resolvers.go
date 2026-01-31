@@ -367,11 +367,48 @@ func (r *queryResolver) WorkflowTemplates(ctx context.Context, limit *int, offse
 	return out, nil
 }
 
+// Submitter is the resolver for the submitter field.
+func (r *requestResolver) Submitter(ctx context.Context, obj *model.Request) (*model.User, error) {
+	// created_by_user_id がnilの場合はnilを返す
+	if obj.CreatedByUserID == nil {
+		return nil, nil
+	}
+
+	userID, err := parseUUID(*obj.CreatedByUserID)
+	if err != nil {
+		return nil, err
+	}
+
+	q, err := r.queries()
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := q.GetUserByID(ctx, userID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return &model.User{
+		UserID: user.ID.String(),
+		OrgID:  "", // ユーザーは複数の組織に所属できるため、ここでは空
+		Name:   &user.Name,
+		Email:  &user.Email,
+	}, nil
+}
+
 // Mutation returns generated.MutationResolver implementation.
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
 
 // Query returns generated.QueryResolver implementation.
 func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
+// Request returns generated.RequestResolver implementation.
+func (r *Resolver) Request() generated.RequestResolver { return &requestResolver{r} }
+
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+type requestResolver struct{ *Resolver }
