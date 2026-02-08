@@ -87,32 +87,8 @@ tasks:
   # 13. 学習用エンハンス（自分で実装）
   # ブランチ命名規則: enhance/NNN-short-slug
   # 目的: PonSuの設計を深く理解し、自分で機能追加できる状態になる
+  # 完了済み: LEARN-018, 019, 020, 021, 022
   # -------------------------
-
-  - id: LEARN-001
-    title: "診断: ヘルスチェックエンドポイント実装"
-    status: todo
-    priority: medium
-    branch: "enhance/001-healthz"
-    depends_on: []
-    needs_claude_review: false
-    description: |
-      目的: コンテナオーケストレーション環境でのヘルスチェックに対応し、Kubernetes等でのサービス可用性監視を可能にする。
-
-      学習ポイント:
-      - net/http の基本（ServeMux, Handler, HandlerFunc）
-      - httptest によるHTTPハンドラのテスト
-      - JSONレスポンスの返し方
-
-      手順:
-      1) internal/interface/http/mux.go を読み、ルーティングの仕組みを理解する
-      2) GET /healthz を追加（認証不要、常に200とJSONを返す）
-      3) httptest を使ってテストを書く（status, content-type, body）
-      4) go test ./internal/interface/http/... を通す
-    acceptance_criteria:
-      - "GET /healthz が 200 を返す"
-      - "レスポンスが JSON で {\"status\":\"ok\"} を含む"
-      - "テストが追加され、go test が通る"
 
   - id: LEARN-018
     title: "監査: 集約単位のイベント履歴取得API実装"
@@ -219,7 +195,7 @@ tasks:
 
   - id: LEARN-022
     title: "機能: 申請コメント機能の追加（イベント定義）"
-    status: todo
+    status: done
     priority: high
     branch: "enhance/022-new-event-type"
     depends_on: [LEARN-018]
@@ -242,105 +218,223 @@ tasks:
       - "Validate でフィールドが検証される"
       - "go test ./internal/domain/request/... が通る"
 
-  - id: LEARN-023
-    title: "品質: コマンド入力検証の集約"
+  - id: LEARN-022F
+    title: "Frontend: 申請コメント機能のUI実装"
     status: todo
-    priority: medium
-    branch: "enhance/023-command-validation"
+    priority: high
+    branch: "enhance/022f-comment-ui"
     depends_on: [LEARN-022]
     needs_claude_review: false
     description: |
-      目的: 入力検証ロジックをコマンド層に集約し、不正データの早期検出とエラーハンドリングの一貫性を確保する。
+      目的: 申請画面でコメントの表示・投稿機能を実装し、承認者と申請者のコミュニケーションを可能にする。
 
       学習ポイント:
-      - コマンドとクエリの分離（CQRS の基本）
-      - バリデーションロジックの配置
-      - エラーハンドリングのベストプラクティス
+      - GraphQLのMutationとQueryの組み合わせ
+      - 楽観的UI更新（投稿後の即座な表示）
+      - フォームバリデーション
 
       手順:
-      1) internal/usecase/ のコマンドハンドラを読む
-      2) SubmitRequestCommand に Validate() メソッドを追加
-      3) ハンドラで Validate を呼び、エラー時は早期リターン
-      4) テストを書く（バリデーションエラーのケース）
+      1) GraphQLスキーマでaddCommentミューテーションとcommentsクエリを確認
+      2) frontend/src/components/CommentList.tsx を作成（コメント一覧表示）
+      3) frontend/src/components/CommentForm.tsx を作成（コメント投稿フォーム）
+      4) 申請詳細画面にコンポーネントを統合
+      5) テストを書く（コメント投稿・表示の動作確認）
     acceptance_criteria:
-      - "コマンドに Validate メソッドが実装されている"
-      - "バリデーションエラーが適切に返る"
-      - "go test ./internal/usecase/... が通る"
+      - "コメント一覧が表示される"
+      - "コメントを投稿できる"
+      - "投稿後に一覧が更新される"
+
+  - id: LEARN-023
+    title: "検索: 申請の検索・フィルタリング機能実装"
+    status: todo
+    priority: high
+    branch: "enhance/023-request-search"
+    depends_on: [LEARN-022]
+    needs_claude_review: false
+    description: |
+      目的: 申請データを柔軟に検索・フィルタリングできるようにし、ユーザーが必要な情報に素早くアクセスできるようにする。
+
+      学習ポイント:
+      - WHERE句の動的構築
+      - LIKE検索とインデックス
+      - ページネーションの実装
+      - GraphQLの引数設計
+
+      手順:
+      1) db/query/requests.sql に SearchRequests クエリを追加
+         - タイトル部分一致、ステータス、作成日範囲でフィルタ
+         - LIMIT/OFFSET でページング
+      2) sqlc generate で型生成
+      3) GraphQLスキーマに searchRequests クエリを追加
+      4) リゾルバを実装してテスト
+    acceptance_criteria:
+      - "複数条件でフィルタリングできる"
+      - "ページネーションが動作する"
+      - "GraphQLで検索結果を取得できる"
+
+  - id: LEARN-023F
+    title: "Frontend: 申請検索UIとフィルター機能"
+    status: todo
+    priority: high
+    branch: "enhance/023f-search-ui"
+    depends_on: [LEARN-023]
+    needs_claude_review: false
+    description: |
+      目的: 申請一覧画面に検索ボックスとフィルター機能を追加し、目的の申請を素早く見つけられるようにする。
+
+      学習ポイント:
+      - 検索フォームの状態管理
+      - デバウンス処理（入力中の過剰なAPI呼び出し防止）
+      - URLクエリパラメータとの同期
+
+      手順:
+      1) frontend/src/components/RequestSearchBar.tsx を作成
+         - タイトル検索、ステータスフィルター、日付範囲フィルター
+      2) useDebounce フックを実装（入力後300ms待ってから検索）
+      3) GraphQLクエリに検索条件を渡す
+      4) URLパラメータに検索条件を反映（共有可能なURL）
+      5) テストを書く
+    acceptance_criteria:
+      - "検索条件を入力できる"
+      - "検索結果が即座に更新される"
+      - "URLで検索条件を共有できる"
 
   - id: LEARN-024
-    title: "テスト: ストレージのメモリ実装追加"
+    title: "統計: ダッシュボード集計クエリの実装"
     status: todo
     priority: medium
-    branch: "enhance/024-storage-interface"
-    depends_on: []
+    branch: "enhance/024-dashboard-stats"
+    depends_on: [LEARN-019]
     needs_claude_review: false
     description: |
-      目的: 外部ストレージに依存しないテスト実装を提供し、CI/CDパイプラインでの高速なテスト実行を実現する。
+      目的: 組織全体の申請状況を可視化するダッシュボード用の集計データを提供する。
 
       学習ポイント:
-      - internal/domain/ にインターフェースを定義する理由
-      - internal/infrastructure/ で実装する理由
-      - テスト時のモック実装
+      - GROUP BY集計
+      - COUNT、AVG等の集約関数
+      - 複数テーブルのJOIN
+      - GraphQLでの複雑な型定義
 
       手順:
-      1) internal/domain/storage/ のインターフェースを読む
-      2) internal/infrastructure/minio/ の実装を読む
-      3) メモリ実装（テスト用）を追加: internal/infrastructure/memory/storage.go
-      4) テストで両方の実装が同じインターフェースを満たすことを確認
+      1) db/query/dashboard.sql を作成
+         - ステータス別の申請数
+         - 期間別の申請数推移
+         - 平均承認時間
+      2) sqlc generate
+      3) GraphQLスキーマに dashboard クエリを追加
+      4) リゾルバ実装とテスト
     acceptance_criteria:
-      - "メモリ実装が Storage インターフェースを満たす"
-      - "テストでメモリ実装を使える"
-      - "go test ./internal/infrastructure/memory/... が通る"
+      - "集計クエリが正確に動作する"
+      - "GraphQLで統計データを取得できる"
+      - "テストが追加されている"
+
+  - id: LEARN-024F
+    title: "Frontend: ダッシュボード画面の実装"
+    status: todo
+    priority: medium
+    branch: "enhance/024f-dashboard-ui"
+    depends_on: [LEARN-024]
+    needs_claude_review: false
+    description: |
+      目的: 組織全体の申請状況を可視化するダッシュボード画面を実装し、管理者が状況を把握できるようにする。
+
+      学習ポイント:
+      - チャートライブラリの使い方（recharts等）
+      - レスポンシブデザイン
+      - データの視覚化手法
+
+      手順:
+      1) frontend/src/pages/Dashboard.tsx を作成
+      2) recharts または similar ライブラリをインストール
+      3) ステータス別申請数の円グラフを実装
+      4) 期間別申請数推移の折れ線グラフを実装
+      5) 平均承認時間などのサマリー数値を表示
+      6) テストを書く
+    acceptance_criteria:
+      - "ダッシュボードが表示される"
+      - "グラフで統計が視覚化される"
+      - "レスポンシブに動作する"
 
   - id: LEARN-025
-    title: "品質: ドメインエラー型の統一"
+    title: "添付: ファイルダウンロード署名URL生成機能"
     status: todo
-    priority: medium
-    branch: "enhance/025-custom-errors"
+    priority: high
+    branch: "enhance/025-attachment-download"
     depends_on: []
     needs_claude_review: false
     description: |
-      目的: エラー種別を型安全に扱えるようにし、エラーハンドリングの一貫性と保守性を向上させる。
+      目的: 添付ファイルに対する期限付き署名URLを生成し、安全なダウンロードを実現する。
 
       学習ポイント:
-      - errors.Is, errors.As の使い方
-      - エラーのラップとアンラップ
-      - ドメインエラーとインフラエラーの分離
+      - S3の署名付きURL生成
+      - 権限チェック（自分の申請または承認者のみ）
+      - HTTPハンドラの実装
 
       手順:
-      1) internal/domain/errors.go を追加
-      2) DomainError 型を定義（Code, Message, Cause を持つ）
-      3) よくあるエラーを定数で定義（ErrNotFound, ErrUnauthorized など）
-      4) テストを書く（errors.Is で判定できることを確認）
+      1) internal/infrastructure/storage/ のインターフェースを確認
+      2) GeneratePresignedURL メソッドを追加（既存ならそれを使う）
+      3) internal/usecase/attachments/ に GetDownloadURL を実装
+         - 申請IDと添付IDから権限チェック
+         - Storage.GeneratePresignedURL を呼ぶ
+      4) GraphQLリゾルバまたはHTTPエンドポイントを追加
+      5) テストを書く
     acceptance_criteria:
-      - "カスタムエラー型が定義されている"
-      - "errors.Is で判定できる"
-      - "go test ./internal/domain/... が通る"
+      - "権限のあるユーザーのみダウンロードURLを取得できる"
+      - "URLに有効期限がある"
+      - "go test が通る"
 
-  - id: LEARN-026
-    title: "品質: バリデーションロジックのテストカバレッジ向上"
+  - id: LEARN-025F
+    title: "Frontend: 添付ファイルダウンロードボタンの実装"
     status: todo
-    priority: medium
-    branch: "enhance/026-table-driven-test"
+    priority: high
+    branch: "enhance/025f-download-button"
     depends_on: [LEARN-025]
     needs_claude_review: false
     description: |
-      目的: 複数の境界値・異常系を網羅的にテストし、バリデーションの信頼性を確保する。
+      目的: 申請詳細画面で添付ファイルを安全にダウンロードできるボタンを実装する。
 
       学習ポイント:
-      - テーブル駆動テストの書き方
-      - サブテスト（t.Run）の活用
-      - テストカバレッジの確認方法
+      - 署名付きURLの取得と使用
+      - ダウンロード進捗の表示
+      - エラーハンドリング（期限切れ等）
 
       手順:
-      1) 既存のテストでテーブル駆動テストを使っている箇所を探す
-      2) internal/domain/request/request_test.go を拡張
-      3) 複数のバリデーションケースをテーブル駆動で書く
-      4) go test -cover でカバレッジを確認
+      1) frontend/src/components/AttachmentDownloadButton.tsx を作成
+      2) GraphQLで署名付きURLを取得するクエリを実装
+      3) ダウンロードボタンをクリックで新しいタブで開く
+      4) ローディング状態とエラー状態を表示
+      5) テストを書く（モックURLでの動作確認）
     acceptance_criteria:
-      - "テーブル駆動テストが実装されている"
-      - "サブテストで各ケースが分離されている"
-      - "カバレッジが向上している"
+      - "ダウンロードボタンが表示される"
+      - "クリックでファイルをダウンロードできる"
+      - "エラー時に適切なメッセージが表示される"
+
+  - id: LEARN-026
+    title: "通知: 通知テンプレートのカスタマイズ機能"
+    status: todo
+    priority: medium
+    branch: "enhance/026-notification-template"
+    depends_on: []
+    needs_claude_review: false
+    description: |
+      目的: 組織ごとに通知メッセージをカスタマイズ可能にし、導入時の柔軟性を向上させる。
+
+      学習ポイント:
+      - テンプレートエンジンの使い方（text/template）
+      - データベースへのテンプレート保存
+      - デフォルト値とカスタム値の優先順位
+
+      手順:
+      1) マイグレーションで notification_templates テーブルを追加
+         - org_id, event_type, template_body
+      2) internal/infrastructure/notify/slack.go を読む
+      3) テンプレートを使ってメッセージを組み立てる機能を追加
+      4) デフォルトテンプレートとカスタムテンプレートの切り替え
+      5) テストを書く
+    acceptance_criteria:
+      - "テンプレートからメッセージを生成できる"
+      - "カスタムテンプレートが優先される"
+      - "go test が通る"
 
   - id: LEARN-027
     title: "監査: 操作ログの検索・ページング機能実装"
@@ -366,7 +460,31 @@ tasks:
       - "フィルタとページングが動作する"
       - "GraphQL で監査ログを取得できる"
       - "go test が通る"
+  - id: LEARN-027F
+    title: "Frontend: 監査ログ閲覧画面の実装"
+    status: todo
+    priority: medium
+    branch: "enhance/027f-audit-log-ui"
+    depends_on: [LEARN-027]
+    needs_claude_review: false
+    description: |
+      目的: 管理者が操作履歴を確認できる監査ログ画面を実装し、セキュリティ調査を可能にする。
 
+      学習ポイント:
+      - テーブル表示とソート機能
+      - ページネーション（前へ/次へボタン）
+      - 日時フォーマットの統一
+
+      手順:
+      1) frontend/src/pages/AuditLog.tsx を作成
+      2) 監査ログのテーブル表示（ユーザー、アクション、日時、詳細）
+      3) ページネーションコントロールを実装
+      4) フィルター機能を統合（ユーザー別、アクション別）
+      5) テストを書く
+    acceptance_criteria:
+      - "監査ログが一覧表示される"
+      - "ページネーションが動作する"
+      - "フィルターで絞り込める"
   - id: LEARN-028
     title: "信頼性: 重複リクエスト防止機能のテスト追加"
     status: todo
@@ -393,53 +511,57 @@ tasks:
       - "go test が通る"
 
   - id: LEARN-029
-    title: "通知: マルチチャネル通知対応（Email/Slack切替）"
+    title: "Projector: エラーハンドリングとリトライ機能追加"
     status: todo
-    priority: low
-    branch: "enhance/029-notification-abstraction"
+    priority: high
+    branch: "enhance/029-projector-resilience"
+    depends_on: [LEARN-019]
+    needs_claude_review: false
+    description: |
+      目的: Projectorでのエラー発生時に適切にリトライし、一時的な障害を自動復旧できるようにする。
+
+      学習ポイント:
+      - エラーのリトライ戦略（指数バックオフ）
+      - デッドレターキューの概念
+      - 構造化ログでのエラー記録
+
+      手順:
+      1) internal/infrastructure/projector/runner.go を読む
+      2) エラー時のリトライロジックを追加
+         - 最大3回リトライ
+         - 指数バックオフ（1s, 2s, 4s）
+      3) リトライ失敗時はfailed_eventsテーブルに記録
+      4) 構造化ログでエラー詳細を記録
+      5) テストを書く（モックでエラーを発生させる）
+    acceptance_criteria:
+      - "一時的なエラーはリトライされる"
+      - "リトライ失敗イベントが記録される"
+      - "go test が通る"
+
+  - id: LEARN-030
+    title: "GraphQL: エラーレスポンスの統一と構造化"
+    status: todo
+    priority: medium
+    branch: "enhance/030-graphql-error-handling"
     depends_on: []
     needs_claude_review: false
     description: |
-      目的: 組織の通知要件に応じてSlack/Email等を切り替え可能にし、導入柔軟性を向上させる。
+      目的: GraphQLエラーを一貫した形式で返し、フロントエンドでの適切なエラーハンドリングを可能にする。
 
       学習ポイント:
-      - Notifier インターフェースの設計
-      - Slack 実装と Email 実装の共存
-      - 設定による実装の切り替え
+      - gqlgenのエラーハンドリング機構
+      - エラーコードとメッセージの設計
+      - エクステンションフィールドの活用
 
       手順:
-      1) internal/domain/notification/notifier.go を追加
-      2) Notifier インターフェースを定義（Send メソッド）
-      3) SlackNotifier と EmailNotifier（スタブ）を実装
-      4) 環境変数で切り替えられるようにする
+      1) internal/interface/graphql/errors.go を追加
+      2) エラー種別を定義（NOT_FOUND, UNAUTHORIZED, VALIDATION_ERROR等）
+      3) gqlgenのエラープレゼンターを実装
+      4) リゾルバでドメインエラーをGraphQLエラーに変換
+      5) テストを書く（各エラー種別のレスポンス確認）
     acceptance_criteria:
-      - "Notifier インターフェースが定義されている"
-      - "複数の実装が存在する"
-      - "設定で切り替え可能"
-
-  - id: LEARN-030
-    title: "診断: 構造化ログへのリクエストID自動付与"
-    status: todo
-    priority: low
-    branch: "enhance/030-context-logging"
-    depends_on: [LEARN-001]
-    needs_claude_review: false
-    description: |
-      目的: リクエストIDをログに自動記録し、分散トレーシングとエラー調査の効率を向上させる。
-
-      学習ポイント:
-      - context に値を詰める/取り出す
-      - slog の With を使ったフィールド追加
-      - ミドルウェアの順序の重要性
-
-      手順:
-      1) internal/interface/http/context.go を追加
-      2) リクエストIDをcontextに詰めるミドルウェアを作成
-      3) ログ出力時にcontextからリクエストIDを取り出して記録
-      4) アクセスログで確認
-    acceptance_criteria:
-      - "ログにリクエストIDが含まれる"
-      - "context経由で値を渡せる"
+      - "エラーに適切なコードが付与される"
+      - "エラーメッセージが分かりやすい"
       - "go test が通る"
 
   - id: LEARN-031
@@ -479,15 +601,120 @@ tasks:
 
       学習ポイント:
       - 1トランザクション = 1集約の原則
-      - サガパターンの基礎
+      - Transaction Scriptでのトランザクション管理
       - 結果整合性とイベント駆動
 
       手順:
-      1) internal/usecase/ で複数テーブルを更新している箇所を探す
-      2) トランザクション境界を明確にする（Begin/Commit/Rollback）
-      3) エラー時のロールバック処理を実装
+      1) internal/usecase/requests/service.go のトランザクション管理を読む
+      2) applyTransition 関数のトランザクション境界を確認
+      3) エラー時のロールバック処理が適切か検証
       4) テストで部分的な更新が残らないことを確認
+      5) ドキュメントにトランザクション境界を明記
     acceptance_criteria:
       - "トランザクション境界が明確"
       - "エラー時にロールバックされる"
-      - "go test が通る"
+      - "ドキュメントが追加されている"
+
+  - id: LEARN-033
+    title: "デモ: モックデータ生成とローカルストレージ永続化"
+    status: todo
+    priority: high
+    branch: "enhance/033-demo-mock-data"
+    depends_on: []
+    needs_claude_review: false
+    description: |
+      目的: デモモード用のモックデータを生成し、ローカルストレージに永続化して再現性のあるデモ環境を構築する。
+
+      学習ポイント:
+      - localStorage/IndexedDBの使い方
+      - モックデータの設計
+      - デモモードとプロダクションモードの切り替え
+
+      手順:
+      1) frontend/src/demo/ ディレクトリを作成
+      2) モックデータを定義（申請、ユーザー、コメント等）
+      3) ローカルストレージへの保存/読み込み機能を実装
+      4) デモモード判定ロジックを追加
+      5) GraphQLクライアントのモック実装
+    acceptance_criteria:
+      - "デモモードで動作する"
+      - "モックデータが永続化される"
+      - "リセット機能が動作する"
+
+  - id: LEARN-034
+    title: "Frontend: リクエスト一覧のページネーション実装"
+    status: todo
+    priority: medium
+    branch: "enhance/034-frontend-pagination"
+    depends_on: [LEARN-023]
+    needs_claude_review: false
+    description: |
+      目的: 大量の申請データを効率的に表示し、ユーザー体験を向上させる。
+
+      学習ポイント:
+      - GraphQLのカーソルベースページネーション
+      - Reactでの無限スクロール実装
+      - パフォーマンス最適化
+
+      手順:
+      1) GraphQLスキーマでページネーション引数を確認
+      2) React Query（またはApollo Client）でページネーション実装
+      3) 「もっと読み込む」ボタンまたは無限スクロールのUI追加
+      4) ローディング状態の表示
+      5) テストを書く
+    acceptance_criteria:
+      - "ページネーションが動作する"
+      - "ローディング状態が表示される"
+      - "テストが追加されている"
+
+  - id: LEARN-035
+    title: "Frontend: エラー境界とトースト通知の統一"
+    status: todo
+    priority: high
+    branch: "enhance/035-error-toast"
+    depends_on: []
+    needs_claude_review: false
+    description: |
+      目的: GraphQLエラーやネットワークエラーを統一的に処理し、ユーザーに分かりやすく表示する。
+
+      学習ポイント:
+      - React Error Boundary
+      - トースト通知ライブラリ（react-hot-toast等）
+      - グローバルエラーハンドリング
+
+      手順:
+      1) react-hot-toast または similar をインストール
+      2) frontend/src/components/ErrorBoundary.tsx を実装
+      3) GraphQLエラーをトースト通知に変換するヘルパー関数
+      4) App.tsx にエラー境界とトースターを統合
+      5) 各画面でエラーハンドリングを統一
+    acceptance_criteria:
+      - "エラー時にトースト通知が表示される"
+      - "致命的エラーはError Boundaryがキャッチする"
+      - "エラーメッセージが分かりやすい"
+
+  - id: LEARN-036
+    title: "Frontend: ローディング状態の統一とスケルトンUI"
+    status: todo
+    priority: medium
+    branch: "enhance/036-loading-skeleton"
+    depends_on: []
+    needs_claude_review: false
+    description: |
+      目的: データ読み込み中のUXを改善し、ユーザーに待ち時間を意識させないようにする。
+
+      学習ポイント:
+      - スケルトンスクリーンの実装
+      - Suspenseとの組み合わせ
+      - UXベストプラクティス
+
+      手順:
+      1) frontend/src/components/Skeleton.tsx を作成（汎用スケルトンコンポーネント）
+      2) 各画面用のスケルトンを実装（RequestListSkeleton等）
+      3) GraphQLのloading状態でスケルトンを表示
+      4) CSSアニメーションで滑らかに表示
+      5) テストを書く
+    acceptance_criteria:
+      - "ローディング時にスケルトンが表示される"
+      - "アニメーションが滑らか"
+      - "各画面で統一されている"
