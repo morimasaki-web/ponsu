@@ -2,7 +2,7 @@ module github.com/morimasaki-web/ponsu
 
 go 1.24.0
 
-toolchain go1.24.11
+toolchain go1.24.13
 
 require (
 	github.com/99designs/gqlgen v0.17.73

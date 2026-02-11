@@ -39,31 +39,36 @@ tasks:
       - "主要機能（承認/却下/差し戻し/再提出/監査）が説明されている"
 
   - id: MVP-121
-    title: "セキュリティ: Go標準ライブラリ脆弱性対応（Go 1.25.7+へアップデート）"
-    status: todo
+    title: "セキュリティ: Go標準ライブラリ脆弱性対応（Go 1.24.13+ または 1.25.7+）"
+    status: in_progress
     priority: high
     branch: "fix/mvp-121-go-upgrade"
     depends_on: []
     needs_claude_review: false
     description: |
-      govulncheckでGo標準ライブラリの脆弱性（GO-2026-4341, GO-2026-4340, GO-2026-4337）が検出されたため、Go 1.25.7以上へアップデートする。
+      govulncheckでGo標準ライブラリの脆弱性が検出されたため、アップデートする。
       
       検出された脆弱性:
-      - GO-2026-4341: net/url でのメモリ枯渇（クエリパラメータ解析）
-      - GO-2026-4340: crypto/tls でのハンドシェイクメッセージ処理問題
-      - GO-2026-4337: crypto/tls での予期しないセッション再開
+      - GO-2026-4337: crypto/tls での予期しないセッション再開（go1.24.13で修正）
+      - GO-2026-4341: net/url でのメモリ枯渇（クエリパラメータ解析、go1.25.6+で修正）
+      - GO-2026-4340: crypto/tls でのハンドシェイクメッセージ処理問題（go1.25.6+で修正）
       
-      対応手順:
+      段階的対応:
+      1. ✅ go.mod toolchain を go1.24.13 に更新（GO-2026-4337対応）
+      2. ⏳ Go 1.25.7以上へアップグレード（全脆弱性対応）
+      
+      対応手順（完全版）:
       1. Go 1.25.7以上をインストール（https://go.dev/dl/）
       2. go.mod の toolchain を更新
       3. go mod tidy 実行
       4. govulncheck で脆弱性が解消されたことを確認
       5. go test ./... でテストが通ることを確認
     deliverables:
-      - "Go 1.25.7以上へのアップデート"
-      - "go.mod の toolchain 更新"
+      - "go.mod の toolchain 更新（go1.24.13以上）"
+      - "Go 1.25.7以上へのアップデート（最終版）"
     acceptance_criteria:
-      - "go version が 1.25.7以上を返す"
+      - "GitHub Actions の govulncheck が通る"
+      - "go version が 1.25.7以上を返す（最終版）"
       - "govulncheck ./... で脆弱性が0件"
       - "すべてのテストが通る"
 
