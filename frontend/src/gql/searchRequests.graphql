@@ -1,0 +1,14 @@
+query SearchRequests($title: String, $status: String, $createdAtStart: Time, $createdAtEnd: Time, $limit: Int = 50, $offset: Int = 0) {
+  searchRequests(title: $title, status: $status, createdAtStart: $createdAtStart, createdAtEnd: $createdAtEnd, limit: $limit, offset: $offset) {
+    id
+    orgID
+    title
+    status
+    createdByUserID
+    decidedByUserID
+    createdAt
+    updatedAt
+    submittedAt
+    decidedAt
+  }
+}

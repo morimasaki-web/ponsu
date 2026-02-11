@@ -682,7 +682,7 @@ tasks:
 
   - id: LEARN-023F
     title: "Frontend: 申請検索UIとフィルター機能"
-    status: todo
+    status: done
     priority: high
     branch: "enhance/023f-search-ui"
     depends_on: [LEARN-023]
@@ -701,11 +701,11 @@ tasks:
       2) useDebounce フックを実装（入力後300ms待ってから検索）
       3) GraphQLクエリに検索条件を渡す
       4) URLパラメータに検索条件を反映（共有可能なURL）
-      5) テストを書く
     acceptance_criteria:
       - "検索条件を入力できる"
       - "検索結果が即座に更新される"
       - "URLで検索条件を共有できる"
+    note: "テストは LEARN-037 (Frontend testing setup) で環境構築後に追加"
 
   - id: LEARN-024
     title: "統計: ダッシュボード集計クエリの実装"
@@ -757,11 +757,11 @@ tasks:
       3) ステータス別申請数の円グラフを実装
       4) 期間別申請数推移の折れ線グラフを実装
       5) 平均承認時間などのサマリー数値を表示
-      6) テストを書く
     acceptance_criteria:
       - "ダッシュボードが表示される"
       - "グラフで統計が視覚化される"
       - "レスポンシブに動作する"
+    note: "テストは LEARN-037 で環境構築後に追加"
 
   - id: LEARN-025
     title: "添付: ファイルダウンロード署名URL生成機能"
@@ -811,11 +811,11 @@ tasks:
       2) GraphQLで署名付きURLを取得するクエリを実装
       3) ダウンロードボタンをクリックで新しいタブで開く
       4) ローディング状態とエラー状態を表示
-      5) テストを書く（モックURLでの動作確認）
     acceptance_criteria:
       - "ダウンロードボタンが表示される"
       - "クリックでファイルをダウンロードできる"
       - "エラー時に適切なメッセージが表示される"
+    note: "テストは LEARN-037 で環境構築後に追加"
 
   - id: LEARN-026
     title: "通知: 通知テンプレートのカスタマイズ機能"
@@ -888,11 +888,11 @@ tasks:
       2) 監査ログのテーブル表示（ユーザー、アクション、日時、詳細）
       3) ページネーションコントロールを実装
       4) フィルター機能を統合（ユーザー別、アクション別）
-      5) テストを書く
     acceptance_criteria:
       - "監査ログが一覧表示される"
       - "ページネーションが動作する"
       - "フィルターで絞り込める"
+    note: "テストは LEARN-037 で環境構築後に追加"
   - id: LEARN-028
     title: "信頼性: 重複リクエスト防止機能のテスト追加"
     status: todo
@@ -1066,14 +1066,13 @@ tasks:
 
       手順:
       1) GraphQLスキーマでページネーション引数を確認
-      2) React Query（またはApollo Client）でページネーション実装
+      2) urqlでページネーション実装（fetchMore等）
       3) 「もっと読み込む」ボタンまたは無限スクロールのUI追加
       4) ローディング状態の表示
-      5) テストを書く
     acceptance_criteria:
       - "ページネーションが動作する"
       - "ローディング状態が表示される"
-      - "テストが追加されている"
+    note: "テストは LEARN-037 で環境構築後に追加"
 
   - id: LEARN-035
     title: "Frontend: エラー境界とトースト通知の統一"
@@ -1100,6 +1099,7 @@ tasks:
       - "エラー時にトースト通知が表示される"
       - "致命的エラーはError Boundaryがキャッチする"
       - "エラーメッセージが分かりやすい"
+    note: "テストは LEARN-037 で環境構築後に追加"
 
   - id: LEARN-036
     title: "Frontend: ローディング状態の統一とスケルトンUI"
@@ -1121,8 +1121,61 @@ tasks:
       2) 各画面用のスケルトンを実装（RequestListSkeleton等）
       3) GraphQLのloading状態でスケルトンを表示
       4) CSSアニメーションで滑らかに表示
-      5) テストを書く
     acceptance_criteria:
       - "ローディング時にスケルトンが表示される"
       - "アニメーションが滑らか"
       - "各画面で統一されている"
+    note: "テストは LEARN-037 で環境構築後に追加"
+
+  - id: LEARN-037
+    title: "Frontend: テスト環境セットアップ（Vitest + Testing Library）"
+    status: todo
+    priority: medium
+    branch: "enhance/037-frontend-testing"
+    depends_on: []
+    needs_claude_review: false
+    description: |
+      目的: フロントエンドのテスト環境を構築し、コンポーネント・フック・統合テストを実行可能にする。
+
+      学習ポイント:
+      - Vitestの設定とViteとの統合
+      - React Testing Libraryの使い方
+      - urqlのモッキング
+      - React Router のテスト
+
+      手順:
+      1) 必要なパッケージをインストール
+         ```bash
+         cd frontend
+         npm install -D vitest @vitest/ui jsdom
+         npm install -D @testing-library/react @testing-library/jest-dom
+         npm install -D @testing-library/user-event
+         ```
+      2) vitest.config.ts を作成
+         ```ts
+         import { defineConfig } from 'vitest/config'
+         import react from '@vitejs/plugin-react'
+
+         export default defineConfig({
+           plugins: [react()],
+           test: {
+             globals: true,
+             environment: 'jsdom',
+             setupFiles: './src/test/setup.ts',
+           },
+         })
+         ```
+      3) src/test/setup.ts を作成（Testing Library設定）
+      4) package.json にテストスクリプトを追加
+         - "test": "vitest"
+         - "test:ui": "vitest --ui"
+         - "test:coverage": "vitest --coverage"
+      5) サンプルテストを作成（useDebounce.test.ts等）
+      6) 既存コンポーネントのテストを追加
+         - RequestSearchBar.test.tsx
+         - CommentForm.test.tsx
+    acceptance_criteria:
+      - "npm test でテストが実行できる"
+      - "@testing-library/react でコンポーネントをテストできる"
+      - "urqlのクエリ/ミューテーションをモックできる"
+      - "サンプルテストが通る"

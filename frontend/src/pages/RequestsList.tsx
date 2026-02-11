@@ -2,18 +2,27 @@ import { Link } from 'react-router-dom'
 import { demoRequestsSeed, formatStatus } from '../demoData'
 import { appMode } from '../graphql'
 import { useQuery } from 'urql'
-import { RequestsDocument } from '../gql/graphql'
+import { RequestsDocument, SearchRequestsQuery } from '../gql/graphql'
 import { ErrorBanner } from '../components/ErrorBanner'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
+import { RequestSearchBar } from '../components/RequestSearchBar'
+import { useState } from 'react'
 
 export default function RequestsList() {
   useDocumentTitle('Requests List | Ponsu')
 
+  // 検索結果を管理するstate
+  const [searchResults, setSearchResults] = useState<SearchRequestsQuery['searchRequests'] | null>(null)
+
+  // デフォルトの全件取得（検索していない時用）
   const [{ data, fetching, error }] = useQuery({
     query: RequestsDocument,
     variables: { limit: 50, offset: 0 },
     pause: appMode === 'demo',
   })
+
+  // 表示するデータ：検索結果があればそれを、なければ全件を表示
+  const displayData = searchResults !== null ? searchResults : data?.requests || []
 
   if (appMode === 'prod') {
     return (
@@ -24,6 +33,9 @@ export default function RequestsList() {
             新規作成
           </Link>
         </div>
+
+        <RequestSearchBar onSearchResultsChange={setSearchResults} />
+
         {fetching && <p>読み込み中...</p>}
         {error && 
           <ErrorBanner 
@@ -36,7 +48,7 @@ export default function RequestsList() {
             }
           />
         }
-        {data && (
+        {displayData.length > 0 && (
           <div className="tableWrap">
             <table className="table">
               <thead>
@@ -48,7 +60,7 @@ export default function RequestsList() {
                 </tr>
               </thead>
               <tbody>
-                {data.requests.map((r) => (
+                {displayData.map((r) => (
                   <tr key={r.id}>
                     <td className="mono">{r.id}</td>
                     <td>
