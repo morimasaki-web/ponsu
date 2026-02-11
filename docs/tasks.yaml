@@ -38,6 +38,35 @@ tasks:
       - "ポートフォリオからデモへ到達できる"
       - "主要機能（承認/却下/差し戻し/再提出/監査）が説明されている"
 
+  - id: MVP-121
+    title: "セキュリティ: Go標準ライブラリ脆弱性対応（Go 1.25.7+へアップデート）"
+    status: todo
+    priority: high
+    branch: "fix/mvp-121-go-upgrade"
+    depends_on: []
+    needs_claude_review: false
+    description: |
+      govulncheckでGo標準ライブラリの脆弱性（GO-2026-4341, GO-2026-4340, GO-2026-4337）が検出されたため、Go 1.25.7以上へアップデートする。
+      
+      検出された脆弱性:
+      - GO-2026-4341: net/url でのメモリ枯渇（クエリパラメータ解析）
+      - GO-2026-4340: crypto/tls でのハンドシェイクメッセージ処理問題
+      - GO-2026-4337: crypto/tls での予期しないセッション再開
+      
+      対応手順:
+      1. Go 1.25.7以上をインストール（https://go.dev/dl/）
+      2. go.mod の toolchain を更新
+      3. go mod tidy 実行
+      4. govulncheck で脆弱性が解消されたことを確認
+      5. go test ./... でテストが通ることを確認
+    deliverables:
+      - "Go 1.25.7以上へのアップデート"
+      - "go.mod の toolchain 更新"
+    acceptance_criteria:
+      - "go version が 1.25.7以上を返す"
+      - "govulncheck ./... で脆弱性が0件"
+      - "すべてのテストが通る"
+
   # -------------------------
   # 12. 次のステップ（デモ磨き込み / 正規版UX）
   # -------------------------
