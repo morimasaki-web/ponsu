@@ -682,7 +682,7 @@ tasks:
 
   - id: LEARN-023F
     title: "Frontend: 申請検索UIとフィルター機能"
-    status: done
+    status: todo
     priority: high
     branch: "enhance/023f-search-ui"
     depends_on: [LEARN-023]

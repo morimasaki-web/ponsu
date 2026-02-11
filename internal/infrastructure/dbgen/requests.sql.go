@@ -7,6 +7,7 @@ package dbgen
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"time"
 
@@ -151,6 +152,71 @@ type ListRequestsByOrgParams struct {
 // MVP-030: Read Model queries for requests
 func (q *Queries) ListRequestsByOrg(ctx context.Context, arg ListRequestsByOrgParams) ([]Request, error) {
 	rows, err := q.db.QueryContext(ctx, listRequestsByOrg, arg.OrgID, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Request{}
+	for rows.Next() {
+		var i Request
+		if err := rows.Scan(
+			&i.ID,
+			&i.OrgID,
+			&i.Title,
+			&i.Status,
+			&i.CreatedByUserID,
+			&i.DecidedByUserID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.SubmittedAt,
+			&i.DecidedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const searchRequests = `-- name: SearchRequests :many
+SELECT id, org_id, title, status, created_by_user_id, decided_by_user_id, created_at, updated_at, submitted_at, decided_at
+FROM public.requests
+WHERE org_id = $1
+  AND ($2::text IS NULL OR title ILIKE '%' || $2::text || '%')
+  AND ($3::text IS NULL OR status = $3::text)
+  AND ($4::timestamptz IS NULL OR created_at >= $4::timestamptz)
+  AND ($5::timestamptz IS NULL OR created_at <= $5::timestamptz)
+ORDER BY created_at DESC
+LIMIT $7
+OFFSET $6
+`
+
+type SearchRequestsParams struct {
+	OrgID          uuid.UUID      `json:"org_id"`
+	Title          sql.NullString `json:"title"`
+	Status         sql.NullString `json:"status"`
+	CreatedAtStart sql.NullTime   `json:"created_at_start"`
+	CreatedAtEnd   sql.NullTime   `json:"created_at_end"`
+	OffsetCount    int32          `json:"offset_count"`
+	LimitCount     int32          `json:"limit_count"`
+}
+
+func (q *Queries) SearchRequests(ctx context.Context, arg SearchRequestsParams) ([]Request, error) {
+	rows, err := q.db.QueryContext(ctx, searchRequests,
+		arg.OrgID,
+		arg.Title,
+		arg.Status,
+		arg.CreatedAtStart,
+		arg.CreatedAtEnd,
+		arg.OffsetCount,
+		arg.LimitCount,
+	)
 	if err != nil {
 		return nil, err
 	}

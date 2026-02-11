@@ -21,6 +21,9 @@ type Query {
   "Get a single request within the viewer's org."
   request(id: ID!): Request
 
+  "Search requests within the viewer's org with optional filters."
+  searchRequests(title: String, status: String, createdAtStart: Time, createdAtEnd: Time, limit: Int = 50, offset: Int = 0): [Request!]!
+
   "List comments"
   comments(requestID: ID!): [Comment!]!
 
