@@ -186,6 +186,50 @@ func (r *mutationResolver) ResubmitRequest(ctx context.Context, id string) (*mod
 	return mapRequestRow(row), nil
 }
 
+// AddComment is the resolver for the addComment field.
+func (r *mutationResolver) AddComment(ctx context.Context, requestID string, content string) (*model.Comment, error) {
+	v, err := viewerFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	q, err := r.queries()
+	if err != nil {
+		return nil, err
+	}
+	reqID, err := parseUUID(requestID)
+	if err != nil {
+		return nil, err
+	}
+
+	svc := requestsuc.Service{DB: r.DB, Notifier: r.RequestsNotifier, PublicBaseURL: r.PublicBaseURL, ActorDisplay: actorDisplayFromViewer(v)}
+	commentID, err := svc.AddComment(ctx, v.OrgID, v.UserID, reqID, content)
+	if err != nil {
+		return nil, err
+	}
+
+	comments, err := q.ListCommentsByRequest(ctx, dbgen.ListCommentsByRequestParams{
+		OrgID:     v.OrgID,
+		RequestID: reqID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, c := range comments {
+		if c.ID == commentID {
+			return &model.Comment{
+				ID:        c.ID.String(),
+				RequestID: c.RequestID.String(),
+				UserID:    c.UserID.String(),
+				Content:   c.Content,
+				CreatedAt: c.CreatedAt,
+			}, nil
+		}
+	}
+
+	return nil, errors.New("comment not found after insert")
+}
+
 // CreateWorkflowTemplate is the resolver for the createWorkflowTemplate field.
 func (r *mutationResolver) CreateWorkflowTemplate(ctx context.Context, name string, description string, definition map[string]any) (*model.WorkflowTemplate, error) {
 	v, err := viewerFromContext(ctx)
@@ -329,6 +373,40 @@ func (r *queryResolver) Request(ctx context.Context, id string) (*model.Request,
 	}
 	out.AuditTrail = audit
 
+	return out, nil
+}
+
+// Comments is the resolver for the comments field.
+func (r *queryResolver) Comments(ctx context.Context, requestID string) ([]*model.Comment, error) {
+	v, err := viewerFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	q, err := r.queries()
+	if err != nil {
+		return nil, err
+	}
+	reqID, err := parseUUID(requestID)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := q.ListCommentsByRequest(ctx, dbgen.ListCommentsByRequestParams{
+		OrgID:     v.OrgID,
+		RequestID: reqID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	var out []*model.Comment
+	for _, r := range rows {
+		out = append(out, &model.Comment{
+			ID:        r.ID.String(),
+			RequestID: r.RequestID.String(),
+			UserID:    r.UserID.String(),
+			Content:   r.Content,
+			CreatedAt: r.CreatedAt,
+		})
+	}
 	return out, nil
 }
 

@@ -156,6 +156,24 @@ func (s Service) ResubmitRequest(ctx context.Context, orgID, actorUserID, reques
 	return s.applyTransition(ctx, orgID, actorUserID, requestID, request.EventTypeResubmitted, nil, false)
 }
 
+func (s Service) AddComment(ctx context.Context, orgID, actorUserID, requestID uuid.UUID, content string) (uuid.UUID, error) {
+	if s.DB == nil {
+		return uuid.UUID{}, errors.New("db is nil")
+	}
+	commentID := uuid.New()
+
+	payload, err := json.Marshal(request.RequestCommentedPayload{
+		CommentID:   commentID.String(),
+		UserID:      actorUserID.String(),
+		Content:     content,
+		CommentedAt: time.Now(),
+	})
+	if err != nil {
+		return uuid.UUID{}, err
+	}
+	return commentID, s.applyTransition(ctx, orgID, actorUserID, requestID, request.EventTypeRequestCommented, payload, false)
+}
+
 func (s Service) maybeNotify(ctx context.Context, kind NotificationKind, orgID, actorUserID, requestID uuid.UUID) {
 	if s.Notifier == nil {
 		return

@@ -220,33 +220,407 @@ tasks:
 
   - id: LEARN-022F
     title: "Frontend: 申請コメント機能のUI実装"
-    status: todo
+    status: done
     priority: high
     branch: "enhance/022f-comment-ui"
     depends_on: [LEARN-022]
     needs_claude_review: false
     description: |
-      目的: 申請画面でコメントの表示・投稿機能を実装し、承認者と申請者のコミュニケーションを可能にする。
+      目的: 申請詳細画面（RequestDetail.tsx）でコメントの表示・投稿機能を実装し、承認者と申請者のコミュニケーションを可能にする。
 
       学習ポイント:
-      - GraphQLのMutationとQueryの組み合わせ
+      - GraphQLのQueryでデータ取得（urql の useQuery）
+      - GraphQLのMutationでデータ更新（urql の useMutation）
       - 楽観的UI更新（投稿後の即座な表示）
-      - フォームバリデーション
+      - GraphQL Code Generator による型安全な開発
 
-      手順:
-      1) GraphQLスキーマでaddCommentミューテーションとcommentsクエリを確認
-      2) frontend/src/components/CommentList.tsx を作成（コメント一覧表示）
-      3) frontend/src/components/CommentForm.tsx を作成（コメント投稿フォーム）
-      4) 申請詳細画面にコンポーネントを統合
-      5) テストを書く（コメント投稿・表示の動作確認）
+      前提条件の確認:
+      - バックエンドでコメント機能（LEARN-022）が実装済みであること
+      - GraphQLスキーマに comments クエリと addComment ミューテーションが存在すること
+
+      詳細手順:
+
+      ステップ1: GraphQLスキーマを確認（バックエンド）
+      1-1) internal/interface/graphql/schema.graphqls を開く
+      1-2) 以下が定義されているか確認:
+           - type Comment { id, requestID, userID, content, createdAt }
+           - Query { comments(requestID: ID!): [Comment!]! }
+           - Mutation { addComment(requestID: ID!, content: String!): Comment! }
+      1-3) もし無ければ、LEARN-022（バックエンド）を先に完了させる
+
+      ステップ2: フロントエンド用GraphQLクエリファイルを作成
+      2-1) frontend/src/gql/comments.graphql を新規作成
+      2-2) 以下のクエリを記述:
+           ```graphql
+           query RequestComments($requestID: ID!) {
+             comments(requestID: $requestID) {
+               id
+               requestID
+               userID
+               content
+               createdAt
+             }
+           }
+
+           mutation AddComment($requestID: ID!, $content: String!) {
+             addComment(requestID: $requestID, content: $content) {
+               id
+               requestID
+               userID
+               content
+               createdAt
+             }
+           }
+           ```
+
+      ステップ3: GraphQL Code Generator で型を生成
+      3-1) ターミナルで frontend/ ディレクトリに移動
+      3-2) npm run codegen を実行
+      3-3) src/gql/graphql.ts に RequestCommentsDocument と AddCommentDocument が生成されることを確認
+
+      ステップ4: コメント一覧コンポーネントを作成
+      4-1) frontend/src/components/CommentList.tsx を新規作成
+      4-2) RequestCommentsDocument を import
+      4-3) useQuery を使ってコメントを取得:
+           ```tsx
+           const [{ data, fetching, error }] = useQuery({
+             query: RequestCommentsDocument,
+             variables: { requestID: props.requestID },
+           })
+           ```
+      4-4) data?.comments を map で表示
+      4-5) 参考: RequestDetail.tsx の useQuery パターンを真似る
+
+      ステップ5: コメント投稿フォームを作成
+      5-1) frontend/src/components/CommentForm.tsx を新規作成
+      5-2) AddCommentDocument を import
+      5-3) useMutation を使って投稿機能を実装:
+           ```tsx
+           const [{ fetching }, addComment] = useMutation(AddCommentDocument)
+           const handleSubmit = async (e) => {
+             e.preventDefault()
+             await addComment({ requestID, content })
+           }
+           ```
+      5-4) textarea と送信ボタンを配置
+      5-5) 参考: RequestDetail.tsx の useMutation パターンを真似る
+
+      ステップ6: 申請詳細画面に統合
+      6-1) frontend/src/pages/RequestDetail.tsx を開く
+      6-2) CommentList と CommentForm を import
+      6-3) 画面下部に追加:
+           ```tsx
+           <section>
+             <h2>コメント</h2>
+             <CommentList requestID={id} />
+             <CommentForm requestID={id} onSuccess={() => reexecuteRequest()} />
+           </section>
+           ```
+      6-4) onSuccess でクエリを再実行して一覧を更新
+
+      ステップ7: デモモード対応（オプション）
+      7-1) appMode === 'demo' の場合はローカルステートでコメントを管理
+      7-2) demoData.ts にコメントのシード用配列を追加
+      7-3) 参考: RequestDetail.tsx の demoRequestsSeed パターン
+
+      --- ここからバックエンド実装（フロントエンドのエラー解消に必要） ---
+
+      ステップ8: マイグレーション作成（コメントテーブル）
+      8-1) migrations/ ディレクトリで最新の番号を確認
+      8-2) 新しいマイグレーションファイルを作成:
+           - 例: 0011_request_comments.up.sql
+           - 例: 0011_request_comments.down.sql
+      8-3) up.sql に以下を記述:
+           ```sql
+           CREATE TABLE IF NOT EXISTS request_comments (
+             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+             org_id UUID NOT NULL,
+             request_id UUID NOT NULL,
+             user_id UUID NOT NULL,
+             content TEXT NOT NULL,
+             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+             FOREIGN KEY (org_id, request_id) REFERENCES requests(org_id, id) ON DELETE CASCADE
+           );
+           CREATE INDEX idx_request_comments_request ON request_comments(org_id, request_id, created_at);
+           ```
+      8-4) down.sql に DROP TABLE request_comments; を記述
+      8-5) ターミナルでマイグレーション実行:
+           - PowerShell: .\scripts\migrate.ps1 up
+           - Bash: ./scripts/migrate.sh up
+
+      ステップ9: SQLクエリ定義
+      9-1) db/query/comments.sql を新規作成
+      9-2) 以下のクエリを記述:
+           ```sql
+           -- name: ListCommentsByRequest :many
+           SELECT id, org_id, request_id, user_id, content, created_at
+           FROM request_comments
+           WHERE org_id = $1 AND request_id = $2
+           ORDER BY created_at ASC;
+
+           -- name: InsertComment :one
+           INSERT INTO request_comments (org_id, request_id, user_id, content)
+           VALUES ($1, $2, $3, $4)
+           RETURNING id, org_id, request_id, user_id, content, created_at;
+           ```
+      9-3) 参考: db/query/requests.sql の書き方
+
+      ステップ10: sqlc で型を生成
+      10-1) ターミナルで go run github.com/sqlc-dev/sqlc/cmd/sqlc generate
+      10-2) internal/infrastructure/dbgen/ に Comments 関連の型とメソッドが生成されることを確認
+
+      ステップ11: プロジェクター実装（イベント→読み取りモデル）
+      11-1) internal/infrastructure/projector/request_comments_projector.go を作成
+      11-2) RequestCommented イベントを購読して request_comments に挿入:
+           ```go
+           package projector
+
+           import (
+             "context"
+             "encoding/json"
+
+             "github.com/google/uuid"
+             "github.com/morimasaki-web/ponsu/internal/domain/request"
+             "github.com/morimasaki-web/ponsu/internal/infrastructure/dbgen"
+           )
+
+           const RequestCommentsProjectorName = "request_comments"
+
+           func NewRequestCommentsProjector() Runner {
+             return Runner{
+               ProjectorName: RequestCommentsProjectorName,
+               BatchSize:     200,
+               Apply: func(ctx context.Context, q *dbgen.Queries, e dbgen.ListEventsForProjectorRow) error {
+                 // RequestCommented イベントのみ処理
+                 if e.EventType != request.EventTypeRequestCommented {
+                   return nil // このイベントはスキップ
+                 }
+
+                 // ペイロードをデコード
+                 var payload request.RequestCommentedPayload
+                 if err := json.Unmarshal(e.Payload, &payload); err != nil {
+                   return err
+                 }
+
+                 // CommentID を UUID にパース
+                 commentID, err := uuid.Parse(payload.CommentID)
+                 if err != nil {
+                   return err
+                 }
+                 userID, err := uuid.Parse(payload.UserID)
+                 if err != nil {
+                   return err
+                 }
+
+                 // request_comments テーブルに冪等に挿入
+                 return q.InsertCommentIfNotExists(ctx, dbgen.InsertCommentIfNotExistsParams{
+                   ID:        commentID,
+                   OrgID:     e.OrgID,
+                   RequestID: e.AggregateID, // aggregateID = requestID
+                   UserID:    userID,
+                   Content:   payload.Content,
+                   CreatedAt: payload.CommentedAt,
+                 })
+               },
+             }
+           }
+           ```
+      11-3) 参考: internal/infrastructure/projector/requests_projector.go
+      11-4) cmd/projector/main.go にプロジェクターを追加登録:
+           - 既存のrunners配列に NewRequestCommentsProjector() を追加
+
+      ステップ12: Serviceレイヤーにコメント追加メソッドを実装
+      12-1) internal/usecase/requests/service.go を開く
+      12-2) AddComment メソッドを追加:
+           ```go
+           func (s Service) AddComment(ctx context.Context, orgID, actorUserID, requestID uuid.UUID, content string) (uuid.UUID, error) {
+             if s.DB == nil {
+               return uuid.Nil, errors.New("db is nil")
+             }
+
+             tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
+             if err != nil {
+               return uuid.Nil, err
+             }
+             defer func() { _ = tx.Rollback() }()
+
+             q := dbgen.New(tx)
+             // 権限チェック: 組織のメンバーであること
+             _, err = q.GetMembershipByOrgAndUserID(ctx, dbgen.GetMembershipByOrgAndUserIDParams{
+               OrgID:  orgID,
+               UserID: actorUserID,
+             })
+             if err != nil {
+               if errors.Is(err, sql.ErrNoRows) {
+                 return uuid.Nil, ErrForbidden
+               }
+               return uuid.Nil, err
+             }
+
+             // 申請の存在確認
+             rows, err := eventstore.ListByAggregate(ctx, tx, orgID, requestAggregateType, requestID, 1)
+             if err != nil {
+               return uuid.Nil, err
+             }
+             if len(rows) == 0 {
+               return uuid.Nil, ErrNotFound
+             }
+
+             // RequestCommented イベントを発行
+             commentID := uuid.New()
+             payload := request.RequestCommentedPayload{
+               CommentID:   commentID.String(),
+               UserID:      actorUserID.String(),
+               Content:     content,
+               CommentedAt: time.Now(),
+             }
+             payloadBytes, err := json.Marshal(payload)
+             if err != nil {
+               return uuid.Nil, err
+             }
+
+             metadata, err := json.Marshal(map[string]any{"actor_user_id": actorUserID.String()})
+             if err != nil {
+               return uuid.Nil, err
+             }
+
+             // イベントストアに追加（バージョン管理なし、コメントは状態遷移ではないため）
+             if _, err := eventstore.Append(ctx, tx, orgID, requestAggregateType, requestID, -1, request.EventTypeRequestCommented, payloadBytes, metadata); err != nil {
+               return uuid.Nil, err
+             }
+
+             // プロジェクターで同期投影（request_comments テーブルに挿入）
+             if _, _, err := s.projectorOrDefault().CatchUpTx(ctx, tx, orgID); err != nil {
+               return uuid.Nil, err
+             }
+
+             if err := tx.Commit(); err != nil {
+               return uuid.Nil, err
+             }
+
+             return commentID, nil
+           }
+           ```
+      12-3) 参考: 同じファイルの applyTransition メソッド
+
+      ステップ13: GraphQLリゾルバ実装
+      13-1) internal/interface/graphql/graph/schema.resolvers.go を開く
+      13-2) Comments リゾルバを実装:
+           ```go
+           func (r *queryResolver) Comments(ctx context.Context, requestID string) ([]*model.Comment, error) {
+             v, err := viewerFromContext(ctx)
+             if err != nil {
+               return nil, err
+             }
+             q, err := r.queries()
+             if err != nil {
+               return nil, err
+             }
+             reqID, err := parseUUID(requestID)
+             if err != nil {
+               return nil, err
+             }
+             rows, err := q.ListCommentsByRequest(ctx, dbgen.ListCommentsByRequestParams{
+               OrgID:     v.OrgID,
+               RequestID: reqID,
+             })
+             if err != nil {
+               return nil, err
+             }
+             var out []*model.Comment
+             for _, row := range rows {
+               out = append(out, &model.Comment{
+                 ID:        row.ID.String(),
+                 RequestID: row.RequestID.String(),
+                 UserID:    row.UserID.String(),
+                 Content:   row.Content,
+                 CreatedAt: row.CreatedAt,
+               })
+             }
+             return out, nil
+           }
+           ```
+      13-3) AddComment リゾルバを実装:
+           ```go
+           func (r *mutationResolver) AddComment(ctx context.Context, requestID string, content string) (*model.Comment, error) {
+             v, err := viewerFromContext(ctx)
+             if err != nil {
+               return nil, err
+             }
+             q, err := r.queries()
+             if err != nil {
+               return nil, err
+             }
+             reqID, err := parseUUID(requestID)
+             if err != nil {
+               return nil, err
+             }
+
+             // Serviceレイヤーを呼び出してイベント発行
+             svc := requestsuc.Service{DB: r.DB, Projector: r.RequestsProjector}
+             commentID, err := svc.AddComment(ctx, v.OrgID, v.UserID, reqID, content)
+             if err != nil {
+               return nil, err
+             }
+
+             // プロジェクターが同期投影したデータを取得
+             comments, err := q.ListCommentsByRequest(ctx, dbgen.ListCommentsByRequestParams{
+               OrgID:     v.OrgID,
+               RequestID: reqID,
+             })
+             if err != nil {
+               return nil, err
+             }
+
+             // 追加したコメントを探して返す
+             for _, c := range comments {
+               if c.ID == commentID {
+                 return &model.Comment{
+                   ID:        c.ID.String(),
+                   RequestID: c.RequestID.String(),
+                   UserID:    c.UserID.String(),
+                   Content:   c.Content,
+                   CreatedAt: c.CreatedAt,
+                 }, nil
+               }
+             }
+
+             return nil, errors.New("comment not found after insert")
+           }
+           ```
+      13-4) 参考: 既存の SubmitRequest リゾルバの実装パターン
+
+      ステップ14: サーバー再起動とテスト
+      14-1) Go サーバーを停止して再起動
+      14-2) フロントエンドで画面をリロード
+      14-3) GraphQLエラーが消えることを確認
+      14-4) コメントの取得・投稿が動作することを確認
+
+      参考ファイル（バックエンド）:
+      - migrations/0005_requests_read_model.up.sql（マイグレーション例）
+      - db/query/requests.sql（SQLクエリ例）
+      - internal/infrastructure/projector/requests_projector.go（プロジェクター例）
+      - internal/interface/graphql/graph/schema.resolvers.go（リゾルバ例）
+
+      参考ファイル（フロントエンド）:
+      - frontend/src/pages/RequestDetail.tsx（useQuery/useMutation の使い方）
+      - frontend/src/gql/request.graphql（GraphQLクエリの書き方）
+      - frontend/src/components/ErrorBanner.tsx（エラー表示の仕方）
+
     acceptance_criteria:
-      - "コメント一覧が表示される"
-      - "コメントを投稿できる"
-      - "投稿後に一覧が更新される"
+      - "マイグレーションが成功する（request_commentsテーブル作成）"
+      - "sqlc generate が成功する（型生成）"
+      - "プロジェクター/リゾルバが実装されている"
+      - "GraphQLエラー「Cannot query field comments」が解消される"
+      - "コメント一覧が表示される（RequestCommentsDocument で取得）"
+      - "コメントを投稿できる（AddCommentDocument で送信）"
+      - "投稿後に一覧が自動更新される（reexecuteQuery）"
+      - "npm run codegen が成功する（フロントエンド）"
+      - "TypeScriptの型エラーが無い"
 
   - id: LEARN-023
     title: "検索: 申請の検索・フィルタリング機能実装"
-    status: todo
+    status: done
     priority: high
     branch: "enhance/023-request-search"
     depends_on: [LEARN-022]
@@ -274,7 +648,7 @@ tasks:
 
   - id: LEARN-023F
     title: "Frontend: 申請検索UIとフィルター機能"
-    status: todo
+    status: done
     priority: high
     branch: "enhance/023f-search-ui"
     depends_on: [LEARN-023]

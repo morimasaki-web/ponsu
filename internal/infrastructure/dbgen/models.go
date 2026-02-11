@@ -103,6 +103,15 @@ type RequestAuditTrail struct {
 	EventGlobalPosition sql.NullInt64   `json:"event_global_position"`
 }
 
+type RequestComment struct {
+	ID        uuid.UUID `json:"id"`
+	OrgID     uuid.UUID `json:"org_id"`
+	RequestID uuid.UUID `json:"request_id"`
+	UserID    uuid.UUID `json:"user_id"`
+	Content   string    `json:"content"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 type RequestStep struct {
 	RequestID        uuid.UUID     `json:"request_id"`
 	StepIndex        int32         `json:"step_index"`

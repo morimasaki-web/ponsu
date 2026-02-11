@@ -390,3 +390,161 @@ body {
 .error {
   color: #b91c1c;
 }
+
+/* Comment List Styles */
+.commentList {
+  margin-bottom: 20px;
+}
+
+.comments {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.comment {
+  margin: 12px 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card-bg);
+  transition: background 0.2s ease;
+}
+
+.comment:hover {
+  background: color-mix(in srgb, var(--card-bg) 95%, var(--accent2));
+}
+
+.commentHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+  gap: 12px;
+}
+
+.commentAuthor {
+  font-weight: 600;
+  font-size: 14px;
+  color: #d97706; /* amber-600: lightモードでも見やすい */
+}
+
+@media (prefers-color-scheme: dark) {
+  .commentAuthor {
+    color: #fbbf24; /* amber-400: darkモードで明るく */
+  }
+}
+
+html[data-theme='dark'] .commentAuthor {
+  color: #fbbf24;
+}
+
+.commentDate {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.commentContent {
+  color: var(--fg);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.noComments {
+  color: var(--muted);
+  font-style: italic;
+  text-align: center;
+  padding: 20px;
+}
+
+.loading {
+  color: var(--muted);
+  text-align: center;
+  padding: 20px;
+}
+
+/* Comment Form Styles */
+.commentFormContainer {
+  margin-top: 16px;
+}
+
+.commentForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.commentForm textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card-bg);
+  color: var(--fg);
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  resize: vertical;
+  transition: border-color 0.2s ease;
+  box-sizing: border-box;
+}
+
+.commentForm textarea:focus {
+  outline: none;
+  border-color: var(--accent2);
+}
+
+.commentForm textarea:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.commentForm .submitButton {
+  align-self: flex-end;
+  padding: 10px 20px;
+  background: #d97706; /* amber-600: lightモードで濃い */
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.commentForm .submitButton:hover:not(:disabled) {
+  background: #b45309; /* amber-700 */
+}
+
+@media (prefers-color-scheme: dark) {
+  .commentForm .submitButton {
+    background: #f59e0b; /* amber-500 */
+  }
+  .commentForm .submitButton:hover:not(:disabled) {
+    background: #d97706; /* amber-600 */
+  }
+}
+
+html[data-theme='dark'] .commentForm .submitButton {
+  background: #f59e0b;
+}
+
+html[data-theme='dark'] .commentForm .submitButton:hover:not(:disabled) {
+  background: #d97706;
+}
+
+.commentForm .submitButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.errorMessage {
+  padding: 10px 12px;
+  background: #fee;
+  border: 1px solid #fcc;
+  border-radius: 6px;
+  color: #b91c1c;
+  font-size: 14px;
+  margin-bottom: 12px;
+}

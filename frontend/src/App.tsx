@@ -24,6 +24,7 @@ export default function App() {
     if (appMode !== 'demo') return
     const ok = window.confirm('デモの状態を初期化しますか？')
     if (!ok) return
+    localStorage.removeItem('ponsu_demo_comments') // デモコメントをリセット
     setDemoResetNonce((v) => v + 1)
     window.location.hash = '#/'
   }

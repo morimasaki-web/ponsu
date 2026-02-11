@@ -21,6 +21,9 @@ type Query {
   "Get a single request within the viewer's org."
   request(id: ID!): Request
 
+  "List comments"
+  comments(requestID: ID!): [Comment!]!
+
   "List workflow templates within the viewer's org."
   workflowTemplates(limit: Int = 50, offset: Int = 0): [WorkflowTemplate!]!
 }
@@ -49,6 +52,8 @@ type Mutation {
   returnRequest(id: ID!, reason: String!): Request!
   resubmitRequest(id: ID!): Request!
 
+  addComment(requestID: ID!, content: String!): Comment!
+
   "Create a workflow template (admin only)."
   createWorkflowTemplate(name: String!, description: String!, definition: JSON!): WorkflowTemplate!
 }
@@ -76,6 +81,14 @@ type RequestStep {
   status: String!
   assignedToUserID: ID
   updatedAt: Time!
+}
+
+type Comment {
+  id: ID!
+  requestID: ID!
+  userID: ID!
+  content: String!
+  createdAt: Time!
 }
 
 type RequestAudit {

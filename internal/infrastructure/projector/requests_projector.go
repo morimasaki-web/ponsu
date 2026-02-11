@@ -131,6 +131,34 @@ func NewRequestsProjector() Runner {
 					return err
 				}
 
+			case request.EventTypeRequestCommented:
+				// コメント投影
+				p, err := decodeJSON[request.RequestCommentedPayload](e.Payload)
+				if err != nil {
+					return err
+				}
+				commentID, err := uuid.Parse(p.CommentID)
+				if err != nil {
+					return err
+				}
+				userID, err := uuid.Parse(p.UserID)
+				if err != nil {
+					return err
+				}
+				err = q.InsertCommentIfNotExists(ctx, dbgen.InsertCommentIfNotExistsParams{
+					ID:        commentID,
+					OrgID:     e.OrgID,
+					RequestID: e.AggregateID,
+					UserID:    userID,
+					Content:   p.Content,
+					CreatedAt: p.CommentedAt,
+				})
+				if err != nil {
+					return err
+				}
+				// コメントは監査ログに記録しない
+				return nil
+
 			default:
 				// ignore unrelated events
 				return nil

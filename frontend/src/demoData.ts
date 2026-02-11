@@ -13,6 +13,14 @@ export type RequestAudit = {
   note?: string
 }
 
+export type DemoComment = {
+  id: string
+  requestID: string
+  userID: string
+  content: string
+  createdAt: string
+}
+
 export type DemoRequest = {
   id: string
   title: string
@@ -119,5 +127,36 @@ export const demoRequestsSeed: DemoRequest[] = [
         action: '承認',
       },
     ],
+  },
+]
+
+export const demoCommentsSeed: DemoComment[] = [
+  {
+    id: 'CMT-0001',
+    requestID: 'REQ-0001',
+    userID: 'user-demo-001',
+    content: '確認いたしました。承認をお願いします。',
+    createdAt: '2026-01-11T10:05:00.000Z',
+  },
+  {
+    id: 'CMT-0002',
+    requestID: 'REQ-0002',
+    userID: 'approver-demo',
+    content: '旅程表と見積りの添付をお願いします。',
+    createdAt: '2026-01-09T08:21:00.000Z',
+  },
+  {
+    id: 'CMT-0003',
+    requestID: 'REQ-0002',
+    userID: 'user-demo-001',
+    content: '承知しました。追加で添付いたします。',
+    createdAt: '2026-01-09T09:30:00.000Z',
+  },
+  {
+    id: 'CMT-0004',
+    requestID: 'REQ-0003',
+    userID: 'approver-demo',
+    content: '承認しました。導入を進めてください。',
+    createdAt: '2026-01-06T13:01:00.000Z',
   },
 ]

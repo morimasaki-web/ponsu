@@ -1,0 +1,19 @@
+query RequestComments($requestID: ID!) {
+    comments(requestID: $requestID) {
+        id
+        requestID
+        userID
+        content
+        createdAt
+    }
+}
+
+mutation AddComment($requestID: ID!, $content: String!) {
+    addComment(requestID: $requestID, content: $content) {
+        id
+        requestID
+        userID
+        content
+        createdAt
+    }
+}

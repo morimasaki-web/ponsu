@@ -5,9 +5,11 @@ import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { ErrorBanner } from '../components/ErrorBanner'
 import {
   demoRequestsSeed,
+  demoCommentsSeed,
   formatStatus,
   nowIso,
   type DemoRequest,
+  type DemoComment,
   type RequestAudit,
   type RequestStatus,
 } from '../demoData'
@@ -21,6 +23,8 @@ import {
   ReturnRequestDocument,
   SubmitRequestDocument,
 } from '../gql/graphql'
+import { CommentList } from '../components/CommentList'
+import { CommentForm } from '../components/CommentForm'
 
 function canSubmit(status: RequestStatus) {
   return status === 'draft'
@@ -43,6 +47,36 @@ export default function RequestDetail() {
 
   const params = useParams()
   const id = decodeURIComponent(params.id ?? '')
+  const [commentsKey, setCommentsKey] = useState(0)
+
+  // デモコメント用LocalStorageキー
+  const DEMO_COMMENTS_KEY = 'ponsu_demo_comments'
+
+  // デモコメントの初期ロード
+  const loadDemoComments = (): DemoComment[] => {
+    if (appMode !== 'demo') return []
+    try {
+      const stored = localStorage.getItem(DEMO_COMMENTS_KEY)
+      if (stored) {
+        return JSON.parse(stored) as DemoComment[]
+      }
+    } catch (e) {
+      console.error('Failed to load demo comments:', e)
+    }
+    return [...demoCommentsSeed]
+  }
+
+  const [demoComments, setDemoComments] = useState<DemoComment[]>(loadDemoComments)
+
+  // デモコメントをLocalStorageに保存
+  const saveDemoComments = (comments: DemoComment[]) => {
+    if (appMode !== 'demo') return
+    try {
+      localStorage.setItem(DEMO_COMMENTS_KEY, JSON.stringify(comments))
+    } catch (e) {
+      console.error('Failed to save demo comments:', e)
+    }
+  }
 
   const [{ data, fetching, error }, reexecuteRequest] = useQuery({
     query: RequestDocument,
@@ -92,6 +126,20 @@ export default function RequestDetail() {
         audit: [...prev.audit, { at, ...a }],
       }
     })
+  }
+
+  // デモコメント追加ハンドラ
+  const handleDemoAddComment = (content: string) => {
+    const newComment: DemoComment = {
+      id: `CMT-${Date.now()}`,
+      requestID: id,
+      userID: 'Demo User',
+      content,
+      createdAt: nowIso(),
+    }
+    const updated = [...demoComments, newComment]
+    setDemoComments(updated)
+    saveDemoComments(updated)
   }
 
   const setStatus = (status: RequestStatus, action: string, note?: string) => {
@@ -341,6 +389,15 @@ export default function RequestDetail() {
             </div>
           )}
         </section>
+      
+        <section className="card">
+          <h2>コメント</h2>
+          <CommentList key={commentsKey} requestID={id} />
+          <CommentForm requestID={id} onSuccess={() => {
+            reexecuteRequest({ requestPolicy: 'network-only' })
+            setCommentsKey(k => k + 1)
+          }} />
+        </section>
 
         {request && (
           <section className="card">
@@ -466,6 +523,19 @@ export default function RequestDetail() {
           <h3>概要</h3>
           <p>{req.summary}</p>
         </div>
+      </section>
+
+      <section className="card">
+        <h2>コメント</h2>
+        <CommentList 
+          requestID={id} 
+          demoComments={demoComments.filter(c => c.requestID === id)} 
+        />
+        <CommentForm 
+          requestID={id} 
+          onSuccess={() => {}} 
+          onDemoSubmit={handleDemoAddComment}
+        />
       </section>
 
       <section className="card">

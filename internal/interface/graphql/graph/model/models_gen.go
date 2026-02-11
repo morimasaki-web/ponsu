@@ -6,6 +6,14 @@ import (
 	"time"
 )
 
+type Comment struct {
+	ID        string    `json:"id"`
+	RequestID string    `json:"requestID"`
+	UserID    string    `json:"userID"`
+	Content   string    `json:"content"`
+	CreatedAt time.Time `json:"createdAt"`
+}
+
 type Me struct {
 	UserID string  `json:"userID"`
 	OrgID  string  `json:"orgID"`

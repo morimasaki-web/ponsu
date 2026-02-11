@@ -94,6 +94,15 @@ func (a *Aggregate) Apply(e Event) error {
 		t := e.OccurredAt
 		a.Request.DecidedAt = &t
 
+	case EventTypeRequestCommented:
+		if !a.initialized {
+			return fmt.Errorf("%w: comment requires initialized request", ErrInvalidTransition)
+		}
+		// ペイロードのバリデーションのみ。状態変更なし
+		if _, err := decodePayload[RequestCommentedPayload](e.Payload); err != nil {
+			return err
+		}
+
 	default:
 		return fmt.Errorf("%w: unknown event type: %s", ErrInvalidEvent, e.Type)
 	}
