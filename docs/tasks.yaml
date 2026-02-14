@@ -707,6 +707,57 @@ tasks:
       - "URLで検索条件を共有できる"
     note: "テストは LEARN-037 (Frontend testing setup) で環境構築後に追加"
 
+  - id: LEARN-023F-DEMO
+    title: "Frontend: デモモード用の検索機能実装"
+    status: todo
+    priority: high
+    branch: "enhance/023f-demo-search"
+    depends_on: [LEARN-023F]
+    needs_claude_review: false
+    description: |
+      目的: デモモードでも検索機能が動作するように、ローカルステートを使った検索フィルタリングを実装する。
+
+      学習ポイント:
+      - クライアントサイドでの配列フィルタリング
+      - 部分一致検索（toLowerCase + includes）
+      - 日付範囲フィルタリング
+      - デモモードとプロダクションモードの条件分岐
+
+      手順:
+      1) RequestSearchBar.tsx を開く
+      2) appMode === 'demo' のときのロジックを追加
+      3) クライアントサイドでdemoRequestsSeedをフィルタリング
+         ```tsx
+         // デモモード用のフィルタリングロジック
+         const filteredRequests = demoRequestsSeed.filter(req => {
+           // タイトル検索
+           if (title && !req.title.toLowerCase().includes(title.toLowerCase())) {
+             return false
+           }
+           // ステータスフィルター
+           if (status && req.status !== status) {
+             return false
+           }
+           // 作成日範囲フィルター
+           if (createdAtStart && new Date(req.createdAt) < new Date(createdAtStart)) {
+             return false
+           }
+           if (createdAtEnd && new Date(req.createdAt) > new Date(createdAtEnd)) {
+             return false
+           }
+           return true
+         })
+         ```
+      4) RequestsList.tsx でデモモード時も検索結果を反映
+      5) URLパラメータの同期（prodモードと同じ）
+    acceptance_criteria:
+      - "デモモードで検索条件が機能する"
+      - "タイトル部分一致検索ができる"
+      - "ステータスフィルターが動作する"
+      - "日付範囲フィルターが動作する"
+      - "URLパラメータが同期される"
+    note: "テストは LEARN-037 で環境構築後に追加"
+
   - id: LEARN-024
     title: "統計: ダッシュボード集計クエリの実装"
     status: todo

@@ -108,9 +108,15 @@ export default function App() {
       <HashRouter>
         <div className="container">
           <header className="header">
-            <div>
-              <h1 className="title">PonSu Demo (SPA)</h1>
-              <p className="subtitle">mode: {appMode}</p>
+            <div className="headerTitle">
+              <h1 className="title">
+                <span className="titleFull">PonSu Demo (SPA)</span>
+                <span className="titleShort">PonSu</span>
+              </h1>
+              <p className="subtitle">
+                <span className="subtitleShort">(SPA) · </span>
+                mode: {appMode}
+              </p>
             </div>
 
             <div className="headerRight">

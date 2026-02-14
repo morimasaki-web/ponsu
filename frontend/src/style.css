@@ -91,6 +91,18 @@ body {
   margin: 0;
 }
 
+.titleFull {
+  display: inline;
+}
+
+.titleShort {
+  display: none;
+}
+
+.subtitleShort {
+  display: none;
+}
+
 .subtitle {
   margin: 4px 0 0;
   color: var(--muted);
@@ -697,6 +709,67 @@ html[data-theme='dark'] .commentForm .submitButton:hover:not(:disabled) {
 
 /* モバイル対応 */
 @media (max-width: 768px) {
+  /* ヘッダー */
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .headerTitle {
+    width: 100%;
+  }
+
+  .titleFull {
+    display: none;
+  }
+
+  .titleShort {
+    display: inline;
+  }
+
+  .subtitleShort {
+    display: inline;
+  }
+
+  .title {
+    font-size: 1.5rem;
+  }
+
+  .headerRight {
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .nav {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .themeLabel {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .select {
+    flex: 1;
+    max-width: 200px;
+  }
+
+  .actions {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .btn {
+    width: 100%;
+  }
+
+  /* 検索バー */
   .requestSearchBar {
     flex-direction: column;
   }
