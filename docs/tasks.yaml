@@ -709,7 +709,7 @@ tasks:
 
   - id: LEARN-023F-DEMO
     title: "Frontend: デモモード用の検索機能実装"
-    status: todo
+    status: done
     priority: high
     branch: "enhance/023f-demo-search"
     depends_on: [LEARN-023F]

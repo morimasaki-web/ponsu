@@ -3,6 +3,8 @@ import { useQuery } from 'urql'
 import { useSearchParams } from 'react-router-dom'
 import { SearchRequestsDocument, SearchRequestsQuery } from "../gql/graphql"
 import { useDebounce } from "../hooks/useDebounce"
+import { appMode } from '../graphql'
+import { DemoRequest } from '../demoData'
 
 /**
  * 日付文字列（YYYY-MM-DD）をRFC3339形式に変換
@@ -16,9 +18,16 @@ function toRFC3339(dateString: string): string {
 
 interface RequestSearchBarProps {
   onSearchResultsChange?: (results: SearchRequestsQuery['searchRequests'] | null) => void
+  // デモモード用のprops
+  demoData?: DemoRequest[]
+  onDemoFilteredChange?: (filtered: DemoRequest[]) => void
 }
 
-export function RequestSearchBar({ onSearchResultsChange }: RequestSearchBarProps) {
+export function RequestSearchBar({ 
+  onSearchResultsChange, 
+  demoData, 
+  onDemoFilteredChange 
+}: RequestSearchBarProps) {
   const [searchParams, setSearchParams] = useSearchParams()
 
   // URLパラメータから初期値を取得
@@ -44,6 +53,7 @@ export function RequestSearchBar({ onSearchResultsChange }: RequestSearchBarProp
   }, [debouncedTitle, debouncedStatus, debouncedCreatedAtStart, debouncedCreatedAtEnd, setSearchParams])
 
   // GraphQLクエリ（デバウンスされた値で自動的に検索）
+  // デモモードの場合はクエリを実行しない
   const [{ data, fetching, error }] = useQuery({
     query: SearchRequestsDocument,
     variables: {
@@ -55,11 +65,51 @@ export function RequestSearchBar({ onSearchResultsChange }: RequestSearchBarProp
       offset: 0,
     },
     requestPolicy: 'cache-and-network',
+    pause: appMode === 'demo', // デモモードではGraphQLクエリを実行しない
   })
 
-  // 検索結果が変わったら親コンポーネントに通知
+  // デモモード: クライアントサイドフィルタリング
   useEffect(() => {
-    if (data?.searchRequests && onSearchResultsChange) {
+    if (appMode === 'demo' && demoData && onDemoFilteredChange) {
+      const filtered = demoData.filter(req => {
+        // タイトル部分一致検索（大文字小文字区別なし）
+        if (debouncedTitle && !req.title.toLowerCase().includes(debouncedTitle.toLowerCase())) {
+          return false
+        }
+        
+        // ステータスフィルター
+        if (debouncedStatus && req.status !== debouncedStatus) {
+          return false
+        }
+        
+        // 作成日範囲フィルター（開始日）
+        if (debouncedCreatedAtStart) {
+          const reqDate = new Date(req.createdAt)
+          const startDate = new Date(debouncedCreatedAtStart)
+          if (reqDate < startDate) {
+            return false
+          }
+        }
+        
+        // 作成日範囲フィルター（終了日）
+        if (debouncedCreatedAtEnd) {
+          const reqDate = new Date(req.createdAt)
+          const endDate = new Date(debouncedCreatedAtEnd + 'T23:59:59.999Z') // 終了日の終わりまで含める
+          if (reqDate > endDate) {
+            return false
+          }
+        }
+        
+        return true
+      })
+      
+      onDemoFilteredChange(filtered)
+    }
+  }, [debouncedTitle, debouncedStatus, debouncedCreatedAtStart, debouncedCreatedAtEnd, demoData, onDemoFilteredChange])
+
+  // プロダクションモード: GraphQL検索結果を親コンポーネントに通知
+  useEffect(() => {
+    if (appMode === 'prod' && data?.searchRequests && onSearchResultsChange) {
       onSearchResultsChange(data.searchRequests)
     }
   }, [data?.searchRequests, onSearchResultsChange])
@@ -71,8 +121,11 @@ export function RequestSearchBar({ onSearchResultsChange }: RequestSearchBarProp
     setCreatedAtStart("")
     setCreatedAtEnd("")
     // 親コンポーネントに全件表示に戻すよう通知
-    if (onSearchResultsChange) {
+    if (appMode === 'prod' && onSearchResultsChange) {
       onSearchResultsChange(null)
+    }
+    if (appMode === 'demo' && demoData && onDemoFilteredChange) {
+      onDemoFilteredChange(demoData) // 全件に戻す
     }
   }
 
@@ -145,7 +198,7 @@ export function RequestSearchBar({ onSearchResultsChange }: RequestSearchBarProp
       </div>
       
       <div className="searchStatusBar">
-        {fetching && (
+        {appMode === 'prod' && fetching && (
           <div className="searchStatus">
             <svg className="spinner" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" x2="12" y1="2" y2="6"></line>
@@ -161,11 +214,11 @@ export function RequestSearchBar({ onSearchResultsChange }: RequestSearchBarProp
           </div>
         )}
         
-        {error && <div className="searchError">⚠️ エラー: {error.message}</div>}
+        {appMode === 'prod' && error && <div className="searchError">エラー: {error.message}</div>}
         
-        {data?.searchRequests && (
+        {appMode === 'prod' && data?.searchRequests && (
           <div className="searchResultCount">
-            📋 {data.searchRequests.length}件の申請が見つかりました
+            {data.searchRequests.length}件の申請が見つかりました
           </div>
         )}
       </div>

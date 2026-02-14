@@ -11,8 +11,11 @@ import { useState } from 'react'
 export default function RequestsList() {
   useDocumentTitle('Requests List | Ponsu')
 
-  // 検索結果を管理するstate
+  // プロダクションモード: GraphQL検索結果を管理
   const [searchResults, setSearchResults] = useState<SearchRequestsQuery['searchRequests'] | null>(null)
+
+  // デモモード: フィルタリングされた申請一覧を管理
+  const [filteredDemoRequests, setFilteredDemoRequests] = useState<typeof demoRequestsSeed>(demoRequestsSeed)
 
   // デフォルトの全件取得（検索していない時用）
   const [{ data, fetching, error }] = useQuery({
@@ -93,6 +96,11 @@ export default function RequestsList() {
         これは静的デモです。データはブラウザ内の一時状態で、サーバやDBには保存されません。
       </p>
 
+      <RequestSearchBar 
+        demoData={demoRequestsSeed}
+        onDemoFilteredChange={setFilteredDemoRequests}
+      />
+
       <div className="tableWrap">
         <table className="table">
           <thead>
@@ -104,8 +112,8 @@ export default function RequestsList() {
             </tr>
           </thead>
           <tbody>
-            {demoRequestsSeed.map((r) => (
-              <tr key={r.id}>
+            {filteredDemoRequests.map((r) => (
+              <tr key={r.id}>)
                 <td className="mono">{r.id}</td>
                 <td>
                   <Link to={`/requests/${encodeURIComponent(r.id)}`}>
