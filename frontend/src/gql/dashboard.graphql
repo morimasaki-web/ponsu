@@ -1,0 +1,33 @@
+# Dashboard statistics queries
+
+query DashboardSummary {
+  dashboardSummary {
+    draftCount
+    submittedCount
+    approvedCount
+    rejectedCount
+    totalCount
+    avgApprovalSeconds
+  }
+}
+
+query CountRequestsByStatus {
+  countRequestsByStatus {
+    status
+    count
+  }
+}
+
+query CountRequestsByMonth($startDate: Time, $endDate: Time) {
+  countRequestsByMonth(startDate: $startDate, endDate: $endDate) {
+    month
+    count
+  }
+}
+
+query AvgTimeToApproval {
+  avgTimeToApproval {
+    avgSeconds
+    sampleCount
+  }
+}

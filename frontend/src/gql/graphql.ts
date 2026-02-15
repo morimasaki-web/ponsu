@@ -17,6 +17,12 @@ export type Scalars = {
   Time: { input: string; output: string; }
 };
 
+export type AvgTimeToApprovalResult = {
+  __typename?: 'AvgTimeToApprovalResult';
+  avgSeconds: Scalars['Float']['output'];
+  sampleCount: Scalars['Int']['output'];
+};
+
 export type Comment = {
   __typename?: 'Comment';
   content: Scalars['String']['output'];
@@ -24,6 +30,28 @@ export type Comment = {
   id: Scalars['ID']['output'];
   requestID: Scalars['ID']['output'];
   userID: Scalars['ID']['output'];
+};
+
+export type CountRequestsByMonthRow = {
+  __typename?: 'CountRequestsByMonthRow';
+  count: Scalars['Int']['output'];
+  month: Scalars['Time']['output'];
+};
+
+export type CountRequestsByStatusRow = {
+  __typename?: 'CountRequestsByStatusRow';
+  count: Scalars['Int']['output'];
+  status: Scalars['String']['output'];
+};
+
+export type DashboardSummaryResult = {
+  __typename?: 'DashboardSummaryResult';
+  approvedCount: Scalars['Int']['output'];
+  avgApprovalSeconds: Scalars['Float']['output'];
+  draftCount: Scalars['Int']['output'];
+  rejectedCount: Scalars['Int']['output'];
+  submittedCount: Scalars['Int']['output'];
+  totalCount: Scalars['Int']['output'];
 };
 
 export type Me = {
@@ -96,8 +124,16 @@ export type MutationSubmitRequestArgs = {
 
 export type Query = {
   __typename?: 'Query';
+  /** Get average time to approval (in seconds) for approved requests. */
+  avgTimeToApproval: AvgTimeToApprovalResult;
   /** List comments */
   comments: Array<Comment>;
+  /** Count requests grouped by month (optionally filtered by date range). */
+  countRequestsByMonth: Array<CountRequestsByMonthRow>;
+  /** Count requests grouped by status. */
+  countRequestsByStatus: Array<CountRequestsByStatusRow>;
+  /** Get comprehensive dashboard summary in a single query. */
+  dashboardSummary: DashboardSummaryResult;
   /** Returns the current logged-in user (viewer). */
   me: Me;
   /** Health-check style ping. Requires login because the endpoint is guarded. */
@@ -115,6 +151,12 @@ export type Query = {
 
 export type QueryCommentsArgs = {
   requestID: Scalars['ID']['input'];
+};
+
+
+export type QueryCountRequestsByMonthArgs = {
+  endDate: InputMaybe<Scalars['Time']['input']>;
+  startDate: InputMaybe<Scalars['Time']['input']>;
 };
 
 
@@ -259,6 +301,29 @@ export type AddCommentMutationVariables = Exact<{
 
 export type AddCommentMutation = { __typename?: 'Mutation', addComment: { __typename?: 'Comment', id: string, requestID: string, userID: string, content: string, createdAt: string } };
 
+export type DashboardSummaryQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type DashboardSummaryQuery = { __typename?: 'Query', dashboardSummary: { __typename?: 'DashboardSummaryResult', draftCount: number, submittedCount: number, approvedCount: number, rejectedCount: number, totalCount: number, avgApprovalSeconds: number } };
+
+export type CountRequestsByStatusQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type CountRequestsByStatusQuery = { __typename?: 'Query', countRequestsByStatus: Array<{ __typename?: 'CountRequestsByStatusRow', status: string, count: number }> };
+
+export type CountRequestsByMonthQueryVariables = Exact<{
+  startDate: InputMaybe<Scalars['Time']['input']>;
+  endDate: InputMaybe<Scalars['Time']['input']>;
+}>;
+
+
+export type CountRequestsByMonthQuery = { __typename?: 'Query', countRequestsByMonth: Array<{ __typename?: 'CountRequestsByMonthRow', month: string, count: number }> };
+
+export type AvgTimeToApprovalQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AvgTimeToApprovalQuery = { __typename?: 'Query', avgTimeToApproval: { __typename?: 'AvgTimeToApprovalResult', avgSeconds: number, sampleCount: number } };
+
 export type MeQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -300,6 +365,10 @@ export const ReturnRequestDocument = {"kind":"Document","definitions":[{"kind":"
 export const ResubmitRequestDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ResubmitRequest"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"resubmitRequest"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]}}]} as unknown as DocumentNode<ResubmitRequestMutation, ResubmitRequestMutationVariables>;
 export const RequestCommentsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"RequestComments"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"requestID"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"comments"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"requestID"},"value":{"kind":"Variable","name":{"kind":"Name","value":"requestID"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"requestID"}},{"kind":"Field","name":{"kind":"Name","value":"userID"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}}]}}]} as unknown as DocumentNode<RequestCommentsQuery, RequestCommentsQueryVariables>;
 export const AddCommentDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"AddComment"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"requestID"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"content"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"addComment"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"requestID"},"value":{"kind":"Variable","name":{"kind":"Name","value":"requestID"}}},{"kind":"Argument","name":{"kind":"Name","value":"content"},"value":{"kind":"Variable","name":{"kind":"Name","value":"content"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"requestID"}},{"kind":"Field","name":{"kind":"Name","value":"userID"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}}]}}]} as unknown as DocumentNode<AddCommentMutation, AddCommentMutationVariables>;
+export const DashboardSummaryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"DashboardSummary"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"dashboardSummary"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"draftCount"}},{"kind":"Field","name":{"kind":"Name","value":"submittedCount"}},{"kind":"Field","name":{"kind":"Name","value":"approvedCount"}},{"kind":"Field","name":{"kind":"Name","value":"rejectedCount"}},{"kind":"Field","name":{"kind":"Name","value":"totalCount"}},{"kind":"Field","name":{"kind":"Name","value":"avgApprovalSeconds"}}]}}]}}]} as unknown as DocumentNode<DashboardSummaryQuery, DashboardSummaryQueryVariables>;
+export const CountRequestsByStatusDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"CountRequestsByStatus"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"countRequestsByStatus"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"count"}}]}}]}}]} as unknown as DocumentNode<CountRequestsByStatusQuery, CountRequestsByStatusQueryVariables>;
+export const CountRequestsByMonthDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"CountRequestsByMonth"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"startDate"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Time"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"endDate"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Time"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"countRequestsByMonth"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"startDate"},"value":{"kind":"Variable","name":{"kind":"Name","value":"startDate"}}},{"kind":"Argument","name":{"kind":"Name","value":"endDate"},"value":{"kind":"Variable","name":{"kind":"Name","value":"endDate"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"month"}},{"kind":"Field","name":{"kind":"Name","value":"count"}}]}}]}}]} as unknown as DocumentNode<CountRequestsByMonthQuery, CountRequestsByMonthQueryVariables>;
+export const AvgTimeToApprovalDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"AvgTimeToApproval"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"avgTimeToApproval"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"avgSeconds"}},{"kind":"Field","name":{"kind":"Name","value":"sampleCount"}}]}}]}}]} as unknown as DocumentNode<AvgTimeToApprovalQuery, AvgTimeToApprovalQueryVariables>;
 export const MeDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"Me"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"me"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"userID"}},{"kind":"Field","name":{"kind":"Name","value":"orgID"}},{"kind":"Field","name":{"kind":"Name","value":"role"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"email"}}]}}]}}]} as unknown as DocumentNode<MeQuery, MeQueryVariables>;
 export const RequestDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"Request"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"request"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"orgID"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"createdByUserID"}},{"kind":"Field","name":{"kind":"Name","value":"decidedByUserID"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}},{"kind":"Field","name":{"kind":"Name","value":"submittedAt"}},{"kind":"Field","name":{"kind":"Name","value":"decidedAt"}},{"kind":"Field","name":{"kind":"Name","value":"steps"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"stepIndex"}},{"kind":"Field","name":{"kind":"Name","value":"label"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"assignedToUserID"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}},{"kind":"Field","name":{"kind":"Name","value":"auditTrail"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"actorUserID"}},{"kind":"Field","name":{"kind":"Name","value":"action"}},{"kind":"Field","name":{"kind":"Name","value":"data"}},{"kind":"Field","name":{"kind":"Name","value":"occurredAt"}}]}}]}}]}}]} as unknown as DocumentNode<RequestQuery, RequestQueryVariables>;
 export const RequestsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"Requests"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"limit"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}},"defaultValue":{"kind":"IntValue","value":"50"}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"offset"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}},"defaultValue":{"kind":"IntValue","value":"0"}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"requests"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"limit"},"value":{"kind":"Variable","name":{"kind":"Name","value":"limit"}}},{"kind":"Argument","name":{"kind":"Name","value":"offset"},"value":{"kind":"Variable","name":{"kind":"Name","value":"offset"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]}}]} as unknown as DocumentNode<RequestsQuery, RequestsQueryVariables>;

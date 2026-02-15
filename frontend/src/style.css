@@ -790,3 +790,49 @@ html[data-theme='dark'] .commentForm .submitButton:hover:not(:disabled) {
     justify-content: center;
   }
 }
+
+/* ダッシュボード統計カード */
+.stat-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: var(--muted);
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+/* インフォバナー（デモモード用等） */
+.info-banner {
+  background: #dbeafe;
+  border: 1px solid #3b82f6;
+  border-radius: 6px;
+  padding: 12px 16px;
+  color: #1e40af;
+}
+
+@media (prefers-color-scheme: dark) {
+  .info-banner {
+    background: #1e3a5f;
+    border-color: #3b82f6;
+    color: #93c5fd;
+  }
+}
+
+html[data-theme='dark'] .info-banner {
+  background: #1e3a5f;
+  border-color: #3b82f6;
+  color: #93c5fd;
+}
