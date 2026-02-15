@@ -789,7 +789,7 @@ tasks:
 
   - id: LEARN-024F
     title: "Frontend: ダッシュボード画面の実装"
-    status: todo
+    status: done
     priority: medium
     branch: "enhance/024f-dashboard-ui"
     depends_on: [LEARN-024]
@@ -816,7 +816,7 @@ tasks:
 
   - id: LEARN-025
     title: "添付: ファイルダウンロード署名URL生成機能"
-    status: todo
+    status: done
     priority: high
     branch: "enhance/025-attachment-download"
     depends_on: []

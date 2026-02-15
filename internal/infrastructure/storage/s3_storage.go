@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awscfg "github.com/aws/aws-sdk-go-v2/config"
@@ -107,6 +108,22 @@ func (s *S3Storage) Delete(ctx context.Context, key string) error {
 		Key:    aws.String(key),
 	})
 	return err
+}
+
+func (s *S3Storage) GeneratePresignedURL(ctx context.Context, key string, expiration time.Duration) (string, error) {
+	if strings.TrimSpace(key) == "" {
+		return "", errors.New("storage key is empty")
+	}
+
+	presignClient := s3.NewPresignClient(s.client)
+	out, err := presignClient.PresignGetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(s.bucket),
+		Key:    aws.String(key),
+	}, s3.WithPresignExpires(expiration))
+	if err != nil {
+		return "", fmt.Errorf("generate presigned url: %w", err)
+	}
+	return out.URL, nil
 }
 
 type countingReader struct {

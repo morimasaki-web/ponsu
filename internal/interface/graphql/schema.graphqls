@@ -41,6 +41,9 @@ type Query {
 
   "Get comprehensive dashboard summary in a single query."
   dashboardSummary: DashboardSummaryResult!
+
+  "Get a presigned download URL for an attachment. URL expires in 15 minutes."
+  attachmentDownloadURL(requestID: ID!, attachmentID: ID!): String!
 }
 
 type Me {

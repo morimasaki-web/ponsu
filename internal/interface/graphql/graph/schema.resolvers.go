@@ -10,12 +10,14 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/morimasaki-web/ponsu/internal/infrastructure/dbgen"
 	"github.com/morimasaki-web/ponsu/internal/interface/graphql/graph/generated"
 	"github.com/morimasaki-web/ponsu/internal/interface/graphql/graph/model"
+	attachmentsuc "github.com/morimasaki-web/ponsu/internal/usecase/attachments"
 	requestsuc "github.com/morimasaki-web/ponsu/internal/usecase/requests"
 )
 
@@ -616,6 +618,42 @@ func (r *queryResolver) DashboardSummary(ctx context.Context) (*model.DashboardS
 		TotalCount:         int(row.TotalCount),
 		AvgApprovalSeconds: row.AvgApprovalSeconds,
 	}, nil
+}
+
+// AttachmentDownloadURL is the resolver for the attachmentDownloadURL field.
+func (r *queryResolver) AttachmentDownloadURL(ctx context.Context, requestID string, attachmentID string) (string, error) {
+	v, err := viewerFromContext(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	reqID, err := parseUUID(requestID)
+	if err != nil {
+		return "", fmt.Errorf("invalid request id: %w", err)
+	}
+
+	attID, err := parseUUID(attachmentID)
+	if err != nil {
+		return "", fmt.Errorf("invalid attachment id: %w", err)
+	}
+
+	svc := attachmentsuc.Service{
+		DB:      r.DB,
+		Storage: r.Storage,
+	}
+
+	url, err := svc.GetDownloadURL(ctx, v.OrgID, v.UserID, reqID, attID, 15*time.Minute)
+	if err != nil {
+		if errors.Is(err, attachmentsuc.ErrForbidden) {
+			return "", fmt.Errorf("forbidden: you don't have permission to download this attachment")
+		}
+		if errors.Is(err, attachmentsuc.ErrNotFound) {
+			return "", fmt.Errorf("attachment not found")
+		}
+		return "", err
+	}
+
+	return url, nil
 }
 
 // Submitter is the resolver for the submitter field.

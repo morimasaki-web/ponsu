@@ -100,6 +100,7 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
+		AttachmentDownloadURL func(childComplexity int, requestID string, attachmentID string) int
 		AvgTimeToApproval     func(childComplexity int) int
 		Comments              func(childComplexity int, requestID string) int
 		CountRequestsByMonth  func(childComplexity int, startDate *time.Time, endDate *time.Time) int
@@ -186,6 +187,7 @@ type QueryResolver interface {
 	CountRequestsByMonth(ctx context.Context, startDate *time.Time, endDate *time.Time) ([]*model.CountRequestsByMonthRow, error)
 	CountRequestsByStatus(ctx context.Context) ([]*model.CountRequestsByStatusRow, error)
 	DashboardSummary(ctx context.Context) (*model.DashboardSummaryResult, error)
+	AttachmentDownloadURL(ctx context.Context, requestID string, attachmentID string) (string, error)
 }
 type RequestResolver interface {
 	Submitter(ctx context.Context, obj *model.Request) (*model.User, error)
@@ -437,6 +439,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.SubmitRequest(childComplexity, args["id"].(string)), true
 
+	case "Query.attachmentDownloadURL":
+		if e.complexity.Query.AttachmentDownloadURL == nil {
+			break
+		}
+
+		args, err := ec.field_Query_attachmentDownloadURL_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.AttachmentDownloadURL(childComplexity, args["requestID"].(string), args["attachmentID"].(string)), true
 	case "Query.avgTimeToApproval":
 		if e.complexity.Query.AvgTimeToApproval == nil {
 			break
@@ -896,6 +909,9 @@ type Query {
 
   "Get comprehensive dashboard summary in a single query."
   dashboardSummary: DashboardSummaryResult!
+
+  "Get a presigned download URL for an attachment. URL expires in 15 minutes."
+  attachmentDownloadURL(requestID: ID!, attachmentID: ID!): String!
 }
 
 type Me {
@@ -981,38 +997,26 @@ type WorkflowTemplate {
 }
 
 type AvgTimeToApprovalResult {
-  "Average approval time in seconds"
   avgSeconds: Float!
-  "Number of approved requests used in calculation"
   sampleCount: Int!
 }
 
 type CountRequestsByMonthRow {
-  "Month timestamp (truncated to month)"
   month: Time!
-  "Number of requests created in this month"
   count: Int!
 }
 
 type CountRequestsByStatusRow {
-  "Request status"
   status: String!
-  "Number of requests with this status"
   count: Int!
 }
 
 type DashboardSummaryResult {
-  "Number of draft requests"
   draftCount: Int!
-  "Number of submitted requests"
   submittedCount: Int!
-  "Number of approved requests"
   approvedCount: Int!
-  "Number of rejected requests"
   rejectedCount: Int!
-  "Total number of requests"
   totalCount: Int!
-  "Average approval time in seconds"
   avgApprovalSeconds: Float!
 }`, BuiltIn: false},
 }
@@ -1148,6 +1152,22 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 		return nil, err
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_attachmentDownloadURL_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "requestID", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["requestID"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "attachmentID", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["attachmentID"] = arg1
 	return args, nil
 }
 
@@ -3018,6 +3038,47 @@ func (ec *executionContext) fieldContext_Query_dashboardSummary(_ context.Contex
 			}
 			return nil, fmt.Errorf("no field named %q was found under type DashboardSummaryResult", field.Name)
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_attachmentDownloadURL(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_attachmentDownloadURL,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().AttachmentDownloadURL(ctx, fc.Args["requestID"].(string), fc.Args["attachmentID"].(string))
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_attachmentDownloadURL(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_attachmentDownloadURL_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -6285,6 +6346,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_dashboardSummary(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "attachmentDownloadURL":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_attachmentDownloadURL(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}

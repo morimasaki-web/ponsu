@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -159,4 +160,62 @@ func (s Service) Open(
 		return dbgen.RequestAttachment{}, nil, err
 	}
 	return meta, rc, nil
+}
+
+// GetDownloadURL generates a pre-signed URL for downloading an attachment.
+// Only users who have access to the request can download its attachments.
+func (s Service) GetDownloadURL(
+	ctx context.Context,
+	orgID uuid.UUID,
+	actorUserID uuid.UUID,
+	requestID uuid.UUID,
+	attachmentID uuid.UUID,
+	expiration time.Duration,
+) (string, error) {
+	if s.DB == nil {
+		return "", errors.New("db is nil")
+	}
+	if s.Storage == nil {
+		return "", errors.New("storage is nil")
+	}
+	if expiration <= 0 {
+		expiration = 15 * time.Minute // デフォルト15分
+	}
+	if expiration > 24*time.Hour {
+		expiration = 24 * time.Hour // 最大24時間
+	}
+
+	q := dbgen.New(s.DB)
+
+	// 権限チェック: 組織のメンバーであること
+	if _, err := q.GetMembershipByOrgAndUserID(ctx, dbgen.GetMembershipByOrgAndUserIDParams{
+		OrgID:  orgID,
+		UserID: actorUserID,
+	}); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", ErrForbidden
+		}
+		return "", err
+	}
+
+	// 添付ファイルの存在確認と取得
+	meta, err := q.GetRequestAttachmentByOrgRequestAndID(ctx, dbgen.GetRequestAttachmentByOrgRequestAndIDParams{
+		OrgID:     orgID,
+		RequestID: requestID,
+		ID:        attachmentID,
+	})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", ErrNotFound
+		}
+		return "", err
+	}
+
+	// 署名付きURL生成
+	url, err := s.Storage.GeneratePresignedURL(ctx, meta.StorageKey, expiration)
+	if err != nil {
+		return "", fmt.Errorf("generate presigned url: %w", err)
+	}
+
+	return url, nil
 }

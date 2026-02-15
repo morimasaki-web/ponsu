@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	attachmentsuc "github.com/morimasaki-web/ponsu/internal/usecase/attachments"
 )
@@ -86,6 +87,13 @@ func (s *LocalStorage) Delete(ctx context.Context, key string) error {
 		return err
 	}
 	return nil
+}
+
+func (s *LocalStorage) GeneratePresignedURL(ctx context.Context, key string, expiration time.Duration) (string, error) {
+	_ = ctx
+	_ = key
+	_ = expiration
+	return "", errors.New("local storage does not support presigned URLs")
 }
 
 func safeJoin(baseDir, key string) (string, error) {
