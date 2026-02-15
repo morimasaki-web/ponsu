@@ -6,12 +6,48 @@ import (
 	"time"
 )
 
+type AvgTimeToApprovalResult struct {
+	// Average approval time in seconds
+	AvgSeconds float64 `json:"avgSeconds"`
+	// Number of approved requests used in calculation
+	SampleCount int `json:"sampleCount"`
+}
+
 type Comment struct {
 	ID        string    `json:"id"`
 	RequestID string    `json:"requestID"`
 	UserID    string    `json:"userID"`
 	Content   string    `json:"content"`
 	CreatedAt time.Time `json:"createdAt"`
+}
+
+type CountRequestsByMonthRow struct {
+	// Month timestamp (truncated to month)
+	Month time.Time `json:"month"`
+	// Number of requests created in this month
+	Count int `json:"count"`
+}
+
+type CountRequestsByStatusRow struct {
+	// Request status
+	Status string `json:"status"`
+	// Number of requests with this status
+	Count int `json:"count"`
+}
+
+type DashboardSummaryResult struct {
+	// Number of draft requests
+	DraftCount int `json:"draftCount"`
+	// Number of submitted requests
+	SubmittedCount int `json:"submittedCount"`
+	// Number of approved requests
+	ApprovedCount int `json:"approvedCount"`
+	// Number of rejected requests
+	RejectedCount int `json:"rejectedCount"`
+	// Total number of requests
+	TotalCount int `json:"totalCount"`
+	// Average approval time in seconds
+	AvgApprovalSeconds float64 `json:"avgApprovalSeconds"`
 }
 
 type Me struct {

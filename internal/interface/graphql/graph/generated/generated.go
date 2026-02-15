@@ -48,12 +48,36 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	AvgTimeToApprovalResult struct {
+		AvgSeconds  func(childComplexity int) int
+		SampleCount func(childComplexity int) int
+	}
+
 	Comment struct {
 		Content   func(childComplexity int) int
 		CreatedAt func(childComplexity int) int
 		ID        func(childComplexity int) int
 		RequestID func(childComplexity int) int
 		UserID    func(childComplexity int) int
+	}
+
+	CountRequestsByMonthRow struct {
+		Count func(childComplexity int) int
+		Month func(childComplexity int) int
+	}
+
+	CountRequestsByStatusRow struct {
+		Count  func(childComplexity int) int
+		Status func(childComplexity int) int
+	}
+
+	DashboardSummaryResult struct {
+		ApprovedCount      func(childComplexity int) int
+		AvgApprovalSeconds func(childComplexity int) int
+		DraftCount         func(childComplexity int) int
+		RejectedCount      func(childComplexity int) int
+		SubmittedCount     func(childComplexity int) int
+		TotalCount         func(childComplexity int) int
 	}
 
 	Me struct {
@@ -76,13 +100,17 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		Comments          func(childComplexity int, requestID string) int
-		Me                func(childComplexity int) int
-		Ping              func(childComplexity int) int
-		Request           func(childComplexity int, id string) int
-		Requests          func(childComplexity int, limit *int, offset *int) int
-		SearchRequests    func(childComplexity int, title *string, status *string, createdAtStart *time.Time, createdAtEnd *time.Time, limit *int, offset *int) int
-		WorkflowTemplates func(childComplexity int, limit *int, offset *int) int
+		AvgTimeToApproval     func(childComplexity int) int
+		Comments              func(childComplexity int, requestID string) int
+		CountRequestsByMonth  func(childComplexity int, startDate *time.Time, endDate *time.Time) int
+		CountRequestsByStatus func(childComplexity int) int
+		DashboardSummary      func(childComplexity int) int
+		Me                    func(childComplexity int) int
+		Ping                  func(childComplexity int) int
+		Request               func(childComplexity int, id string) int
+		Requests              func(childComplexity int, limit *int, offset *int) int
+		SearchRequests        func(childComplexity int, title *string, status *string, createdAtStart *time.Time, createdAtEnd *time.Time, limit *int, offset *int) int
+		WorkflowTemplates     func(childComplexity int, limit *int, offset *int) int
 	}
 
 	Request struct {
@@ -154,6 +182,10 @@ type QueryResolver interface {
 	SearchRequests(ctx context.Context, title *string, status *string, createdAtStart *time.Time, createdAtEnd *time.Time, limit *int, offset *int) ([]*model.Request, error)
 	Comments(ctx context.Context, requestID string) ([]*model.Comment, error)
 	WorkflowTemplates(ctx context.Context, limit *int, offset *int) ([]*model.WorkflowTemplate, error)
+	AvgTimeToApproval(ctx context.Context) (*model.AvgTimeToApprovalResult, error)
+	CountRequestsByMonth(ctx context.Context, startDate *time.Time, endDate *time.Time) ([]*model.CountRequestsByMonthRow, error)
+	CountRequestsByStatus(ctx context.Context) ([]*model.CountRequestsByStatusRow, error)
+	DashboardSummary(ctx context.Context) (*model.DashboardSummaryResult, error)
 }
 type RequestResolver interface {
 	Submitter(ctx context.Context, obj *model.Request) (*model.User, error)
@@ -177,6 +209,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 	ec := executionContext{nil, e, 0, 0, nil}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "AvgTimeToApprovalResult.avgSeconds":
+		if e.complexity.AvgTimeToApprovalResult.AvgSeconds == nil {
+			break
+		}
+
+		return e.complexity.AvgTimeToApprovalResult.AvgSeconds(childComplexity), true
+	case "AvgTimeToApprovalResult.sampleCount":
+		if e.complexity.AvgTimeToApprovalResult.SampleCount == nil {
+			break
+		}
+
+		return e.complexity.AvgTimeToApprovalResult.SampleCount(childComplexity), true
 
 	case "Comment.content":
 		if e.complexity.Comment.Content == nil {
@@ -208,6 +253,69 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Comment.UserID(childComplexity), true
+
+	case "CountRequestsByMonthRow.count":
+		if e.complexity.CountRequestsByMonthRow.Count == nil {
+			break
+		}
+
+		return e.complexity.CountRequestsByMonthRow.Count(childComplexity), true
+	case "CountRequestsByMonthRow.month":
+		if e.complexity.CountRequestsByMonthRow.Month == nil {
+			break
+		}
+
+		return e.complexity.CountRequestsByMonthRow.Month(childComplexity), true
+
+	case "CountRequestsByStatusRow.count":
+		if e.complexity.CountRequestsByStatusRow.Count == nil {
+			break
+		}
+
+		return e.complexity.CountRequestsByStatusRow.Count(childComplexity), true
+	case "CountRequestsByStatusRow.status":
+		if e.complexity.CountRequestsByStatusRow.Status == nil {
+			break
+		}
+
+		return e.complexity.CountRequestsByStatusRow.Status(childComplexity), true
+
+	case "DashboardSummaryResult.approvedCount":
+		if e.complexity.DashboardSummaryResult.ApprovedCount == nil {
+			break
+		}
+
+		return e.complexity.DashboardSummaryResult.ApprovedCount(childComplexity), true
+	case "DashboardSummaryResult.avgApprovalSeconds":
+		if e.complexity.DashboardSummaryResult.AvgApprovalSeconds == nil {
+			break
+		}
+
+		return e.complexity.DashboardSummaryResult.AvgApprovalSeconds(childComplexity), true
+	case "DashboardSummaryResult.draftCount":
+		if e.complexity.DashboardSummaryResult.DraftCount == nil {
+			break
+		}
+
+		return e.complexity.DashboardSummaryResult.DraftCount(childComplexity), true
+	case "DashboardSummaryResult.rejectedCount":
+		if e.complexity.DashboardSummaryResult.RejectedCount == nil {
+			break
+		}
+
+		return e.complexity.DashboardSummaryResult.RejectedCount(childComplexity), true
+	case "DashboardSummaryResult.submittedCount":
+		if e.complexity.DashboardSummaryResult.SubmittedCount == nil {
+			break
+		}
+
+		return e.complexity.DashboardSummaryResult.SubmittedCount(childComplexity), true
+	case "DashboardSummaryResult.totalCount":
+		if e.complexity.DashboardSummaryResult.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.DashboardSummaryResult.TotalCount(childComplexity), true
 
 	case "Me.email":
 		if e.complexity.Me.Email == nil {
@@ -329,6 +437,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.SubmitRequest(childComplexity, args["id"].(string)), true
 
+	case "Query.avgTimeToApproval":
+		if e.complexity.Query.AvgTimeToApproval == nil {
+			break
+		}
+
+		return e.complexity.Query.AvgTimeToApproval(childComplexity), true
 	case "Query.comments":
 		if e.complexity.Query.Comments == nil {
 			break
@@ -340,6 +454,29 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.Comments(childComplexity, args["requestID"].(string)), true
+	case "Query.countRequestsByMonth":
+		if e.complexity.Query.CountRequestsByMonth == nil {
+			break
+		}
+
+		args, err := ec.field_Query_countRequestsByMonth_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.CountRequestsByMonth(childComplexity, args["startDate"].(*time.Time), args["endDate"].(*time.Time)), true
+	case "Query.countRequestsByStatus":
+		if e.complexity.Query.CountRequestsByStatus == nil {
+			break
+		}
+
+		return e.complexity.Query.CountRequestsByStatus(childComplexity), true
+	case "Query.dashboardSummary":
+		if e.complexity.Query.DashboardSummary == nil {
+			break
+		}
+
+		return e.complexity.Query.DashboardSummary(childComplexity), true
 	case "Query.me":
 		if e.complexity.Query.Me == nil {
 			break
@@ -747,6 +884,18 @@ type Query {
 
   "List workflow templates within the viewer's org."
   workflowTemplates(limit: Int = 50, offset: Int = 0): [WorkflowTemplate!]!
+
+  "Get average time to approval (in seconds) for approved requests."
+  avgTimeToApproval: AvgTimeToApprovalResult!
+
+  "Count requests grouped by month (optionally filtered by date range)."
+  countRequestsByMonth(startDate: Time, endDate: Time): [CountRequestsByMonthRow!]!
+
+  "Count requests grouped by status."
+  countRequestsByStatus: [CountRequestsByStatusRow!]!
+
+  "Get comprehensive dashboard summary in a single query."
+  dashboardSummary: DashboardSummaryResult!
 }
 
 type Me {
@@ -830,7 +979,42 @@ type WorkflowTemplate {
   createdAt: Time!
   updatedAt: Time!
 }
-`, BuiltIn: false},
+
+type AvgTimeToApprovalResult {
+  "Average approval time in seconds"
+  avgSeconds: Float!
+  "Number of approved requests used in calculation"
+  sampleCount: Int!
+}
+
+type CountRequestsByMonthRow {
+  "Month timestamp (truncated to month)"
+  month: Time!
+  "Number of requests created in this month"
+  count: Int!
+}
+
+type CountRequestsByStatusRow {
+  "Request status"
+  status: String!
+  "Number of requests with this status"
+  count: Int!
+}
+
+type DashboardSummaryResult {
+  "Number of draft requests"
+  draftCount: Int!
+  "Number of submitted requests"
+  submittedCount: Int!
+  "Number of approved requests"
+  approvedCount: Int!
+  "Number of rejected requests"
+  rejectedCount: Int!
+  "Total number of requests"
+  totalCount: Int!
+  "Average approval time in seconds"
+  avgApprovalSeconds: Float!
+}`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
@@ -978,6 +1162,22 @@ func (ec *executionContext) field_Query_comments_args(ctx context.Context, rawAr
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_countRequestsByMonth_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "startDate", ec.unmarshalOTime2ᚖtimeᚐTime)
+	if err != nil {
+		return nil, err
+	}
+	args["startDate"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "endDate", ec.unmarshalOTime2ᚖtimeᚐTime)
+	if err != nil {
+		return nil, err
+	}
+	args["endDate"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_request_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1108,6 +1308,64 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 // endregion ************************** directives.gotpl **************************
 
 // region    **************************** field.gotpl *****************************
+
+func (ec *executionContext) _AvgTimeToApprovalResult_avgSeconds(ctx context.Context, field graphql.CollectedField, obj *model.AvgTimeToApprovalResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AvgTimeToApprovalResult_avgSeconds,
+		func(ctx context.Context) (any, error) {
+			return obj.AvgSeconds, nil
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AvgTimeToApprovalResult_avgSeconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AvgTimeToApprovalResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AvgTimeToApprovalResult_sampleCount(ctx context.Context, field graphql.CollectedField, obj *model.AvgTimeToApprovalResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AvgTimeToApprovalResult_sampleCount,
+		func(ctx context.Context) (any, error) {
+			return obj.SampleCount, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AvgTimeToApprovalResult_sampleCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AvgTimeToApprovalResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
 
 func (ec *executionContext) _Comment_id(ctx context.Context, field graphql.CollectedField, obj *model.Comment) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
@@ -1249,6 +1507,296 @@ func (ec *executionContext) fieldContext_Comment_createdAt(_ context.Context, fi
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CountRequestsByMonthRow_month(ctx context.Context, field graphql.CollectedField, obj *model.CountRequestsByMonthRow) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CountRequestsByMonthRow_month,
+		func(ctx context.Context) (any, error) {
+			return obj.Month, nil
+		},
+		nil,
+		ec.marshalNTime2timeᚐTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CountRequestsByMonthRow_month(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CountRequestsByMonthRow",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CountRequestsByMonthRow_count(ctx context.Context, field graphql.CollectedField, obj *model.CountRequestsByMonthRow) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CountRequestsByMonthRow_count,
+		func(ctx context.Context) (any, error) {
+			return obj.Count, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CountRequestsByMonthRow_count(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CountRequestsByMonthRow",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CountRequestsByStatusRow_status(ctx context.Context, field graphql.CollectedField, obj *model.CountRequestsByStatusRow) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CountRequestsByStatusRow_status,
+		func(ctx context.Context) (any, error) {
+			return obj.Status, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CountRequestsByStatusRow_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CountRequestsByStatusRow",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CountRequestsByStatusRow_count(ctx context.Context, field graphql.CollectedField, obj *model.CountRequestsByStatusRow) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CountRequestsByStatusRow_count,
+		func(ctx context.Context) (any, error) {
+			return obj.Count, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CountRequestsByStatusRow_count(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CountRequestsByStatusRow",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DashboardSummaryResult_draftCount(ctx context.Context, field graphql.CollectedField, obj *model.DashboardSummaryResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DashboardSummaryResult_draftCount,
+		func(ctx context.Context) (any, error) {
+			return obj.DraftCount, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_DashboardSummaryResult_draftCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DashboardSummaryResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DashboardSummaryResult_submittedCount(ctx context.Context, field graphql.CollectedField, obj *model.DashboardSummaryResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DashboardSummaryResult_submittedCount,
+		func(ctx context.Context) (any, error) {
+			return obj.SubmittedCount, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_DashboardSummaryResult_submittedCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DashboardSummaryResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DashboardSummaryResult_approvedCount(ctx context.Context, field graphql.CollectedField, obj *model.DashboardSummaryResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DashboardSummaryResult_approvedCount,
+		func(ctx context.Context) (any, error) {
+			return obj.ApprovedCount, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_DashboardSummaryResult_approvedCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DashboardSummaryResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DashboardSummaryResult_rejectedCount(ctx context.Context, field graphql.CollectedField, obj *model.DashboardSummaryResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DashboardSummaryResult_rejectedCount,
+		func(ctx context.Context) (any, error) {
+			return obj.RejectedCount, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_DashboardSummaryResult_rejectedCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DashboardSummaryResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DashboardSummaryResult_totalCount(ctx context.Context, field graphql.CollectedField, obj *model.DashboardSummaryResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DashboardSummaryResult_totalCount,
+		func(ctx context.Context) (any, error) {
+			return obj.TotalCount, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_DashboardSummaryResult_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DashboardSummaryResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DashboardSummaryResult_avgApprovalSeconds(ctx context.Context, field graphql.CollectedField, obj *model.DashboardSummaryResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DashboardSummaryResult_avgApprovalSeconds,
+		func(ctx context.Context) (any, error) {
+			return obj.AvgApprovalSeconds, nil
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_DashboardSummaryResult_avgApprovalSeconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DashboardSummaryResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
 		},
 	}
 	return fc, nil
@@ -2310,6 +2858,166 @@ func (ec *executionContext) fieldContext_Query_workflowTemplates(ctx context.Con
 	if fc.Args, err = ec.field_Query_workflowTemplates_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_avgTimeToApproval(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_avgTimeToApproval,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Query().AvgTimeToApproval(ctx)
+		},
+		nil,
+		ec.marshalNAvgTimeToApprovalResult2ᚖgithubᚗcomᚋmorimasakiᚑwebᚋponsuᚋinternalᚋinterfaceᚋgraphqlᚋgraphᚋmodelᚐAvgTimeToApprovalResult,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_avgTimeToApproval(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "avgSeconds":
+				return ec.fieldContext_AvgTimeToApprovalResult_avgSeconds(ctx, field)
+			case "sampleCount":
+				return ec.fieldContext_AvgTimeToApprovalResult_sampleCount(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AvgTimeToApprovalResult", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_countRequestsByMonth(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_countRequestsByMonth,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().CountRequestsByMonth(ctx, fc.Args["startDate"].(*time.Time), fc.Args["endDate"].(*time.Time))
+		},
+		nil,
+		ec.marshalNCountRequestsByMonthRow2ᚕᚖgithubᚗcomᚋmorimasakiᚑwebᚋponsuᚋinternalᚋinterfaceᚋgraphqlᚋgraphᚋmodelᚐCountRequestsByMonthRowᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_countRequestsByMonth(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "month":
+				return ec.fieldContext_CountRequestsByMonthRow_month(ctx, field)
+			case "count":
+				return ec.fieldContext_CountRequestsByMonthRow_count(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type CountRequestsByMonthRow", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_countRequestsByMonth_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_countRequestsByStatus(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_countRequestsByStatus,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Query().CountRequestsByStatus(ctx)
+		},
+		nil,
+		ec.marshalNCountRequestsByStatusRow2ᚕᚖgithubᚗcomᚋmorimasakiᚑwebᚋponsuᚋinternalᚋinterfaceᚋgraphqlᚋgraphᚋmodelᚐCountRequestsByStatusRowᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_countRequestsByStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "status":
+				return ec.fieldContext_CountRequestsByStatusRow_status(ctx, field)
+			case "count":
+				return ec.fieldContext_CountRequestsByStatusRow_count(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type CountRequestsByStatusRow", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_dashboardSummary(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_dashboardSummary,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Query().DashboardSummary(ctx)
+		},
+		nil,
+		ec.marshalNDashboardSummaryResult2ᚖgithubᚗcomᚋmorimasakiᚑwebᚋponsuᚋinternalᚋinterfaceᚋgraphqlᚋgraphᚋmodelᚐDashboardSummaryResult,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_dashboardSummary(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "draftCount":
+				return ec.fieldContext_DashboardSummaryResult_draftCount(ctx, field)
+			case "submittedCount":
+				return ec.fieldContext_DashboardSummaryResult_submittedCount(ctx, field)
+			case "approvedCount":
+				return ec.fieldContext_DashboardSummaryResult_approvedCount(ctx, field)
+			case "rejectedCount":
+				return ec.fieldContext_DashboardSummaryResult_rejectedCount(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_DashboardSummaryResult_totalCount(ctx, field)
+			case "avgApprovalSeconds":
+				return ec.fieldContext_DashboardSummaryResult_avgApprovalSeconds(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DashboardSummaryResult", field.Name)
+		},
 	}
 	return fc, nil
 }
@@ -4925,6 +5633,50 @@ func (ec *executionContext) fieldContext___Type_isOneOf(_ context.Context, field
 
 // region    **************************** object.gotpl ****************************
 
+var avgTimeToApprovalResultImplementors = []string{"AvgTimeToApprovalResult"}
+
+func (ec *executionContext) _AvgTimeToApprovalResult(ctx context.Context, sel ast.SelectionSet, obj *model.AvgTimeToApprovalResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, avgTimeToApprovalResultImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AvgTimeToApprovalResult")
+		case "avgSeconds":
+			out.Values[i] = ec._AvgTimeToApprovalResult_avgSeconds(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "sampleCount":
+			out.Values[i] = ec._AvgTimeToApprovalResult_sampleCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var commentImplementors = []string{"Comment"}
 
 func (ec *executionContext) _Comment(ctx context.Context, sel ast.SelectionSet, obj *model.Comment) graphql.Marshaler {
@@ -4958,6 +5710,158 @@ func (ec *executionContext) _Comment(ctx context.Context, sel ast.SelectionSet, 
 			}
 		case "createdAt":
 			out.Values[i] = ec._Comment_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var countRequestsByMonthRowImplementors = []string{"CountRequestsByMonthRow"}
+
+func (ec *executionContext) _CountRequestsByMonthRow(ctx context.Context, sel ast.SelectionSet, obj *model.CountRequestsByMonthRow) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, countRequestsByMonthRowImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CountRequestsByMonthRow")
+		case "month":
+			out.Values[i] = ec._CountRequestsByMonthRow_month(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "count":
+			out.Values[i] = ec._CountRequestsByMonthRow_count(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var countRequestsByStatusRowImplementors = []string{"CountRequestsByStatusRow"}
+
+func (ec *executionContext) _CountRequestsByStatusRow(ctx context.Context, sel ast.SelectionSet, obj *model.CountRequestsByStatusRow) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, countRequestsByStatusRowImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CountRequestsByStatusRow")
+		case "status":
+			out.Values[i] = ec._CountRequestsByStatusRow_status(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "count":
+			out.Values[i] = ec._CountRequestsByStatusRow_count(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var dashboardSummaryResultImplementors = []string{"DashboardSummaryResult"}
+
+func (ec *executionContext) _DashboardSummaryResult(ctx context.Context, sel ast.SelectionSet, obj *model.DashboardSummaryResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, dashboardSummaryResultImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DashboardSummaryResult")
+		case "draftCount":
+			out.Values[i] = ec._DashboardSummaryResult_draftCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "submittedCount":
+			out.Values[i] = ec._DashboardSummaryResult_submittedCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "approvedCount":
+			out.Values[i] = ec._DashboardSummaryResult_approvedCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "rejectedCount":
+			out.Values[i] = ec._DashboardSummaryResult_rejectedCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalCount":
+			out.Values[i] = ec._DashboardSummaryResult_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "avgApprovalSeconds":
+			out.Values[i] = ec._DashboardSummaryResult_avgApprovalSeconds(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -5293,6 +6197,94 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_workflowTemplates(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "avgTimeToApproval":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_avgTimeToApproval(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "countRequestsByMonth":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_countRequestsByMonth(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "countRequestsByStatus":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_countRequestsByStatus(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "dashboardSummary":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_dashboardSummary(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -6017,6 +7009,20 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 
 // region    ***************************** type.gotpl *****************************
 
+func (ec *executionContext) marshalNAvgTimeToApprovalResult2githubᚗcomᚋmorimasakiᚑwebᚋponsuᚋinternalᚋinterfaceᚋgraphqlᚋgraphᚋmodelᚐAvgTimeToApprovalResult(ctx context.Context, sel ast.SelectionSet, v model.AvgTimeToApprovalResult) graphql.Marshaler {
+	return ec._AvgTimeToApprovalResult(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAvgTimeToApprovalResult2ᚖgithubᚗcomᚋmorimasakiᚑwebᚋponsuᚋinternalᚋinterfaceᚋgraphqlᚋgraphᚋmodelᚐAvgTimeToApprovalResult(ctx context.Context, sel ast.SelectionSet, v *model.AvgTimeToApprovalResult) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AvgTimeToApprovalResult(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v any) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -6089,6 +7095,144 @@ func (ec *executionContext) marshalNComment2ᚖgithubᚗcomᚋmorimasakiᚑweb�
 		return graphql.Null
 	}
 	return ec._Comment(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNCountRequestsByMonthRow2ᚕᚖgithubᚗcomᚋmorimasakiᚑwebᚋponsuᚋinternalᚋinterfaceᚋgraphqlᚋgraphᚋmodelᚐCountRequestsByMonthRowᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.CountRequestsByMonthRow) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNCountRequestsByMonthRow2ᚖgithubᚗcomᚋmorimasakiᚑwebᚋponsuᚋinternalᚋinterfaceᚋgraphqlᚋgraphᚋmodelᚐCountRequestsByMonthRow(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNCountRequestsByMonthRow2ᚖgithubᚗcomᚋmorimasakiᚑwebᚋponsuᚋinternalᚋinterfaceᚋgraphqlᚋgraphᚋmodelᚐCountRequestsByMonthRow(ctx context.Context, sel ast.SelectionSet, v *model.CountRequestsByMonthRow) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._CountRequestsByMonthRow(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNCountRequestsByStatusRow2ᚕᚖgithubᚗcomᚋmorimasakiᚑwebᚋponsuᚋinternalᚋinterfaceᚋgraphqlᚋgraphᚋmodelᚐCountRequestsByStatusRowᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.CountRequestsByStatusRow) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNCountRequestsByStatusRow2ᚖgithubᚗcomᚋmorimasakiᚑwebᚋponsuᚋinternalᚋinterfaceᚋgraphqlᚋgraphᚋmodelᚐCountRequestsByStatusRow(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNCountRequestsByStatusRow2ᚖgithubᚗcomᚋmorimasakiᚑwebᚋponsuᚋinternalᚋinterfaceᚋgraphqlᚋgraphᚋmodelᚐCountRequestsByStatusRow(ctx context.Context, sel ast.SelectionSet, v *model.CountRequestsByStatusRow) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._CountRequestsByStatusRow(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNDashboardSummaryResult2githubᚗcomᚋmorimasakiᚑwebᚋponsuᚋinternalᚋinterfaceᚋgraphqlᚋgraphᚋmodelᚐDashboardSummaryResult(ctx context.Context, sel ast.SelectionSet, v model.DashboardSummaryResult) graphql.Marshaler {
+	return ec._DashboardSummaryResult(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNDashboardSummaryResult2ᚖgithubᚗcomᚋmorimasakiᚑwebᚋponsuᚋinternalᚋinterfaceᚋgraphqlᚋgraphᚋmodelᚐDashboardSummaryResult(ctx context.Context, sel ast.SelectionSet, v *model.DashboardSummaryResult) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DashboardSummaryResult(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v any) (float64, error) {
+	res, err := graphql.UnmarshalFloatContext(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.SelectionSet, v float64) graphql.Marshaler {
+	_ = sel
+	res := graphql.MarshalFloatContext(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return graphql.WrapContextMarshaler(ctx, res)
 }
 
 func (ec *executionContext) unmarshalNID2string(ctx context.Context, v any) (string, error) {

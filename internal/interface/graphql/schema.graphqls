@@ -29,6 +29,18 @@ type Query {
 
   "List workflow templates within the viewer's org."
   workflowTemplates(limit: Int = 50, offset: Int = 0): [WorkflowTemplate!]!
+
+  "Get average time to approval (in seconds) for approved requests."
+  avgTimeToApproval: AvgTimeToApprovalResult!
+
+  "Count requests grouped by month (optionally filtered by date range)."
+  countRequestsByMonth(startDate: Time, endDate: Time): [CountRequestsByMonthRow!]!
+
+  "Count requests grouped by status."
+  countRequestsByStatus: [CountRequestsByStatusRow!]!
+
+  "Get comprehensive dashboard summary in a single query."
+  dashboardSummary: DashboardSummaryResult!
 }
 
 type Me {
@@ -111,4 +123,28 @@ type WorkflowTemplate {
   createdByUserID: ID
   createdAt: Time!
   updatedAt: Time!
+}
+
+type AvgTimeToApprovalResult {
+  avgSeconds: Float!
+  sampleCount: Int!
+}
+
+type CountRequestsByMonthRow {
+  month: Time!
+  count: Int!
+}
+
+type CountRequestsByStatusRow {
+  status: String!
+  count: Int!
+}
+
+type DashboardSummaryResult {
+  draftCount: Int!
+  submittedCount: Int!
+  approvedCount: Int!
+  rejectedCount: Int!
+  totalCount: Int!
+  avgApprovalSeconds: Float!
 }

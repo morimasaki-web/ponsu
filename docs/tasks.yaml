@@ -760,7 +760,7 @@ tasks:
 
   - id: LEARN-024
     title: "統計: ダッシュボード集計クエリの実装"
-    status: todo
+    status: done
     priority: medium
     branch: "enhance/024-dashboard-stats"
     depends_on: [LEARN-019]

@@ -508,6 +508,116 @@ func (r *queryResolver) WorkflowTemplates(ctx context.Context, limit *int, offse
 	return out, nil
 }
 
+// AvgTimeToApproval is the resolver for the avgTimeToApproval field.
+func (r *queryResolver) AvgTimeToApproval(ctx context.Context) (*model.AvgTimeToApprovalResult, error) {
+	v, err := viewerFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	q, err := r.queries()
+	if err != nil {
+		return nil, err
+	}
+
+	row, err := q.AvgTimeToApproval(ctx, v.OrgID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.AvgTimeToApprovalResult{
+		AvgSeconds:  row.AvgSeconds,
+		SampleCount: int(row.SampleCount),
+	}, nil
+}
+
+// CountRequestsByMonth is the resolver for the countRequestsByMonth field.
+func (r *queryResolver) CountRequestsByMonth(ctx context.Context, startDate *time.Time, endDate *time.Time) ([]*model.CountRequestsByMonthRow, error) {
+	v, err := viewerFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	q, err := r.queries()
+	if err != nil {
+		return nil, err
+	}
+
+	params := dbgen.CountRequestsByMonthParams{
+		OrgID: v.OrgID,
+	}
+	if startDate != nil {
+		params.StartDate = sql.NullTime{Time: *startDate, Valid: true}
+	}
+	if endDate != nil {
+		params.EndDate = sql.NullTime{Time: *endDate, Valid: true}
+	}
+
+	row, err := q.CountRequestsByMonth(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+
+	var out []*model.CountRequestsByMonthRow
+	for _, r := range row {
+		out = append(out, &model.CountRequestsByMonthRow{
+			Month: r.Month,
+			Count: int(r.Count),
+		})
+	}
+	return out, nil
+}
+
+// CountRequestsByStatus is the resolver for the countRequestsByStatus field.
+func (r *queryResolver) CountRequestsByStatus(ctx context.Context) ([]*model.CountRequestsByStatusRow, error) {
+	v, err := viewerFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	q, err := r.queries()
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := q.CountRequestsByStatus(ctx, v.OrgID)
+	if err != nil {
+		return nil, err
+	}
+
+	var out []*model.CountRequestsByStatusRow
+	for _, r := range rows {
+		out = append(out, &model.CountRequestsByStatusRow{
+			Status: r.Status,
+			Count:  int(r.Count),
+		})
+	}
+	return out, nil
+}
+
+// DashboardSummary is the resolver for the dashboardSummary field.
+func (r *queryResolver) DashboardSummary(ctx context.Context) (*model.DashboardSummaryResult, error) {
+	v, err := viewerFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	q, err := r.queries()
+	if err != nil {
+		return nil, err
+	}
+
+	row, err := q.GetDashboardSummary(ctx, v.OrgID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.DashboardSummaryResult{
+		DraftCount:         int(row.DraftCount),
+		SubmittedCount:     int(row.SubmittedCount),
+		ApprovedCount:      int(row.ApprovedCount),
+		RejectedCount:      int(row.RejectedCount),
+		TotalCount:         int(row.TotalCount),
+		AvgApprovalSeconds: row.AvgApprovalSeconds,
+	}, nil
+}
+
 // Submitter is the resolver for the submitter field.
 func (r *requestResolver) Submitter(ctx context.Context, obj *model.Request) (*model.User, error) {
 	// created_by_user_id がnilの場合はnilを返す
