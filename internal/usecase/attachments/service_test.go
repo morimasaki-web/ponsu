@@ -13,7 +13,7 @@ import (
 
 // mockStorage implements the Storage interface for testing
 type mockStorage struct {
-	generatePresignedURLFunc func(ctx context.Context, key string, expiration time.Duration) (string, error)
+	generatePresignedURLFunc func(ctx context.Context, key, filename string, expiration time.Duration) (string, error)
 }
 
 func (m *mockStorage) Put(ctx context.Context, key string, r io.Reader) (PutResult, error) {
@@ -28,9 +28,9 @@ func (m *mockStorage) Delete(ctx context.Context, key string) error {
 	return nil
 }
 
-func (m *mockStorage) GeneratePresignedURL(ctx context.Context, key string, expiration time.Duration) (string, error) {
+func (m *mockStorage) GeneratePresignedURL(ctx context.Context, key, filename string, expiration time.Duration) (string, error) {
 	if m.generatePresignedURLFunc != nil {
-		return m.generatePresignedURLFunc(ctx, key, expiration)
+		return m.generatePresignedURLFunc(ctx, key, filename, expiration)
 	}
 	return "", nil
 }
