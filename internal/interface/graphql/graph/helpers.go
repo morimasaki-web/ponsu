@@ -2,9 +2,11 @@ package graph
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/morimasaki-web/ponsu/internal/infrastructure/dbgen"
@@ -72,6 +74,13 @@ func ptrStringFromNullUUID(nu uuid.NullUUID) *string {
 	}
 	s := nu.UUID.String()
 	return &s
+}
+
+func nullTimeFromPtr(t *time.Time) sql.NullTime {
+	if t == nil {
+		return sql.NullTime{Valid: false}
+	}
+	return sql.NullTime{Time: *t, Valid: true}
 }
 
 func mapRequestRow(row dbgen.Request) *model.Request {

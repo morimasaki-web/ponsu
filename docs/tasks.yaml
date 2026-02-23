@@ -897,7 +897,7 @@ tasks:
 
   - id: LEARN-027
     title: "監査: 操作ログの検索・ページング機能実装"
-    status: todo
+    status: done
     priority: medium
     branch: "enhance/027-audit-query-api"
     depends_on: [LEARN-018]
@@ -919,6 +919,7 @@ tasks:
       - "フィルタとページングが動作する"
       - "GraphQL で監査ログを取得できる"
       - "go test が通る"
+  
   - id: LEARN-027F
     title: "Frontend: 監査ログ閲覧画面の実装"
     status: todo

@@ -112,6 +112,7 @@ type ComplexityRoot struct {
 
 	Query struct {
 		AttachmentDownloadURL func(childComplexity int, requestID string, attachmentID string) int
+		AuditLogs             func(childComplexity int, requestID *string, actorUserID *string, action *string, occurredAtStart *time.Time, occurredAtEnd *time.Time, limit *int, offset *int) int
 		AvgTimeToApproval     func(childComplexity int) int
 		Comments              func(childComplexity int, requestID string) int
 		CountRequestsByMonth  func(childComplexity int, startDate *time.Time, endDate *time.Time) int
@@ -201,6 +202,7 @@ type QueryResolver interface {
 	CountRequestsByStatus(ctx context.Context) ([]*model.CountRequestsByStatusRow, error)
 	DashboardSummary(ctx context.Context) (*model.DashboardSummaryResult, error)
 	AttachmentDownloadURL(ctx context.Context, requestID string, attachmentID string) (string, error)
+	AuditLogs(ctx context.Context, requestID *string, actorUserID *string, action *string, occurredAtStart *time.Time, occurredAtEnd *time.Time, limit *int, offset *int) ([]*model.RequestAudit, error)
 }
 type RequestResolver interface {
 	Submitter(ctx context.Context, obj *model.Request) (*model.User, error)
@@ -519,6 +521,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.AttachmentDownloadURL(childComplexity, args["requestID"].(string), args["attachmentID"].(string)), true
+	case "Query.auditLogs":
+		if e.complexity.Query.AuditLogs == nil {
+			break
+		}
+
+		args, err := ec.field_Query_auditLogs_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.AuditLogs(childComplexity, args["requestID"].(*string), args["actorUserID"].(*string), args["action"].(*string), args["occurredAtStart"].(*time.Time), args["occurredAtEnd"].(*time.Time), args["limit"].(*int), args["offset"].(*int)), true
 	case "Query.avgTimeToApproval":
 		if e.complexity.Query.AvgTimeToApproval == nil {
 			break
@@ -988,6 +1001,17 @@ type Query {
 
   "Get a presigned download URL for an attachment. URL expires in 15 minutes."
   attachmentDownloadURL(requestID: ID!, attachmentID: ID!): String!
+
+  "Search audit logs with optional filters (admin/approver only)."
+  auditLogs(
+    requestID: ID
+    actorUserID: ID
+    action: String
+    occurredAtStart: Time
+    occurredAtEnd: Time
+    limit: Int = 50
+    offset: Int = 0
+  ): [RequestAudit!]!
 }
 
 type Me {
@@ -1274,6 +1298,47 @@ func (ec *executionContext) field_Query_attachmentDownloadURL_args(ctx context.C
 		return nil, err
 	}
 	args["attachmentID"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_auditLogs_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "requestID", ec.unmarshalOID2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["requestID"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "actorUserID", ec.unmarshalOID2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["actorUserID"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "action", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["action"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "occurredAtStart", ec.unmarshalOTime2ᚖtimeᚐTime)
+	if err != nil {
+		return nil, err
+	}
+	args["occurredAtStart"] = arg3
+	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "occurredAtEnd", ec.unmarshalOTime2ᚖtimeᚐTime)
+	if err != nil {
+		return nil, err
+	}
+	args["occurredAtEnd"] = arg4
+	arg5, err := graphql.ProcessArgField(ctx, rawArgs, "limit", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["limit"] = arg5
+	arg6, err := graphql.ProcessArgField(ctx, rawArgs, "offset", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["offset"] = arg6
 	return args, nil
 }
 
@@ -3461,6 +3526,59 @@ func (ec *executionContext) fieldContext_Query_attachmentDownloadURL(ctx context
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_attachmentDownloadURL_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_auditLogs(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_auditLogs,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().AuditLogs(ctx, fc.Args["requestID"].(*string), fc.Args["actorUserID"].(*string), fc.Args["action"].(*string), fc.Args["occurredAtStart"].(*time.Time), fc.Args["occurredAtEnd"].(*time.Time), fc.Args["limit"].(*int), fc.Args["offset"].(*int))
+		},
+		nil,
+		ec.marshalNRequestAudit2ᚕᚖgithubᚗcomᚋmorimasakiᚑwebᚋponsuᚋinternalᚋinterfaceᚋgraphqlᚋgraphᚋmodelᚐRequestAuditᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_auditLogs(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_RequestAudit_id(ctx, field)
+			case "actorUserID":
+				return ec.fieldContext_RequestAudit_actorUserID(ctx, field)
+			case "action":
+				return ec.fieldContext_RequestAudit_action(ctx, field)
+			case "data":
+				return ec.fieldContext_RequestAudit_data(ctx, field)
+			case "occurredAt":
+				return ec.fieldContext_RequestAudit_occurredAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RequestAudit", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_auditLogs_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -6870,6 +6988,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_attachmentDownloadURL(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "auditLogs":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_auditLogs(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}

@@ -707,6 +707,83 @@ func (r *queryResolver) AttachmentDownloadURL(ctx context.Context, requestID str
 	return url, nil
 }
 
+// AuditLogs is the resolver for the auditLogs field.
+func (r *queryResolver) AuditLogs(ctx context.Context, requestID *string, actorUserID *string, action *string, occurredAtStart *time.Time, occurredAtEnd *time.Time, limit *int, offset *int) ([]*model.RequestAudit, error) {
+	v, err := viewerFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	q, err := r.queries()
+	if err != nil {
+		return nil, err
+	}
+
+	var reqID, actorID uuid.NullUUID
+	if requestID != nil {
+		id, err := uuid.Parse(*requestID)
+		if err != nil {
+			return nil, err
+		}
+		reqID = uuid.NullUUID{UUID: id, Valid: true}
+	}
+	if actorUserID != nil {
+		id, err := uuid.Parse(*actorUserID)
+		if err != nil {
+			return nil, err
+		}
+		actorID = uuid.NullUUID{UUID: id, Valid: true}
+	}
+
+	limitCount := int32(50)
+	if limit != nil {
+		limitCount = int32(*limit)
+	}
+	offsetCount := int32(0)
+	if offset != nil {
+		offsetCount = int32(*offset)
+	}
+
+	var actionParam sql.NullString
+	if action != nil {
+		actionParam = sql.NullString{String: *action, Valid: true}
+	}
+
+	rows, err := q.SearchAuditLogs(ctx, dbgen.SearchAuditLogsParams{
+		OrgID:           v.OrgID,
+		RequestID:       reqID,
+		ActorUserID:     actorID,
+		Action:          actionParam,
+		OccurredAtStart: nullTimeFromPtr(occurredAtStart),
+		OccurredAtEnd:   nullTimeFromPtr(occurredAtEnd),
+		LimitCount:      limitCount,
+		OffsetCount:     offsetCount,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var result []*model.RequestAudit
+	for _, row := range rows {
+		var data map[string]any
+		if len(row.Data) == 0 {
+			data = map[string]any{}
+		} else {
+			if err := json.Unmarshal(row.Data, &data); err != nil {
+				return nil, errors.New("invalid audit data")
+			}
+		}
+
+		result = append(result, &model.RequestAudit{
+			ID:          row.ID.String(),
+			ActorUserID: ptrStringFromNullUUID(row.ActorUserID),
+			Action:      row.Action,
+			Data:        data,
+			OccurredAt:  row.OccurredAt,
+		})
+	}
+	return result, nil
+}
+
 // Submitter is the resolver for the submitter field.
 func (r *requestResolver) Submitter(ctx context.Context, obj *model.Request) (*model.User, error) {
 	// created_by_user_id がnilの場合はnilを返す

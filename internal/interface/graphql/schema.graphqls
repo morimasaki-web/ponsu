@@ -45,6 +45,17 @@ type Query {
 
   "Get a presigned download URL for an attachment. URL expires in 15 minutes."
   attachmentDownloadURL(requestID: ID!, attachmentID: ID!): String!
+
+  "Search audit logs with optional filters (admin/approver only)."
+  auditLogs(
+    requestID: ID
+    actorUserID: ID
+    action: String
+    occurredAtStart: Time
+    occurredAtEnd: Time
+    limit: Int = 50
+    offset: Int = 0
+  ): [RequestAudit!]!
 }
 
 type Me {
