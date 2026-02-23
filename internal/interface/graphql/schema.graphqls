@@ -2,6 +2,7 @@
 
 scalar Time
 scalar JSON
+scalar Upload
 
 schema {
   query: Query
@@ -74,6 +75,9 @@ type Mutation {
 
   "Create a workflow template (admin only)."
   createWorkflowTemplate(name: String!, description: String!, definition: JSON!): WorkflowTemplate!
+  
+  "Upload an attachment to a request"
+  uploadAttachment(requestID: ID!, file: Upload!): Attachment!
 }
 
 type Request {
@@ -91,6 +95,17 @@ type Request {
 
   steps: [RequestStep!]!
   auditTrail: [RequestAudit!]!
+  attachments: [Attachment!]!
+}
+
+type Attachment {
+  id: ID!
+  requestID: ID!
+  filename: String!
+  contentType: String!
+  size: Int!
+  uploadedByUserID: ID
+  createdAt: Time!
 }
 
 type RequestStep {

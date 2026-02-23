@@ -844,7 +844,7 @@ tasks:
 
   - id: LEARN-025F
     title: "Frontend: 添付ファイルダウンロードボタンの実装"
-    status: todo
+    status: done
     priority: high
     branch: "enhance/025f-download-button"
     depends_on: [LEARN-025]

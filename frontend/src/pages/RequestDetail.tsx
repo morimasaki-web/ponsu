@@ -25,6 +25,8 @@ import {
 } from '../gql/graphql'
 import { CommentList } from '../components/CommentList'
 import { CommentForm } from '../components/CommentForm'
+import AttachmentUploadForm from '../components/AttachmentUploadForm'
+import AttachmentDownloadButton from '../components/AttachmentDownloadButton'
 
 function canSubmit(status: RequestStatus) {
   return status === 'draft'
@@ -82,6 +84,7 @@ export default function RequestDetail() {
     query: RequestDocument,
     variables: { id },
     pause: appMode === 'demo' || !id,
+    requestPolicy: 'network-only',  // キャッシュを完全に無効化
   })
 
   const [{ data: meData, fetching: meFetching, error: meError }] = useQuery({
@@ -389,6 +392,56 @@ export default function RequestDetail() {
             </div>
           )}
         </section>
+                
+        {request && (
+          <section className="card">
+            <h2>添付ファイル</h2>
+            
+            {request.attachments.length > 0 ? (
+              <div className="tableWrap">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>ファイル名</th>
+                      <th>サイズ</th>
+                      <th>アップロード日時</th>
+                      <th>操作</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {request.attachments.map((att) => (
+                      <tr key={att.id}>
+                        <td>{att.filename}</td>
+                        <td>{(att.size / 1024).toFixed(1)} KB</td>
+                        <td className="mono">
+                          {new Date(att.createdAt).toLocaleString()}
+                        </td>
+                        <td>
+                          <AttachmentDownloadButton
+                            requestID={request.id}
+                            attachmentID={att.id}
+                            filename={att.filename}
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="note">添付ファイルはありません</p>
+            )}
+            
+            <AttachmentUploadForm
+              requestID={request.id}
+              onSuccess={() => {
+                setTimeout(() => {
+                  reexecuteRequest({ requestPolicy: 'network-only' })
+                }, 200)
+              }}
+            />
+          </section>
+        )}
       
         <section className="card">
           <h2>コメント</h2>

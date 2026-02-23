@@ -212,7 +212,7 @@ func (s Service) GetDownloadURL(
 	}
 
 	// 署名付きURL生成
-	url, err := s.Storage.GeneratePresignedURL(ctx, meta.StorageKey, expiration)
+	url, err := s.Storage.GeneratePresignedURL(ctx, meta.StorageKey, meta.Filename, expiration)
 	if err != nil {
 		return "", fmt.Errorf("generate presigned url: %w", err)
 	}

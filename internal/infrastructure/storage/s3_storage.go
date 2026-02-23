@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -70,19 +71,22 @@ func (s *S3Storage) Put(ctx context.Context, key string, r io.Reader) (attachmen
 		return attachmentsuc.PutResult{}, errors.New("storage key is empty")
 	}
 
-	h := sha256.New()
-	cr := &countingReader{r: io.TeeReader(r, h)}
+	data, err := io.ReadAll(r)
+	if err != nil {
+		return attachmentsuc.PutResult{}, err
+	}
+	h := sha256.Sum256(data)
 
-	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{
+	_, err = s.client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(s.bucket),
 		Key:    aws.String(key),
-		Body:   cr,
+		Body:   bytes.NewReader(data),
 	})
 	if err != nil {
 		return attachmentsuc.PutResult{}, err
 	}
 
-	return attachmentsuc.PutResult{SizeBytes: cr.n, SHA256Hex: hex.EncodeToString(h.Sum(nil))}, nil
+	return attachmentsuc.PutResult{SizeBytes: int64(len(data)), SHA256Hex: hex.EncodeToString(h[:])}, nil
 }
 
 func (s *S3Storage) Open(ctx context.Context, key string) (io.ReadCloser, error) {
@@ -110,29 +114,22 @@ func (s *S3Storage) Delete(ctx context.Context, key string) error {
 	return err
 }
 
-func (s *S3Storage) GeneratePresignedURL(ctx context.Context, key string, expiration time.Duration) (string, error) {
+func (s *S3Storage) GeneratePresignedURL(ctx context.Context, key string, filename string, expiration time.Duration) (string, error) {
 	if strings.TrimSpace(key) == "" {
 		return "", errors.New("storage key is empty")
 	}
 
+	// Content-Dispositionヘッダーを設定してダウンロード時のファイル名を指定
+	contentDisposition := fmt.Sprintf("attachment; filename=\"%s\"", filename)
+
 	presignClient := s3.NewPresignClient(s.client)
 	out, err := presignClient.PresignGetObject(ctx, &s3.GetObjectInput{
-		Bucket: aws.String(s.bucket),
-		Key:    aws.String(key),
+		Bucket:                     aws.String(s.bucket),
+		Key:                        aws.String(key),
+		ResponseContentDisposition: aws.String(contentDisposition),
 	}, s3.WithPresignExpires(expiration))
 	if err != nil {
 		return "", fmt.Errorf("generate presigned url: %w", err)
 	}
 	return out.URL, nil
-}
-
-type countingReader struct {
-	r io.Reader
-	n int64
-}
-
-func (c *countingReader) Read(p []byte) (int, error) {
-	n, err := c.r.Read(p)
-	c.n += int64(n)
-	return n, err
 }

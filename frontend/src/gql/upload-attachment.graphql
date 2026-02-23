@@ -1,0 +1,10 @@
+mutation UploadAttachment($requestID: ID!, $file: Upload!) {
+  uploadAttachment(requestID: $requestID, file: $file) {
+    id
+    requestID
+    filename
+    contentType
+    size
+    createdAt
+  }
+}

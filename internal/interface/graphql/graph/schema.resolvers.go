@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/99designs/gqlgen/graphql"
 	"github.com/google/uuid"
 	"github.com/morimasaki-web/ponsu/internal/infrastructure/dbgen"
 	"github.com/morimasaki-web/ponsu/internal/interface/graphql/graph/generated"
@@ -275,6 +276,48 @@ func (r *mutationResolver) CreateWorkflowTemplate(ctx context.Context, name stri
 		return nil, err
 	}
 	return mapWorkflowTemplateRow(row)
+}
+
+// UploadAttachment is the resolver for the uploadAttachment field.
+func (r *mutationResolver) UploadAttachment(ctx context.Context, requestID string, file graphql.Upload) (*model.Attachment, error) {
+	v, err := viewerFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	reqID, err := uuid.Parse(requestID)
+	if err != nil {
+		return nil, err
+	}
+
+	svc := attachmentsuc.Service{DB: r.DB, Storage: r.Storage}
+	row, err := svc.Upload(
+		ctx,
+		v.OrgID,
+		v.UserID,
+		reqID,
+		file.Filename,
+		file.ContentType,
+		file.File,
+	)
+	if err != nil {
+		if errors.Is(err, attachmentsuc.ErrForbidden) {
+			return nil, fmt.Errorf("forbidden")
+		}
+		if errors.Is(err, attachmentsuc.ErrNotFound) {
+			return nil, fmt.Errorf("request not found")
+		}
+		return nil, err
+	}
+
+	return &model.Attachment{
+		ID:               row.ID.String(),
+		RequestID:        row.RequestID.String(),
+		Filename:         row.Filename,
+		ContentType:      row.ContentType,
+		Size:             int(row.SizeBytes),
+		UploadedByUserID: ptrStringFromNullUUID(row.UploadedByUserID),
+		CreatedAt:        row.CreatedAt,
+	}, nil
 }
 
 // Ping is the resolver for the ping field.
@@ -644,6 +687,14 @@ func (r *queryResolver) AttachmentDownloadURL(ctx context.Context, requestID str
 
 	url, err := svc.GetDownloadURL(ctx, v.OrgID, v.UserID, reqID, attID, 15*time.Minute)
 	if err != nil {
+		if errors.Is(err, attachmentsuc.ErrPresignedURLUnsupported) {
+			return fmt.Sprintf(
+				"/org/%s/requests/%s/attachments/%s",
+				v.OrgID.String(),
+				reqID.String(),
+				attID.String(),
+			), nil
+		}
 		if errors.Is(err, attachmentsuc.ErrForbidden) {
 			return "", fmt.Errorf("forbidden: you don't have permission to download this attachment")
 		}
@@ -687,6 +738,41 @@ func (r *requestResolver) Submitter(ctx context.Context, obj *model.Request) (*m
 		Name:   &user.Name,
 		Email:  &user.Email,
 	}, nil
+}
+
+// Attachments is the resolver for the attachments field.
+func (r *requestResolver) Attachments(ctx context.Context, obj *model.Request) ([]*model.Attachment, error) {
+	v, err := viewerFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	reqID, err := uuid.Parse(obj.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	svc := attachmentsuc.Service{DB: r.DB, Storage: r.Storage}
+	rows, err := svc.ListByRequest(ctx, v.OrgID, v.UserID, reqID)
+	if err != nil {
+		if errors.Is(err, attachmentsuc.ErrForbidden) {
+			return nil, fmt.Errorf("forbidden")
+		}
+		return nil, err
+	}
+
+	result := make([]*model.Attachment, len(rows))
+	for i, row := range rows {
+		result[i] = &model.Attachment{
+			ID:               row.ID.String(),
+			RequestID:        row.RequestID.String(),
+			Filename:         row.Filename,
+			ContentType:      row.ContentType,
+			Size:             int(row.SizeBytes),
+			UploadedByUserID: ptrStringFromNullUUID(row.UploadedByUserID),
+			CreatedAt:        row.CreatedAt,
+		}
+	}
+	return result, nil
 }
 
 // Mutation returns generated.MutationResolver implementation.

@@ -28,11 +28,6 @@ func NewMux(cfg config.Config, logger *slog.Logger, db *sql.DB) http.Handler {
 	auth := NewOIDCAuth(cfg, logger, db)
 	requestsNotifier := notify.NewSlackNotifier(cfg.SlackWebhookURL)
 	publicBaseURL := cfg.PublicBaseURLForLinks()
-	gqlServer := gqlapi.NewServer(db, requestsNotifier, publicBaseURL)
-	playgroundHandler := gqlapi.PlaygroundHandler("/graphql")
-
-	requestsHandler := NewRequestsHandler(cfg, db, requestsNotifier)
-	adminTemplatesHandler := NewAdminTemplatesHandler(db)
 
 	// MVP-070/MVP-071: Attachments (storage backend selectable)
 	var attachmentsStorage attachmentsuc.Storage
@@ -56,6 +51,12 @@ func NewMux(cfg config.Config, logger *slog.Logger, db *sql.DB) http.Handler {
 		}
 	}
 	attachmentsService := attachmentsuc.Service{DB: db, Storage: attachmentsStorage}
+
+	gqlServer := gqlapi.NewServer(db, requestsNotifier, publicBaseURL, attachmentsStorage)
+	playgroundHandler := gqlapi.PlaygroundHandler("/graphql")
+
+	requestsHandler := NewRequestsHandler(cfg, db, requestsNotifier)
+	adminTemplatesHandler := NewAdminTemplatesHandler(db)
 
 	mux := http.NewServeMux()
 

@@ -1,0 +1,3 @@
+﻿query AttachmentDownloadURL($requestID: ID!, $attachmentID: ID!) {
+  attachmentDownloadURL(requestID: $requestID, attachmentID: $attachmentID)
+}

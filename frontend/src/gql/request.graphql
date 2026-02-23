@@ -26,5 +26,15 @@ query Request($id: ID!) {
       data
       occurredAt
     }
+    
+    attachments {
+      id
+      requestID
+      filename
+      contentType
+      size
+      uploadedByUserID
+      createdAt
+    }
   }
 }

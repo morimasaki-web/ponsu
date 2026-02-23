@@ -89,11 +89,12 @@ func (s *LocalStorage) Delete(ctx context.Context, key string) error {
 	return nil
 }
 
-func (s *LocalStorage) GeneratePresignedURL(ctx context.Context, key string, expiration time.Duration) (string, error) {
+func (s *LocalStorage) GeneratePresignedURL(ctx context.Context, key string, filename string, expiration time.Duration) (string, error) {
 	_ = ctx
 	_ = key
+	_ = filename
 	_ = expiration
-	return "", errors.New("local storage does not support presigned URLs")
+	return "", attachmentsuc.ErrPresignedURLUnsupported
 }
 
 func safeJoin(baseDir, key string) (string, error) {

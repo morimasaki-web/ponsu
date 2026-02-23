@@ -8,12 +8,15 @@ export function createGraphqlClient(): Client {
 
   return createClient({
     url,
-    exchanges: [cacheExchange, fetchExchange],
+    exchanges: [
+      cacheExchange,
+      fetchExchange,
+    ],
     // OIDCログインはCookieベース想定のため、同一オリジン or dev-proxy 経由で cookie を送る。
     fetchOptions: () => ({
       credentials: 'include',
       headers: {
-        'content-type': 'application/json',
+        // content-typeは削除：urqlがファイルアップロード時に自動的にmultipart/form-dataを設定
         'x-ponsu-app-mode': appMode,
       },
     }),

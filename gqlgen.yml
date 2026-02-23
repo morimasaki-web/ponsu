@@ -28,3 +28,7 @@ models:
     fields:
       submitter:
         resolver: true
+      attachments:
+        resolver: true
+  Upload:
+    model: github.com/99designs/gqlgen/graphql.Upload

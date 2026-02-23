@@ -66,6 +66,14 @@ func mapNullUUID(u uuid.NullUUID) *string {
 	return &s
 }
 
+func ptrStringFromNullUUID(nu uuid.NullUUID) *string {
+	if !nu.Valid {
+		return nil
+	}
+	s := nu.UUID.String()
+	return &s
+}
+
 func mapRequestRow(row dbgen.Request) *model.Request {
 	out := &model.Request{
 		ID:              row.ID.String(),

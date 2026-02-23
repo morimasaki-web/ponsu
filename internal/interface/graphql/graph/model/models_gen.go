@@ -6,6 +6,16 @@ import (
 	"time"
 )
 
+type Attachment struct {
+	ID               string    `json:"id"`
+	RequestID        string    `json:"requestID"`
+	Filename         string    `json:"filename"`
+	ContentType      string    `json:"contentType"`
+	Size             int       `json:"size"`
+	UploadedByUserID *string   `json:"uploadedByUserID,omitempty"`
+	CreatedAt        time.Time `json:"createdAt"`
+}
+
 type AvgTimeToApprovalResult struct {
 	AvgSeconds  float64 `json:"avgSeconds"`
 	SampleCount int     `json:"sampleCount"`
@@ -66,6 +76,7 @@ type Request struct {
 	DecidedAt       *time.Time      `json:"decidedAt,omitempty"`
 	Steps           []*RequestStep  `json:"steps"`
 	AuditTrail      []*RequestAudit `json:"auditTrail"`
+	Attachments     []*Attachment   `json:"attachments"`
 }
 
 type RequestAudit struct {
