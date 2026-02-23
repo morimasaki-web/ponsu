@@ -16,6 +16,7 @@ type Config struct {
 	Port int
 
 	PublicBaseURL   string
+	FrontendURL     string
 	SlackWebhookURL string
 
 	AttachmentsStorage          string
@@ -55,6 +56,7 @@ func LoadFromEnv() (Config, error) {
 	}
 
 	publicBaseURL := getEnv("PONSU_PUBLIC_BASE_URL", "")
+	frontendURL := getEnv("PONSU_FRONTEND_URL", "http://127.0.0.1:5173")
 	slackWebhookURL := getEnv("PONSU_SLACK_WEBHOOK_URL", "")
 
 	attachmentsStorage := getEnv("PONSU_ATTACHMENTS_STORAGE", "local")
@@ -103,6 +105,7 @@ func LoadFromEnv() (Config, error) {
 		Port: port,
 
 		PublicBaseURL:   publicBaseURL,
+		FrontendURL:     frontendURL,
 		SlackWebhookURL: slackWebhookURL,
 
 		AttachmentsStorage:          attachmentsStorage,

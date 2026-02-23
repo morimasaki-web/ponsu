@@ -270,7 +270,12 @@ func (a *OIDCAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	a.clearStateCookie(w, r)
-	http.Redirect(w, r, "/", http.StatusFound)
+	// SPA にリダイレクト（デフォルトは http://127.0.0.1:5173）
+	redirectTo := a.cfg.FrontendURL
+	if redirectTo == "" {
+		redirectTo = "/"
+	}
+	http.Redirect(w, r, redirectTo, http.StatusFound)
 }
 
 func isEmailAllowed(allowedList string, email string) bool {
