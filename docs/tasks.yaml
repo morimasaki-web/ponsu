@@ -922,7 +922,7 @@ tasks:
   
   - id: LEARN-027F
     title: "Frontend: 監査ログ閲覧画面の実装"
-    status: todo
+    status: done
     priority: medium
     branch: "enhance/027f-audit-log-ui"
     depends_on: [LEARN-027]
@@ -945,6 +945,7 @@ tasks:
       - "ページネーションが動作する"
       - "フィルターで絞り込める"
     note: "テストは LEARN-037 で環境構築後に追加"
+    
   - id: LEARN-028
     title: "信頼性: 重複リクエスト防止機能のテスト追加"
     status: todo

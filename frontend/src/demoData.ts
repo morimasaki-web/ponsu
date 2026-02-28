@@ -21,6 +21,15 @@ export type DemoComment = {
   createdAt: string
 }
 
+export type DemoAuditLog = {
+  id: string
+  requestID?: string | null
+  actorUserID: string | null
+  action: string
+  data: Record<string, any>
+  occurredAt: string
+}
+
 export type DemoRequest = {
   id: string
   title: string
@@ -158,5 +167,72 @@ export const demoCommentsSeed: DemoComment[] = [
     userID: 'approver-demo',
     content: '承認しました。導入を進めてください。',
     createdAt: '2026-01-06T13:01:00.000Z',
+  },
+]
+
+export const demoAuditLogsSeed: DemoAuditLog[] = [
+  {
+    id: 'AUDIT-0001',
+    requestID: 'REQ-0001',
+    actorUserID: 'user-demo-001',
+    action: 'create',
+    data: { title: '備品購入申請（モニター）' },
+    occurredAt: '2026-01-10T09:12:00.000Z',
+  },
+  {
+    id: 'AUDIT-0002',
+    requestID: 'REQ-0001',
+    actorUserID: 'user-demo-001',
+    action: 'submit',
+    data: {},
+    occurredAt: '2026-01-11T10:04:00.000Z',
+  },
+  {
+    id: 'AUDIT-0003',
+    requestID: 'REQ-0002',
+    actorUserID: 'user-demo-001',
+    action: 'create',
+    data: { title: '出張申請（大阪）' },
+    occurredAt: '2026-01-08T03:30:00.000Z',
+  },
+  {
+    id: 'AUDIT-0004',
+    requestID: 'REQ-0002',
+    actorUserID: 'user-demo-001',
+    action: 'submit',
+    data: {},
+    occurredAt: '2026-01-08T04:15:00.000Z',
+  },
+  {
+    id: 'AUDIT-0005',
+    requestID: 'REQ-0002',
+    actorUserID: 'approver-demo',
+    action: 'return',
+    data: { reason: '旅程と見積りの添付をお願いします' },
+    occurredAt: '2026-01-09T08:20:00.000Z',
+  },
+  {
+    id: 'AUDIT-0006',
+    requestID: 'REQ-0003',
+    actorUserID: 'user-demo-001',
+    action: 'create',
+    data: { title: '稟議申請（SaaS導入）' },
+    occurredAt: '2026-01-05T12:00:00.000Z',
+  },
+  {
+    id: 'AUDIT-0007',
+    requestID: 'REQ-0003',
+    actorUserID: 'user-demo-001',
+    action: 'submit',
+    data: {},
+    occurredAt: '2026-01-05T12:40:00.000Z',
+  },
+  {
+    id: 'AUDIT-0008',
+    requestID: 'REQ-0003',
+    actorUserID: 'approver-demo',
+    action: 'approve',
+    data: {},
+    occurredAt: '2026-01-06T13:00:00.000Z',
   },
 ]

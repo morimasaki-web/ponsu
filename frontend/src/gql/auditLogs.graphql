@@ -1,0 +1,9 @@
+query AuditLogs($requestID: ID, $actorUserID: ID, $action: String, $occurredAtStart: Time, $occurredAtEnd: Time, $limit: Int = 50, $offset: Int = 0) {
+  auditLogs(requestID: $requestID, actorUserID: $actorUserID, action: $action, occurredAtStart: $occurredAtStart, occurredAtEnd: $occurredAtEnd, limit: $limit, offset: $offset) {
+    id
+    actorUserID
+    action
+    data
+    occurredAt
+  }
+}

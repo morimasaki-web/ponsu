@@ -480,6 +480,11 @@ export default function RequestDetail() {
                   </li>
                 ))}
             </ol>
+            <div style={{ marginTop: '16px', textAlign: 'center' }}>
+              <Link to={`/audit?requestID=${id}`} className="button button--secondary">
+                この申請の全監査ログを表示 →
+              </Link>
+            </div>
           </section>
         )}
       </div>
@@ -605,6 +610,11 @@ export default function RequestDetail() {
             </li>
           ))}
         </ol>
+        <div style={{ marginTop: '16px', textAlign: 'center' }}>
+          <Link to={`/audit?requestID=${id}`} className="button button--secondary">
+            この申請の全監査ログを表示 →
+          </Link>
+        </div>
       </section>
     </div>
   )

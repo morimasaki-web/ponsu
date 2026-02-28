@@ -4,6 +4,7 @@ import { appMode, fetchMe, type Me } from './graphql'
 import { createGraphqlClient } from './gql/client'
 import { applyTheme, getStoredTheme, type ThemeMode } from './theme'
 import About from './pages/About'
+import AuditLog from './pages/AuditLog'
 import Dashboard from './pages/Dashboard'
 import RequestDetail from './pages/RequestDetail'
 import RequestNew from './pages/RequestNew'
@@ -131,6 +132,9 @@ export default function App() {
                 <NavLink to="/requests" className={navLinkClassName}>
                   Requests
                 </NavLink>
+                <NavLink to="/audit" className={navLinkClassName}>
+                  Audit
+                </NavLink>
                 <NavLink to="/about" className={navLinkClassName}>
                   Guide
                 </NavLink>
@@ -176,6 +180,7 @@ export default function App() {
             <Route path="/requests" element={<RequestsList />} />
             <Route path="/requests/new" element={<RequestNew />} />
             <Route path="/requests/:id" element={<RequestDetail />} />
+            <Route path="/audit" element={<AuditLog />} />
             <Route path="/about" element={<About onResetDemo={resetDemo} />} />
           </Routes>
         </div>
