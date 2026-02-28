@@ -948,7 +948,7 @@ tasks:
     
   - id: LEARN-028
     title: "信頼性: 重複リクエスト防止機能のテスト追加"
-    status: todo
+    status: done
     priority: medium
     branch: "enhance/028-idempotency-test"
     depends_on: []

@@ -25,6 +25,17 @@ type EventStore struct {
 	GlobalPosition int64           `json:"global_position"`
 }
 
+type Idempotency struct {
+	OrgID          uuid.UUID `json:"org_id"`
+	ActorUserID    uuid.UUID `json:"actor_user_id"`
+	Action         string    `json:"action"`
+	IdempotencyKey string    `json:"idempotency_key"`
+	RequestHash    string    `json:"request_hash"`
+	StatusCode     int32     `json:"status_code"`
+	ResponseBody   string    `json:"response_body"`
+	CreatedAt      time.Time `json:"created_at"`
+}
+
 type Membership struct {
 	OrgID     uuid.UUID `json:"org_id"`
 	UserID    uuid.UUID `json:"user_id"`

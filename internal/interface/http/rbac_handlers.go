@@ -3,7 +3,9 @@
 package http
 
 import (
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -214,6 +216,57 @@ func (a *RequestsHandler) HandleRequestsCreate(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	q := dbgen.New(a.db)
+	idempotencyKey := strings.TrimSpace(r.Header.Get("Idempotency-Key"))
+	requestHash := sha256Hash(title + "\n" + tplIDStr)
+
+	// 同一ユーザによる同一内容のリクエストが既に処理されていないか確認し、重複していれば既存のレスポンスを返す。
+	if idempotencyKey != "" {
+		rowsAffected, err := q.InsertIdempotencyIfNotExists(r.Context(), dbgen.InsertIdempotencyIfNotExistsParams{
+			OrgID:          orgID,
+			ActorUserID:    actorUserID,
+			Action:         "create_request",
+			IdempotencyKey: idempotencyKey,
+			RequestHash:    requestHash,
+			StatusCode:     0,
+			ResponseBody:   "",
+		})
+		if err != nil {
+			writeInternalError(w, r, nil, err)
+			return
+		}
+
+		if rowsAffected == 0 {
+			idemRow, err := q.GetIdempotencyByKey(r.Context(), dbgen.GetIdempotencyByKeyParams{
+				OrgID:          orgID,
+				ActorUserID:    actorUserID,
+				Action:         "create_request",
+				IdempotencyKey: idempotencyKey,
+			})
+			if err != nil {
+				if errors.Is(err, sql.ErrNoRows) {
+					http.Error(w, "idempotency conflict", http.StatusConflict)
+					return
+				}
+				writeInternalError(w, r, nil, err)
+				return
+			}
+
+			if idemRow.RequestHash != requestHash {
+				http.Error(w, "idempotency key reused with different request body", http.StatusConflict)
+				return
+			}
+
+			if idemRow.ResponseBody != "" && idemRow.StatusCode == int32(http.StatusSeeOther) {
+				http.Redirect(w, r, idemRow.ResponseBody, http.StatusSeeOther)
+				return
+			}
+
+			http.Error(w, "idempotency key already in progress", http.StatusConflict)
+			return
+		}
+	}
+
 	svc := requestsuc.Service{DB: a.db, Notifier: a.requestsNotifier, PublicBaseURL: a.cfg.PublicBaseURLForLinks(), ActorDisplay: actorDisplayFromSession(sess)}
 	requestID, err := svc.CreateRequestWithTemplate(r.Context(), orgID, actorUserID, title, workflowTemplateID)
 	if err != nil {
@@ -224,7 +277,20 @@ func (a *RequestsHandler) HandleRequestsCreate(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	http.Redirect(w, r, "/org/"+orgIDStr+"/requests/"+requestID.String(), http.StatusSeeOther)
+	redirectURL := "/org/" + orgIDStr + "/requests/" + requestID.String()
+	if idempotencyKey != "" {
+		_ = q.UpdateIdempotencyResponse(r.Context(), dbgen.UpdateIdempotencyResponseParams{
+			OrgID:          orgID,
+			ActorUserID:    actorUserID,
+			Action:         "create_request",
+			IdempotencyKey: idempotencyKey,
+			RequestHash:    requestHash,
+			StatusCode:     int32(http.StatusSeeOther),
+			ResponseBody:   redirectURL,
+		})
+	}
+
+	http.Redirect(w, r, redirectURL, http.StatusSeeOther)
 }
 
 func (a *RequestsHandler) HandleRequestsShow(w http.ResponseWriter, r *http.Request, sess sessionData) {
@@ -767,6 +833,11 @@ func uniqueKeepOrder(items []string) []string {
 		out = append(out, it)
 	}
 	return out
+}
+
+func sha256Hash(text string) string {
+	sum := sha256.Sum256([]byte(text))
+	return hex.EncodeToString(sum[:])
 }
 
 func buildWorkflowTemplateDefinitionJSONFromApprovalSteps(steps []approvalStep) (string, error) {
