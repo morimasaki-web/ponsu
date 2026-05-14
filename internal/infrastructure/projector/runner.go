@@ -59,7 +59,7 @@ func (r Runner) RunOnceTx(ctx context.Context, dbtx dbgen.DBTX, orgID uuid.UUID)
 		return 0, 0, errors.New("ProjectorName is required")
 	}
 	if r.Apply == nil {
-		return 0, 0, errors.New("Apply is required")
+		return 0, 0, errors.New("apply is required")
 	}
 
 	q := dbgen.New(dbtx)
@@ -119,7 +119,7 @@ func (r Runner) RunOnce(ctx context.Context, db *sql.DB, orgID uuid.UUID) (proce
 		return 0, errors.New("ProjectorName is required")
 	}
 	if r.Apply == nil {
-		return 0, errors.New("Apply is required")
+		return 0, errors.New("apply is required")
 	}
 
 	logger := r.loggerOrDefault()
