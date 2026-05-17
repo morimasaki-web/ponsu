@@ -61,41 +61,44 @@ func (n *SlackNotifier) Notify(ctx context.Context, in requestsuc.Notification) 
 }
 
 func formatSlackText(n requestsuc.Notification) string {
-	kind := "Request"
-	switch n.Kind {
-	case requestsuc.NotificationKindSubmitted:
-		kind = "Request submitted"
-	case requestsuc.NotificationKindApproved:
-		kind = "Request approved"
-	case requestsuc.NotificationKindRejected:
-		kind = "Request rejected"
-	}
-
 	title := strings.TrimSpace(n.RequestTitle)
 	if title == "" {
 		title = n.RequestID.String()
 	}
-
 	actor := strings.TrimSpace(n.Actor)
 	if actor == "" {
 		actor = "(unknown)"
 	}
 
+	templateBody := GetTemplate(nil, kindToEventType(n.Kind))
+	msg, err := RenderTemplate(templateBody, TemplateData{Title: title, SubmitterName: actor})
+	if err != nil {
+		msg = "通知: " + title
+	}
+
 	url := strings.TrimSpace(n.URL)
-	if url == "" {
-		url = "(no url)"
+	if url != "" {
+		link := url
+		if strings.HasPrefix(url, "http://") || strings.HasPrefix(url, "https://") {
+			link = "<" + url + "|Open request>"
+		}
+		msg += "\nURL: " + link
 	}
 
-	// Slack mrkdwn link: <url|label>
-	link := url
-	if strings.HasPrefix(url, "http://") || strings.HasPrefix(url, "https://") {
-		link = "<" + url + "|Open request>"
-	}
+	return msg
+}
 
-	return kind + "\n" +
-		"Title: " + title + "\n" +
-		"Actor: " + actor + "\n" +
-		"URL: " + link
+func kindToEventType(kind requestsuc.NotificationKind) string {
+	switch kind {
+	case requestsuc.NotificationKindSubmitted:
+		return "RequestSubmitted"
+	case requestsuc.NotificationKindApproved:
+		return "RequestApproved"
+	case requestsuc.NotificationKindRejected:
+		return "RequestRejected"
+	default:
+		return ""
+	}
 }
 
 var _ requestsuc.Notifier = (*SlackNotifier)(nil)
