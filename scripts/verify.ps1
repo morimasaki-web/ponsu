@@ -18,11 +18,11 @@ function Invoke-Step([string]$Name, [scriptblock]$Body) {
 
 # Force a stable toolchain to avoid tool incompatibilities with newer local Go.
 # Go will auto-download this toolchain if missing.
-$env:GOTOOLCHAIN = "go1.24.11"
+$env:GOTOOLCHAIN = "go1.26.3"
 
 if (-not $SkipTidy) {
   Invoke-Step "go mod tidy" {
-    go --% mod tidy -go=1.24.0
+    go --% mod tidy -go=1.26.0
   }
 }
 
