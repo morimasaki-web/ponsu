@@ -24,6 +24,7 @@ func NewServer(db *sql.DB, notifier requestsuc.Notifier, publicBaseURL string, s
 		},
 	})
 	srv := handler.New(schema)
+	srv.SetErrorPresenter(graph.NewErrorPresenter())
 	srv.AddTransport(transport.Options{})
 	srv.AddTransport(transport.GET{})
 	srv.AddTransport(transport.MultipartForm{}) // POSTより先に追加

@@ -137,7 +137,7 @@
     - リトライ失敗イベントが記録される
     - go test が通る
 
-- [ ] **LEARN-030** `enhance/030-graphql-error-handling` [medium]  
+- [x] **LEARN-030** `enhance/030-graphql-error-handling` [medium]  
   GraphQL: エラーレスポンスの統一と構造化  
   _gqlgenのエラーハンドリング機構を活用してエラーコードを付与する。_
   - 受け入れ条件:
