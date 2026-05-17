@@ -6,7 +6,7 @@ skip_lint="${SKIP_LINT:-0}"
 skip_tidy="${SKIP_TIDY:-0}"
 
 # Force a stable toolchain to avoid tool incompatibilities with newer local Go.
-export GOTOOLCHAIN="go1.26.3"
+export GOTOOLCHAIN="go1.25.10"
 
 step() {
   echo "==> $1"
@@ -15,7 +15,7 @@ step() {
 }
 
 if [ "$skip_tidy" = "0" ]; then
-  step "go mod tidy" go mod tidy -go=1.26.0
+  step "go mod tidy" go mod tidy -go=1.25.0
 fi
 
 step "go test" go test ./...
