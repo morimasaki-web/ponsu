@@ -39,3 +39,9 @@ docs/study/
 # data
 
 .data/
+
+# claude
+
+.claude/
+CLAUDE.md
+.steering/
